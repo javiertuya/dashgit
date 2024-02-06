@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>DashGit - A Dashboard for GitHub and GitLab repositories</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="assets/icons/git.png">
+  <link rel="stylesheet" href="assets/fontawesome6/css/fontawesome.min.css">
+  <link rel="stylesheet" href="assets/fontawesome6/css/brands.min.css">
+  <link rel="stylesheet" href="assets/fontawesome6/css/solid.min.css">
+  <link rel="stylesheet" href="assets/fontawesome6/css/regular.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+    crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"
+    integrity="sha512-a+SUDuwNzXDvz4XrIcXHuCf089/iJAoN4lmrXJg18XnduKK6YlDHNRalv4yd1N40OKI80tFidF+rqTFKGPoWFQ=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- Update versions of main external components here -->
+  <script type="importmap">
+    {
+      "imports": {
+        "octokit/rest" : "https://esm.sh/@octokit/rest@20.0.2",
+        "octokit/graphql" : "https://esm.sh/@octokit/graphql@7.0.2",
+        "gitbreaker/rest": "https://esm.sh/@gitbeaker/rest@39.33.0"
+      }
+    }
+  </script>
+  <script type="module" src="./indexController.js"></script>
+</head>
+
+<style>
+  .col-auto {
+    margin: 3px;
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+
+  .nav-link {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .accordion-body {
+    padding: 6px
+  }
+
+  .accordion-button {
+    padding: 6px
+  }
+</style>
+
+<body style="overflow-x: hidden;"><!-- overflow-x to remove bootstrap horizontal scroll bar -->
+  <div class="sticky-md-top text-bg-light" style="padding:4px 4px 0px 4px;">
+    <div id="alert-div"></div>
+
+    <span style="float:right; padding-top:4px">&nbsp;
+      <!--do not modify version number, the published version is set at release-->
+      <span id="appVersion">v0.0.0-local</span>&nbsp;
+      <a href="https://github.com/javiertuya/dashgit/blob/main/README.md" target="_blank"
+        class="link-underline link-underline-opacity-0">[Readme]</a>
+    </span>
+
+    <h3> &nbsp;DashGit<span class="h5 d-none d-sm-inline"> - Dashboard for GitHub and GitLab</span></h3>
+
+    <div id="header-content" class="form-group row align-items-center" style="display:none">
+
+      <div class="col-auto" id="loadingIcon" style="visibility:hidden;">
+        &nbsp;<img src="assets/icons/loading.gif" width="22" height="22" alt="progress">
+      </div>
+      <div class="col-auto" id="reloadIcon">
+        &nbsp;<i class="fa-solid fa-arrow-rotate-right" style="width:22px"></i>
+      </div>
+
+      <div class="col-auto">
+        <label for="inputStatus" class="col-form-label">Type/Status:</label>
+      </div>
+      <div class="col-auto">
+        <select id="inputStatus" class="form-select form-select-sm" aria-label="Sort by">
+          <option selected value="111111">All</option>
+          <option value="100000">Issues</option>
+          <option value="011111">Branches/PRs</option>
+          <option value="010000">Succesful</option>
+          <option value="001000">Failed</option>
+          <option value="000100">Pending</option>
+          <option value="000011">Not available</option> <!--and undefined-->
+        </select>
+      </div>
+
+      <div class="col-auto">
+        <label for="inputSort" class="col-form-label">Sort by:</label>
+      </div>
+      <div class="col-auto">
+        <!--quitar el div interno y form-select hace que no haga break el select, pero pierde estilo-->
+        <select id="inputSort" class="form-select form-select-sm" aria-label="Sort by:">
+          <option value="ascending,created_at">Newest</option>
+          <option value="descending,created_at">Oldest</option>
+          <option selected value="ascending,updated_at">Recently updated</option>
+          <option value="descending,updated_at">Last recently updated</option>
+        </select>
+      </div>
+
+      <div class="col-auto">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" value="" id="checkGroup">
+          <label class="form-check-label" for="checkGroup">
+            Group by repository
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <form id="header-authentication" class="form-group row m-2" style="display:none" novalidate>
+      <p>Enter the password used to encrypt the API access tokens.
+        If you forgot your password, or imported the configuration from another browser,
+        click skip and enter the config tab to reset.
+      </p>
+      <div class="col-auto">
+        <label for="inputPassword" class="col-form-label">Enter you password:</label>
+      </div>
+      <div class="col-auto">
+        <input id="inputPassword" type="password" autofocus class="form-control form-control-sm"
+          aria-label="Enter you password:" required></input>
+      </div>
+      <div class="col-auto">
+        <button type="submit" id="inputPasswordButton" class="btn btn-primary btn-sm">Submit</button>
+      </div>
+      <div class="col-auto">
+        <button type="submit" id="inputSkipButton" class="btn btn-primary btn-sm">SKIP</button>
+      </div>
+      <p>&nbsp;</p>
+    </form>
+
+    <!-- target tabs -->
+    <ul class="nav nav-tabs" id="tab-headers" role="tablist" style="display:none">
+      <li class="nav-item" id="wi-notifications-tab-count" style="display:none">
+        <button class="nav-link">
+          <span id="wi-notifications-tab-badge" class="badge rounded-pill"
+            style="background-color:#F34F29; color:#ffffff;"></span></button>
+      </li>
+      <li class="nav-item" role="presentation" data-toggle="tooltip"
+        title="Open work items (issues/pull requests) where I'm the assignee or reviewer">
+        <button class="nav-link active" id="assigned-tab" data-bs-toggle="tab" data-bs-target="#assigned" type="button"
+          role="tab" aria-controls="assigned" aria-selected="true">Assigned</button>
+      </li>
+      <li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="bottom"
+        title="Open work items (issues/pull requests) where I'm the author, assignee, mentioned or commenter">
+        <button class="nav-link" id="involved-tab" data-bs-toggle="tab" data-bs-target="#involved" type="button"
+          role="tab" aria-controls="involved" aria-selected="false">Involved</button>
+      </li>
+      <li class="nav-item" role="presentation" data-toggle="tooltip"
+        title="Open work items (issues/pull requests) where I'm the author">
+        <button class="nav-link" id="created-tab" data-bs-toggle="tab" data-bs-target="#created" type="button"
+          role="tab" aria-controls="created" aria-selected="false">Created</button>
+      </li>
+      <li class="nav-item" role="presentation" data-toggle="tooltip"
+        title="Open work items that do not have any asignee" role="tab">
+        <button class="nav-link" id="unassigned-tab" data-bs-toggle="tab" data-bs-target="#unassigned" type="button"
+          aria-controls="unassigned" aria-selected="true">Unassigned</button>
+      </li>
+      <li class="nav-item" role="presentation" data-toggle="tooltip"
+        title="Open pull requests that have been created by dependabot to update depencencies">
+        <button class="nav-link" id="dependabot-tab" data-bs-toggle="tab" data-bs-target="#dependabot" type="button"
+          role="tab" aria-controls="dependabot" aria-selected="false">Dependabot</button>
+      </li>
+      <li class="nav-item" role="presentation" data-toggle="tooltip"
+        title="Statuses of all accesible branches and pull requests">
+        <button class="nav-link" id="statuses-tab" data-bs-toggle="tab" data-bs-target="#statuses" type="button"
+          role="tab" aria-controls="statuses" aria-selected="false">Branches</button>
+      </li>
+      <li class="nav-item" role="presentation" data-toggle="tooltip"
+        title="Add/remove GitHub or GitLab providers and set other parameters" role="tab">
+        <button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#config" type="button"
+          aria-controls="config" aria-selected="false">Configure</button>
+      </li>
+    </ul>
+  </div>
+
+  <div class="tab-content" id="tab-content" style="display:none">
+    <div class="tab-pane active" id="assigned" role="tabpanel" aria-labelledby="assigned-tab"></div>
+    <div class="tab-pane" id="involved" role="tabpanel" aria-labelledby="involved-tab"></div>
+    <div class="tab-pane" id="created" role="tabpanel" aria-labelledby="created-tab"></div>
+    <div class="tab-pane" id="unassigned" role="tabpanel" aria-labelledby="unassigned-tab"></div>
+    <div class="tab-pane" id="dependabot" role="tabpanel" aria-labelledby="dependabot-tab"></div>
+    <div class="tab-pane" id="statuses" role="tabpanel" aria-labelledby="statuses-tab"></div>
+    <div class="tab-pane m-2" id="config" role="tabpanel" aria-labelledby="config-tab"></div>
+    <p>&nbsp;</p>
+  </div>
+
+</body>
+
+</html>

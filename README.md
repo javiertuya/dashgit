@@ -1,2 +1,77 @@
-# dashgit
-DashGit - A Dashboard for GitHub and GitLab repositories
+# DashGit - A Dashboard for GitHub and GitLab repos
+
+This dashboard provides a consolidated view of your latest work items 
+(open issues, pull requests, review requests, branches, dependabot updates) 
+along with build statuses and notifications for multiple GitHub and GitLab repositories.
+
+It works entirely in the browser and is hosted on the GitHub Pages of this repo at
+[https://javiertuya.github.io/dashgit](https://javiertuya.github.io/dashgit).
+The only data sent outside of the browser is the
+required to request the repositories to get your work items.
+
+This is an example view of DashGit configured to manage two GitHub and one GitLab repositories:
+
+![dashgit-image](dashgit-web/app/assets/image.png "DashGit image")
+
+## Quick Start
+
+To start, enter into DashGit at [https://javiertuya.github.io/dashgit](https://javiertuya.github.io/dashgit),
+go to the Configure tab and specify a GitHub provider by setting your username and an access token.
+You can omit the token, but this is subject to lower rate limits and does not allow you to view the branches tab, build statuses and notifications.
+
+The configuration is stored in the local browser memory. 
+To protect the tokens you can encrypt them with a password that will be requested when you open a new DashGit browser tab.
+
+## Features and Configuration
+
+The different *views* (tabs) shown in the UI display the open *work items* (issues, pull requests, etc.) in a collapsible panel for each *provider*.
+A provider is defined by a repository type (GitHub, GitLab), an *user* and an access *token* to authenticate the requests. 
+You can define any combination (e.g. providers with the same username but different token, or different username but same token).
+
+### Api acces token encryption
+As told before, the configuration is stored in the browser local memory as all processing occours in the browser.
+To protect sensistive information (the access tokens) the user is given the option to encrypt the tokens using a password.
+If you set a password, the next time that you open a tab with DasGit you will be asked for the password.
+
+If you forgot the password, you are given with the option of skip. In that case the api calls will fail and you should go
+to the configuration to reset the tokens to an empty value.
+Note that once a token is encrypted, you can't decrypt it, only reset.
+
+### Selecting, sorting and grouping
+The user can customize how the work items are sorted and organized by setting the controls that appear at the top of the header.
+This settings are no stored in the configuration.
+
+### Scope configuration
+The user is the reference username for which the work items are displayed (assigned to, created by, etc.)
+and the token defines the scope of the request that determines what items are displayed.
+
+- The scope of Assigned, Involved and Created views is whatever repository visible for the token.
+- The scope of Unassigned and Dependabot views is restricted only to the repository of the token owner. 
+  If you need include other users or organizations, you must include them in the `unassignedAdditionalOwner`
+  or `dependabotAdditionalOwner` parameters, respectively.
+- The scope of Branches view is handled differently, as data is obtained by the GraphQL API requests insetead of the REST API.
+  On GitHub you should specify one or more than the following scopes: OWNER, ORGANIZATION_MEMBER or COLLABORATOR.
+
+### Filtering
+The requests made against the repositories get the most recent work items that fit on a single response page,
+that is enough for the most common use case to display the open work items regarding the user.
+Moreover the data displayed can be restricted by setting any of the following parameters:
+- `maxAge`: Filters out the work items that are older than the days specified.
+- `filterIfLabel`: Filters out the work items that contain the label specified.
+
+### Status cache
+Requests to the GraphQL API to get the branches and build statuses are expensive if they retrieve data
+from many repositories and are subject to more restrictive rate limits than REST API.
+To mitigate potential problems and improve the UI response times, these calls are cached and managed
+by two parameters (measured in seconds):
+- `statusCacheUpdateTime`: During this period, any call to get statuses returns the cached data-
+  This is to avoid makking API calls when the user moves from a view to another in a short period of time.
+  When this period of time expires, the cache will be incrementally updated by requesting 
+  data only from the latest updated projects.
+- `statusCacheRefreshTime`: It specifies a much longer period than `statusCacheUpdateTime`.
+  When this period of time expires, the cache is fully refreshed.
+
+## Contributing
+
+This repository follows the general contribution policies and guidelines at the giis-uniovi org:
+[CONTRIBUTING.md](https://github.com/giis-uniovi/.github/blob/main/profile/CONTRIBUTING.md)

@@ -1,0 +1,40 @@
+[
+    {
+        "repository_url": "https://api.github.com/repos/myuser/testrepo",
+        "html_url": "https://github.com/myuser/testrepo/pull/63",
+        "number": 63,
+        "title": "test pr assignee",
+        "user": { "login": "myuser" },
+        "labels": [],
+        "state": "open",
+        "assignees": [ { "login": "myuser" } ],
+        "created_at": "2024-01-09T19:56:21Z",
+        "updated_at": "2024-01-10T17:27:30Z",
+        "pull_request": { "html_url": "https://github.com/myuser/testrepo/pull/63" }
+    },
+    {
+        "repository_url": "https://api.github.com/repos/myorg/testrepo2",
+        "html_url": "https://github.com/myorg/testrepo2/issues/62",
+        "number": 62,
+        "title": "issue assigned",
+        "user": { "login": "user2" },
+        "labels": [ { "name" : "question", "color": "d876e3" } ],
+        "state": "open",
+        "assignees": [ { "login": "myuser" }, { "login": "user2" } ],
+        "created_at": "2024-01-08T14:49:48Z",
+        "updated_at": "2024-01-08T14:49:49Z"
+    },
+    {
+        "repository_url": "https://api.github.com/repos/myuser/testrepo",
+        "html_url": "https://github.com/myuser/testrepo/pull/61",
+        "number": 61,
+        "title": "test pr reviewer, other project",
+        "user": { "login": "giis-qabot" },
+        "labels": [ { "name": "invalid", "color": "e4e669"}, { "name": "question", "color": "d876e3" } ],
+        "state": "open",
+        "assignees": [],
+        "created_at": "2024-01-08T12:52:35Z",
+        "updated_at": "2024-01-08T12:52:56Z",
+        "pull_request": {  "html_url": "https://github.com/myuser/testrepo/pull/61" }
+    }
+]

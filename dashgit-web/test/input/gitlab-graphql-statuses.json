@@ -1,0 +1,76 @@
+{
+    "data": {
+        "projects": {
+            "nodes": [
+                {
+                    "id": "gid://gitlab/Project/5", "fullPath": "org1/proj5", "lastActivityAt": "2024-02-05T15:49:00+01:00",
+                    "webUrl": "https://mygitlab.com/org1/proj5",
+                    "pipelines": {
+                        "nodes": [
+                            { 
+                                "id": "gid://gitlab/Ci::Pipeline/6550", "startedAt": "2024-02-05T15:50:00+01:00", "finishedAt": null,
+                                "latest": true, "refPath": "refs/heads/building", "name": null, "status": "RUNNING"
+                            },
+                            { 
+                                "id": "gid://gitlab/Ci::Pipeline/6549", "startedAt": "2024-02-05T15:39:00+01:00", "finishedAt": "2024-02-05T15:49:00+01:00",
+                                "latest": true, "refPath": "refs/heads/feature", "name": null, "status": "SUCCESS"
+                            },
+                            { 
+                                "id": "gid://gitlab/Ci::Pipeline/6548", "startedAt": "2024-02-10T15:38:00+01:00", "finishedAt": "2024-02-05T15:48:00+01:00",
+                                "latest": true, "refPath": "refs/heads/main", "name": null, "status": "FAILED"
+                            },
+                            { 
+                                "id": "gid://gitlab/Ci::Pipeline/6540", "startedAt": "2024-02-05T15:30:00+01:00", "finishedAt": "2024-02-05T15:40:00+01:00",
+                                "latest": true, "refPath": "refs/heads/feature", "name": null, "status": "FAILED"
+                            }
+                        ]
+                    },
+                    "mergeRequests": {
+                        "nodes": [
+                            {
+                                "iid": "50", "webUrl": "https://mygitlab.com/org1/proj5/-/merge_requests/50",
+                                "sourceBranch": "building", "title": "pr branch building now"
+                            },
+                            {
+                                "iid": "49", "webUrl": "https://mygitlab.com/org1/proj5/-/merge_requests/49",
+                                "sourceBranch": "feature", "title": "pr branch with pipeline"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "id": "gid://gitlab/Project/7", "fullPath": "org2/proj7", "lastActivityAt": "2024-02-07T17:49:00+01:00",
+                    "webUrl": "https://mygitlab.com/org2/proj7",
+                    "pipelines": {
+                        "nodes": [
+                            { 
+                                "id": "gid://gitlab/Ci::Pipeline/6749", "startedAt": "2024-02-07T17:39:00+01:00", "finishedAt": "2024-02-07T17:49:00+01:00",
+                                "latest": true, "refPath": "refs/heads/hidden1", "name": null, "status": "SUCCESS"
+                            },
+                            { 
+                                "id": "gid://gitlab/Ci::Pipeline/6748", "startedAt": "2024-02-07T17:38:00+01:00", "finishedAt": "2024-02-07T17:48:00+01:00",
+                                "latest": true, "refPath": "refs/heads/hidden2", "name": null, "status": "SUCCESS"
+                            }
+                        ]
+                    },
+                    "mergeRequests": {
+                        "nodes": [
+                            {
+                                "iid": "49", "webUrl": "https://mygitlab.com/org2/proj7/-/merge_requests/49",
+                                "sourceBranch": "branch1", "title": "pr branch without pipeline"
+                            },
+                            {
+                                "iid": "48", "webUrl": "https://mygitlab.com/org2/proj7/-/merge_requests/48",
+                                "sourceBranch": "hidden1", "title": "hidden pr branch with pipeline"
+                            },
+                            {
+                                "iid": "47", "webUrl": "https://mygitlab.com/org2/proj7/-/merge_requests/47",
+                                "sourceBranch": "hidden3", "title": "hidden pr branch without pipeline"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    }
+}

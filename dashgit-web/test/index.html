@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>Mocha Tests</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/mocha/mocha.css" />
+</head>
+
+<!-- Notes on testing ES6 modules:
+  https://stackoverflow.com/questions/42857778/how-do-you-run-mocha-tests-in-the-browser
+  https://medium.com/dailyjs/running-mocha-tests-as-native-es6-modules-in-a-browser-882373f2ecb0
+-->
+
+<body>
+  <div id="mocha"></div>
+
+  <!--requires previous npm install-->
+  <script src="node_modules/mocha/mocha.js"></script>
+  <script src="node_modules/chai/chai.js"></script>
+
+  <script type="module" class="mocha-init">
+    mocha.setup('bdd');
+    mocha.checkLeaks();
+  </script>
+
+  <script>
+    //to make compatible with the assert used in node
+    let assert = chai.assert
+  </script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+  <script type="module" src="TestConfig.js"></script>
+  <script type="module" src="TestView.js"></script>
+
+  <script type="module" class="mocha-exec">
+    mocha.run();
+  </script>
+</body>
+
+</html>
