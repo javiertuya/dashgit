@@ -1,0 +1,72 @@
+{
+  "header": {
+    "provider": "GitHub",
+    "uid": "0-github",
+    "user": "usr1",
+    "url": "",
+    "repo_names": [],
+    "target": "",
+    "message": ""
+  },
+  "items": [
+    {
+      "repo_name": "myuser/testrepo",
+      "type": "pr",
+      "iid": 63,
+      "title": "test pr assignee",
+      "author": "myuser",
+      "assignees": "myuser ",
+      "created_at": "2024-01-09T19:56:21Z",
+      "updated_at": "2024-01-10T17:27:30Z",
+      "iidstr": "#63",
+      "url": "https://github.com/myuser/testrepo/pull/63",
+      "repo_url": "https://github.com/myuser/testrepo",
+      "labels": [],
+      "uid": "myuser-testrepo_pr_63"
+    },
+    {
+      "repo_name": "myorg/testrepo2",
+      "type": "issue",
+      "iid": 62,
+      "title": "issue assigned",
+      "author": "user2",
+      "assignees": "myuser user2 ",
+      "created_at": "2024-01-08T14:49:48Z",
+      "updated_at": "2024-01-08T14:49:49Z",
+      "iidstr": "#62",
+      "url": "https://github.com/myorg/testrepo2/issues/62",
+      "repo_url": "https://github.com/myorg/testrepo2",
+      "labels": [
+        {
+          "name": "question",
+          "color": "d876e3"
+        }
+      ],
+      "uid": "myorg-testrepo2_issue_62"
+    },
+    {
+      "repo_name": "myuser/testrepo",
+      "type": "pr",
+      "iid": 61,
+      "title": "test pr reviewer, other project",
+      "author": "giis-qabot",
+      "assignees": "",
+      "created_at": "2024-01-08T12:52:35Z",
+      "updated_at": "2024-01-08T12:52:56Z",
+      "iidstr": "#61",
+      "url": "https://github.com/myuser/testrepo/pull/61",
+      "repo_url": "https://github.com/myuser/testrepo",
+      "labels": [
+        {
+          "name": "invalid",
+          "color": "e4e669"
+        },
+        {
+          "name": "question",
+          "color": "d876e3"
+        }
+      ],
+      "uid": "myuser-testrepo_pr_61"
+    }
+  ]
+}

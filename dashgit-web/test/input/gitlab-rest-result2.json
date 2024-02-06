@@ -1,0 +1,52 @@
+[
+    {
+        "id": 14708,
+        "project": { "id": 117, "path_with_namespace": "org2/proj2", "created_at": "2023-01-01T01:01:01.000+01:00" },
+        "action_name": "directly_addressed",
+        "target_type": "Issue",
+        "target": {
+            "id": 1566, "iid": 3, "project_id": 117, "title": "issue from todos",
+            "state": "opened", "created_at": "2023-01-02T01:01:01.000+01:00", "updated_at": "2023-01-02T02:01:01.000+01:00",
+            "labels": [ "BLOCKING" ], "assignees": [ { "username": "usr3" } ], 
+            "author": { "username": "usr2" },
+            "type": "ISSUE",
+            "assignee": null, "issue_type": "issue",
+            "web_url": "https://mygitlab.com/org2/proj2/-/issues/3"
+        },
+        "target_url": "https://mygitlab.com/org2/proj2/-/issues/3#note_43601",
+        "state": "pending", "created_at": "2023-01-03T01:01:01.000+01:00", "updated_at": "2023-01-03T02:01:01.000+01:00"
+    },
+    {
+        "id": 14709,
+        "project": { "id": 117, "path_with_namespace": "org2/proj2", "created_at": "2023-02-01T01:01:01.000+01:00" },
+        "action_name": "directly_addressed",
+        "target_type": "MergeRequest",
+        "target": {
+            "id": 13018, "iid": 4, "project_id": 117, "title": "mr from todos",
+            "state": "opened", "created_at": "2023-02-02T01:01:01.000+01:00", "updated_at": "2023-02-02T02:01:01.000+01:00",
+            "labels": [ ], "assignees": [ ], 
+            "author": { "username": "usr2" },
+            "assignee": null,
+            "web_url": "https://mygitlab.com/org2/proj2/-/merge_requests/4070"
+        },
+        "target_url": "https://mygitlab.com/org2/proj2/-/merge_requests/4070#note_43602",
+        "state": "done", "created_at": "2023-02-03T01:01:01.000+01:00", "updated_at": "2023-02-03T02:01:01.000+01:00"
+    },
+    {
+        "id": 14710,
+        "project": { "id": 117, "path_with_namespace": "org2/proj2", "created_at": "2023-03-01T01:01:01.000+01:00" },
+        "action_name": "directly_addressed",
+        "target_type": "Issue",
+        "target": {
+            "id": 1568, "iid": 4, "project_id": 117, "title": "closed issue from todos",
+            "state": "closed", "created_at": "2023-03-02T01:01:01.000+01:00", "updated_at": "2023-03-02T02:01:01.000+01:00",
+            "labels": [ "BLOCKING" ], "assignees": [ { "username": "usr3" } ], 
+            "author": { "username": "usr2" },
+            "type": "ISSUE",
+            "assignee": null, "issue_type": "issue",
+            "web_url": "https://mygitlab.com/org2/proj2/-/issues/4"
+        },
+        "target_url": "https://mygitlab.com/org2/proj2/-/issues/4#note_43603",
+        "state": "pending", "created_at": "2023-03-03T01:01:01.000+01:00", "updated_at": "2023-03-03T02:01:01.000+01:00"
+    }
+]

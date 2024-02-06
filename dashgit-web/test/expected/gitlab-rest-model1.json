@@ -1,0 +1,87 @@
+{
+  "header": {
+    "provider": "GitLab",
+    "uid": "0-gitlab",
+    "user": "usr1",
+    "url": "https://mygitlab.com",
+    "repo_names": [],
+    "target": "",
+    "message": ""
+  },
+  "items": [
+    {
+      "repo_name": "org/proj1",
+      "type": "issue",
+      "iid": 3,
+      "title": "gl issue1",
+      "author": "usr2",
+      "assignees": "usr1 ",
+      "created_at": "2024-02-10T11:09:12.972+01:00",
+      "updated_at": "2024-02-10T11:09:12.972+01:00",
+      "iidstr": "#3",
+      "url": "https://mygitlab.com/org/proj1/-/issues/2",
+      "repo_url": "https://mygitlab.com/org/proj1",
+      "labels": [],
+      "uid": "org-proj1_issue_3"
+    },
+    {
+      "repo_name": "org/proj1",
+      "type": "issue",
+      "iid": 2,
+      "title": "gl issue2",
+      "author": "usr0",
+      "assignees": "usr1 usr2 ",
+      "created_at": "2024-02-10T11:09:13.972+01:00",
+      "updated_at": "2024-02-10T11:09:13.972+01:00",
+      "iidstr": "#2",
+      "url": "https://mygitlab.com/org/proj1/-/issues/2",
+      "repo_url": "https://mygitlab.com/org/proj1",
+      "labels": [
+        {
+          "name": "BLOCKING",
+          "color": "FF0000"
+        }
+      ],
+      "uid": "org-proj1_issue_2"
+    },
+    {
+      "repo_name": "org/proj1",
+      "type": "pr",
+      "iid": 4068,
+      "title": "gl pr with assignee",
+      "author": "usr0",
+      "assignees": "",
+      "created_at": "2024-02-10T11:10:28.159+01:00",
+      "updated_at": "2024-02-10T11:10:29.505+01:00",
+      "iidstr": "!4068",
+      "url": "https://mygitlab.com/org/proj1/-/merge_requests/4068",
+      "repo_url": "https://mygitlab.com/org/proj1",
+      "labels": [
+        {
+          "name": "urgent",
+          "color": ""
+        },
+        {
+          "name": "BLOCKING",
+          "color": "FF0000"
+        }
+      ],
+      "uid": "org-proj1_pr_4068"
+    },
+    {
+      "repo_name": "org/proj1",
+      "type": "pr",
+      "iid": 4069,
+      "title": "test pr with revieer",
+      "author": "usr0",
+      "assignees": "",
+      "created_at": "2024-02-10T11:11:25.633+01:00",
+      "updated_at": "2024-02-10T11:11:32.586+01:00",
+      "iidstr": "!4069",
+      "url": "https://mygitlab.com/org/proj1/-/merge_requests/4069",
+      "repo_url": "https://mygitlab.com/org/proj1",
+      "labels": [],
+      "uid": "org-proj1_pr_4069"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "org/proj1-.NET": {
+    "color": "#6699cc"
+  },
+  "org/proj1-BLOCKING": {
+    "color": "#CC0033"
+  },
+  "com/projx-BLOCKING": {
+    "color": "#CC0033"
+  },
+  "com/projx-Doing": {
+    "color": "#00ffaa"
+  }
+}

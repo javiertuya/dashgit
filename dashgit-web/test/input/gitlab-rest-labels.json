@@ -1,0 +1,24 @@
+{
+  "data": {
+      "projects": {
+          "nodes": [
+              {
+                  "id": "gid://gitlab/Project/117",
+                  "name": "proj1",
+                  "fullPath": "org/proj1",
+                  "labels": {
+                      "nodes": [ { "color": "#6699cc", "title": ".NET" }, { "color": "#CC0033", "title": "BLOCKING" } ]
+                  }
+              },
+              {
+                  "id": "gid://gitlab/Project/44",
+                  "name": "projx",
+                  "fullPath": "com/projx",
+                  "labels": {
+                      "nodes": [ { "color": "#CC0033", "title": "BLOCKING" }, { "color": "#00ffaa", "title": "Doing" } ]
+                  }
+              }
+          ]
+      }
+  }
+}
