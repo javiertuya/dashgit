@@ -1,0 +1,12 @@
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: 'dashgit-web/test/'
+    schedule:
+      interval: 'monthly'
+    open-pull-requests-limit: 20
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: 'monthly'
+    open-pull-requests-limit: 20
