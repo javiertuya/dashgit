@@ -8,7 +8,7 @@ import { gitLabAdapter } from "../app/GitLabAdapter.js"
  * Test inputs are created by getting real data, removing unneeded fields
  * and customized to represent the test situations.
  */
-describe("TestGitLabAdapters - Model transformations from GitLab API results", function () {
+describe("TestGitLabAdapter - Model transformations from GitLab API results", function () {
 
     //Rest API, Issues and Merge Requests:
     // - pr assigned, pr reviewer(not assigned), issue (type ISSUE/INCIDENT)

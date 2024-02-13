@@ -7,7 +7,7 @@ import { gitHubAdapter } from "../app/GitHubAdapter.js"
  * Test inputs are created by getting real data, removing unneeded fields
  * and customized to represent the test situations.
  */
-describe("TestGitHubAdapters - Model transformations from GitHub API results", function () {
+describe("TestGitHubAdapter - Model transformations from GitHub API results", function () {
 
     //Rest API
     // - pr assigned, pr reviewer(not assigned), issue
