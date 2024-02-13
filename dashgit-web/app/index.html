@@ -28,7 +28,12 @@
       }
     }
   </script>
-  <script type="module" src="./indexController.js"></script>
+  <script type="module">
+    import { indexController } from "./IndexController.js"
+    $(document).ready(async function () {
+      indexController.load();
+    });
+  </script>
 </head>
 
 <style>

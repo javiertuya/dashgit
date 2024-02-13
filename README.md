@@ -1,3 +1,6 @@
+[![Status](https://github.com/javiertuya/dashgit/actions/workflows/test.yml/badge.svg)](https://github.com/javiertuya/dashgit/actions)
+[![Run DashGit](https://img.shields.io/badge/%20-Run_DashGit-orange)](https://javiertuya.github.io/dashgit)
+
 # DashGit - A Dashboard for GitHub and GitLab repos
 
 This dashboard provides a consolidated view of your latest work items 
