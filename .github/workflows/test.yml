@@ -1,0 +1,38 @@
+name: test
+
+on:
+  push:
+    branches-ignore:
+      - 'dependabot/**' #avoid duplicates: only run the PR, not the commit
+    tags-ignore:
+      - 'v*' #avoids rerun existing commit on release
+  pull_request:
+    branches:
+      - 'main'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitHub repo
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x' 
+      - name: Run unit tests
+        working-directory: ./dashgit-web/test
+        run: |
+          mkdir actual
+          npm install
+          npm run report
+      - name: Publish test report files
+        if: always()
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: "test-report-files"
+          path: |
+            dashgit-web/test/expected
+            dashgit-web/test/actual
+            dashgit-web/test/mochawesome-report
