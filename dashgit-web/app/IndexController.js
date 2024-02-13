@@ -5,20 +5,12 @@ import { configController } from "./ConfigController.js"
 
 /**
  * Manages the top level elements visibility and actions (header and tabs).
- * Enters one of two modes depending on the token encription configuration
+ * Enters one of two modes depending on the token encription configuration.
+ * 
+ * Note: The index.html cannot import this module with src, on chromium causes this error:
+ * Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'interest-cohort'.
+ * Solution is to define an inline module in index.html that initializes jquery and imports this controller
  */
-$(document).ready(async function () {
-  config.appVersion = $("#appVersion").text();
-  console.log(`Loading, version ${config.appVersion}`)
-  config.load();
-  if (config.data.encrypted) {
-    indexController.loginMode();
-  } else {
-    indexController.workMode();
-    indexController.render();
-  }
-  $('[data-toggle="tooltip"]').tooltip({ trigger: "hover", delay: 600 });
-});
 
 //In login mode, enter and validate password
 $(document).on('click', '#inputPasswordButton', function (e) {
@@ -68,6 +60,21 @@ $(document).on('click', '.accordion-button', function () {
 });
 
 const indexController = {
+
+  // Initial configuration to be run by jquery on document ready
+  load: function() {
+    config.appVersion = $("#appVersion").text();
+    config.load();
+    $("#appVersion").text(config.appVersion);
+    if (config.data.encrypted) {
+      indexController.loginMode();
+    } else {
+      indexController.workMode();
+      indexController.render();
+    }
+    $('[data-toggle="tooltip"]').tooltip({trigger:"hover", delay:600});
+  },
+
   //Rendering depends on the selected tab, calls the appropriate controller to update the UI
   render: function () {
     wiView.resetAlerts();
