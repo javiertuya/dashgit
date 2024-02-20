@@ -58,34 +58,36 @@ const config = {
     this.setDefault(data, "statusCacheRefreshTime", 3600);
     this.setDefault(data, "maxAge", 0);
     this.setDefault(data, "providers", []);
-    for (const element of data.providers) {
-      let provider = element;
-      this.setDefault(element, "provider", "");
-      this.setDefault(element, "uid", "");
-      this.setDefault(element, "user", "");
-      this.setDefault(element, "token", "");
-      this.setDefault(element, "enabled", true);
-      this.setDefault(element, "enableNotifications", true);
-      this.setDefault(element, "filterIfLabel", "");
-      if (provider.provider == "GitHub") {
-        this.setDefault(element, "url", "https://github.com");
-        this.setDefault(element, "api", "https://api.github.com");
-        this.setDefault(element, "unassignedAdditionalOwner", []);
-        this.setDefault(element, "dependabotAdditionalOwner", []);
-        this.setDefault(element, "graphql", {});
-        this.setDefault(element.graphql, "ownerAffiliations", ["OWNER"]);
-        this.setDefault(element.graphql, "maxProjects", 20);
-        this.setDefault(element.graphql, "maxBranches", 10);
-      } else if (provider.provider == "GitLab") {
-        this.setDefault(element, "url", "");
-        this.setDefault(element, "dependabotUser", "dependabot");
-        this.setDefault(element, "graphql", {});
-        this.setDefault(element.graphql, "maxProjects", 20);
-        this.setDefault(element.graphql, "maxBranches", 10);
-        this.setDefault(element.graphql, "maxPipelines", 100);
-      }
-    }
+    for (const provider of data.providers)
+      this.setProviderDefaults(provider);
     return data;
+  },
+  setProviderDefaults: function(element) {
+    this.setDefault(element, "provider", "");
+    this.setDefault(element, "uid", "");
+    this.setDefault(element, "user", "");
+    this.setDefault(element, "token", "");
+    this.setDefault(element, "enabled", true);
+    this.setDefault(element, "enableNotifications", true);
+    this.setDefault(element, "filterIfLabel", "");
+    if (element.provider == "GitHub") {
+      this.setDefault(element, "url", "https://github.com");
+      this.setDefault(element, "api", "https://api.github.com");
+      this.setDefault(element, "unassignedAdditionalOwner", []);
+      this.setDefault(element, "dependabotAdditionalOwner", []);
+      this.setDefault(element, "graphql", {});
+      this.setDefault(element.graphql, "ownerAffiliations", ["OWNER"]);
+      this.setDefault(element.graphql, "maxProjects", 20);
+      this.setDefault(element.graphql, "maxBranches", 10);
+    } else if (element.provider == "GitLab") {
+      this.setDefault(element, "url", "");
+      this.setDefault(element, "dependabotUser", "dependabot");
+      this.setDefault(element, "graphql", {});
+      this.setDefault(element.graphql, "maxProjects", 20);
+      this.setDefault(element.graphql, "maxBranches", 10);
+      this.setDefault(element.graphql, "maxPipelines", 100);
+    }
+    return element;
   },
   setDefault: function (parent, property, value) {
     if (parent[property] == undefined || parent[property] == null)

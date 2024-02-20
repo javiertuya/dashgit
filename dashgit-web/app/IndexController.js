@@ -80,7 +80,7 @@ const indexController = {
     wiView.resetAlerts();
     let target = $(".nav-link.active").attr("aria-controls");
     if (target == "config")
-      configController.updateTab();
+      configController.updateMainTarget();
     else
       wiController.updateTarget(target); //display work items for the indicated target
   },
