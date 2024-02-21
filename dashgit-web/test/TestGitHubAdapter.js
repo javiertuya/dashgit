@@ -23,6 +23,18 @@ describe("TestGitHubAdapter - Model transformations from GitHub API results", fu
         assert.deepEqual(expected, actual);
     });
 
+    //Rest API with actions: Same as before, but calling the method to add the actions and then the transformation
+    it("Transform GitHub REST API results with actions", function () {
+        let input = JSON.parse(fs.readFileSync("./input/github-rest-result1.json"));
+        gitHubAdapter.addActionToPullRequestItems(input, "review_request");
+        gitHubAdapter.addActionToPullRequestItems(input, "other_action");
+        let provider = { provider: "GitHub", uid: "0-github", user: "usr1", url: 'https://github.com', api: 'https://api.github.com' };
+        let actual = gitHubAdapter.workitems2model(provider, input);
+        fs.writeFileSync("./actual/github-rest-model1-actions.json", JSON.stringify(actual, null, 2)); //to allow extenal diff
+        let expected = JSON.parse(fs.readFileSync("./expected/github-rest-model1-actions.json"));
+        assert.deepEqual(expected, actual);
+    });
+
     // GraphQL API, basic (use a first repo: testrepo)
     // - pr open, branch (does not have associatedPullRequests)
     // - status success, failure, pending, not available (does not have History)

@@ -29,8 +29,10 @@ const gitLabApi = {
     if (target == "assigned")
       promises = [
         api.MergeRequests.all(assigned),
-        api.MergeRequests.all(reviewer),
-        api.Issues.all(assigned)
+        api.Issues.all(assigned),
+        //Review requests come from the notification generated when assigning the reviewer (this notification will disappear after the reviewer finish).
+        //To allow the ui to mark this as a review request, the api call is wrapped to add a special attribute (called custom_actions) to the response
+        this.wrapToDoListsCall(api, { state: "pending", action: "review_requested", type: "MergeRequest" }, "review_request"),
       ];
     else if (target == "unassigned")
       promises = [
@@ -75,6 +77,12 @@ const gitLabApi = {
     if (target == "involved")
       model.header.message = "<em>On GitLab, this view displays issues/merge requests that you are author, assignee or mentioned, but no comenter.</em>";
     return model;
+  },
+  wrapToDoListsCall: async function (api, query, action) {
+    return api.TodoLists.all(query)
+      .then(async function (response) {
+        return gitLabAdapter.addActionToToDoResponse(response, action);
+      })
   },
 
   updateNotificationsAsync: async function (target, provider) {

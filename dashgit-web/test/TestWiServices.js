@@ -140,6 +140,26 @@ describe("TestView - Main processing in the view module", function () {
         assert.deepEqual(['pr001', 'pr002', 'pr005', 'pr006', 'pr007', 'pr008', 'pr009'], items.map(a => a.title));
     });
 
+    it("Filter duplicates with actions should aggregate all action values", function () {
+        // The issue here is that if two equal items are adjacent, but one has actions and other has not,
+        // the item that is kept could depend on the order. Actions must be aggregated (merged) in all cases
+        // - the only record with actions is the last, reverse
+        // - two records with actions (should merge)
+        let mod = new Model().setHeader("GitHub", "0-github", "", "");
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "001", title: "pr001", author: "me" });
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "001", title: "pr001", author: "me", actions: { request_review1: true } });
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "002", title: "pr002", author: "me", actions: { request_review2: true } });
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "002", title: "pr002", author: "me" });
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "003", title: "pr003", author: "me" });
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "003", title: "pr003", author: "me", actions: { request_review3: true } });
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "003", title: "pr003", author: "me", actions: { other_action: true } });
+        let modStr = JSON.stringify(mod);
+
+        let items = wiServices.filterBy("assigned", new Date(), 0, "", JSON.parse(modStr).items);
+        assert.deepEqual(['pr001', 'pr002', 'pr003'], items.map(a => a.title));
+        assert.deepEqual([{ request_review1: true }, { request_review2: true }, { request_review3: true, other_action: true }], items.map(a => a.actions));
+    });
+
     it("Filter dependabot authored only at unassigned target", function () {
         //author: dependabot/dependa[bot]/other, pr/issue(no filter), target=unassigned/other(no filter)
         let mod = new Model().setHeader("GitHub", "0-github", "", "");

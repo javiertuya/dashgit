@@ -31,7 +31,8 @@ const gitHubApi = {
     if (target == "assigned")
       promises = [
         octokit.rest.search.issuesAndPullRequests({ q: assigned, }),
-        octokit.rest.search.issuesAndPullRequests({ q: reviewer, }),
+        //To allow the ui to mark this as a review request, the api call is wrapped to add a special attribute (called custom_actions) to the response
+        this.wrapIssuesAndPullRequestsCall(octokit, { q: reviewer, }, "review_request"),
       ];
     else if (target == "unassigned")
       promises = [
@@ -63,6 +64,13 @@ const gitHubApi = {
   },
   additionalOwners: function (provider, additionalOwners) {
     return additionalOwners.length == 0 ? "" : " owner:" + additionalOwners.join(" owner:");
+  },
+  wrapIssuesAndPullRequestsCall: async function (octokit, query, action) {
+    return octokit.rest.search.issuesAndPullRequests(query)
+      .then(async function (response) {
+        gitHubAdapter.addActionToPullRequestItems(response.data.items, action);
+        return response;
+      })
   },
 
   updateNotificationsAsync: function (target, provider) {

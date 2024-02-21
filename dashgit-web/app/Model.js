@@ -50,7 +50,11 @@ class Model {
   addItem(value) {
     const uid = this.getModelUid(value.repo_name, value.type, value.iid, value.branch_name);
     value.uid = uid; //also stores the uid in the item
-    value.labels = []
+    // default values for iterables
+    if (value.labels == undefined)
+      value.labels = [];
+    if (value.actions == undefined)
+      value.actions = {};
     this.items.push(value);
     this.#index[uid] = value;
     return uid;
