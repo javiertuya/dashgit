@@ -68,6 +68,8 @@ const wiServices = {
   removeDuplicates: function (items) {
     for (let i = items.length - 1; i >= 1; i--) {
       if (items[i].uid == items[i - 1].uid) {
+        // before removing item i, aggregate actions of i into i-1
+        items[i-1].actions = {...items[i].actions, ...items[i-1].actions};
         items.splice(i, 1);
       }
     }

@@ -46,6 +46,20 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
         assert.deepEqual(expected, actual);
     });
 
+    //Rest API with actions: Same as before, but calling the method to add the actions and then the transformation
+    it("Transform GitHub REST API results with actions", function () {
+        let labels = { "org2/proj2-BLOCKING": { "color": "#FF0000" } }
+        let input = JSON.parse(fs.readFileSync("./input/gitlab-rest-result2.json"));
+        gitLabAdapter.addActionToToDoResponse(input, "review_request");
+        gitLabAdapter.addActionToToDoResponse(input, "other_action");
+        let provider = { provider: "GitLab", uid: "0-gitlab", user: "usr1", url: 'https://mygitlab.com' };
+
+        let actual = gitLabAdapter.workitems2model(provider, input, labels);
+        fs.writeFileSync("./actual/gitlab-rest-model2-actions.json", JSON.stringify(actual, null, 2)); //to allow extenal diff
+        let expected = JSON.parse(fs.readFileSync("./expected/gitlab-rest-model2-actions.json"));
+        assert.deepEqual(expected, actual);
+    });
+
     it("Transform Gitlab GraphQL API labels", function () {
         let input = JSON.parse(fs.readFileSync("./input/gitlab-rest-labels.json"));
         let actual = gitLabAdapter.labels2model(input);

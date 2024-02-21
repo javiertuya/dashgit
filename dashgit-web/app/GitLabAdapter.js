@@ -22,9 +22,10 @@ const gitLabAdapter = {
       for (let assignee of item.assignees)
         assignees += assignee.username + " ";
       let iidstr = (common.isIssue ? "#" : "!") + item.iid;
+      let actions = item.custom_actions == undefined ? {} : item.custom_actions;
       model.addItem({
         repo_name: common.repoName, type: (common.isIssue ? "issue" : "pr"), iid: item.iid,
-        title: item.title,
+        title: item.title, actions: actions,
         author: item.author.username, assignees: assignees, created_at: item.created_at, updated_at: item.updated_at,
         iidstr: iidstr, url: item.web_url, repo_url: common.repoUrl,
         labels: []
@@ -59,6 +60,14 @@ const gitLabAdapter = {
       common.item = item.target;
     }
     return common;
+  },
+  addActionToToDoResponse: function (response, action) {
+    for (let item of response) {
+      if (item.target.custom_actions == undefined) //create if does not exist
+        item.target["custom_actions"] = {};
+      item.target.custom_actions[action] = true;
+    }
+    return response;
   },
   getLabelsForItem: function (repoName, item, allLabels, model) {
     for (let label of item.labels) {
@@ -112,7 +121,7 @@ const gitLabAdapter = {
           const modelItem = { //anyade un id que no esta en gitlab para poder usar como criterio de seleccion en siguiente query
             repo_name: repoName, type: "branch", iid: "",
             branch_name: branch, status: "notavailable",
-            title: "",
+            title: "", actions: {},
             author: "", assignees: "", created_at: "", updated_at: "",
             iidstr: "", url: "", branch_url: "", repo_url: repoUrl,
             labels: [], gid: proj.id

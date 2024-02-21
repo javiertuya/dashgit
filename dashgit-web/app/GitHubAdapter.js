@@ -19,9 +19,10 @@ const gitHubAdapter = {
       for (let assignee of item.assignees)
         assignees += assignee.login + " ";
       let iidstr = "#" + item.number;
+      let actions = item.custom_actions == undefined ? {} : item.custom_actions;
       m.addItem({
         repo_name: repoName, type: type, iid: item.number,
-        title: item.title,
+        title: item.title, actions: actions,
         author: item.user.login, assignees: assignees, created_at: item.created_at, updated_at: item.updated_at,
         iidstr: iidstr, url: item.html_url, repo_url: repoUrl,
         labels: []
@@ -31,6 +32,13 @@ const gitHubAdapter = {
       }
     }
     return m;
+  },
+  addActionToPullRequestItems: function(responseItems, action) {
+    for (let item of responseItems) {
+      if (item.custom_actions==undefined) //create if does not exist
+        item["custom_actions"] = {};
+      item.custom_actions[action]=true;
+    }
   },
 
   notifications2model: function (response) {
@@ -101,7 +109,7 @@ const gitHubAdapter = {
         m.addItem({
           repo_name: repoName, type: type, iid: iid,
           branch_name: branch, status: status,
-          title: title,
+          title: title, actions: {},
           author: "", assignees: "", created_at: createdAt, updated_at: updatedAt,
           iidstr: iid != "" ? "#" + iid : "", url: url, branch_url: branchUrl, repo_url: repoUrl,
           labels: []

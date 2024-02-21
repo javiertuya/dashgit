@@ -14,7 +14,10 @@
       "type": "issue",
       "iid": 3,
       "title": "issue from todos",
-      "actions": {},
+      "actions": {
+        "review_request": true,
+        "other_action": true
+      },
       "author": "usr2",
       "assignees": "usr3 ",
       "created_at": "2023-01-02T01:01:01.000+01:00",
@@ -35,7 +38,10 @@
       "type": "pr",
       "iid": 4,
       "title": "mr from todos",
-      "actions": {},
+      "actions": {
+        "review_request": true,
+        "other_action": true
+      },
       "author": "usr2",
       "assignees": "",
       "created_at": "2023-02-02T01:01:01.000+01:00",

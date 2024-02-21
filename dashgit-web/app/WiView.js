@@ -66,6 +66,7 @@ const wiView = {
     for (let mod of models) {
       this.updateBadges(target, mod.header.uid, true);
       $(`#${this.getPanelId(target, mod.header.uid)} .wi-status-icon`).tooltip({ delay: 200 });
+      $(`#${this.getPanelId(target, mod.header.uid)} .wi-action-badge`).tooltip({ delay: 200 });
     }
   },
 
@@ -133,6 +134,7 @@ const wiView = {
         ${this.notification2html(header.uid, item.uid)}
       </td>
       <td>
+        ${this.actions2html(item.actions)}
         ${grouping ? "" : this.repourl2html(item.repo_url, item.repo_name)}
         ${this.branch2html(item.branch_url, item.branch_name)}
         <span class='${item.type == "branch" ? "fw-normal" : "fw-bold"}'>${this.url2html(item.url, item.title)}</span>
@@ -143,6 +145,14 @@ const wiView = {
       </td>
     </tr>
     `;
+  },
+  actions2html: function (actions) {
+    if (actions == undefined)
+      return "";
+    let html = "";
+    if (actions["review_request"])
+      html += `<span class="badge text-dark bg-warning wi-action-badge" title="Review requested">review</span> `;
+    return html;
   },
 
   groupValue: function (item, grouping, sorting) {
