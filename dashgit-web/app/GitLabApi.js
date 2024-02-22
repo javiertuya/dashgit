@@ -1,4 +1,4 @@
-import { Gitlab } from 'gitbreaker/rest' //https://www.npmjs.com/package/@gitbeaker/rest
+import { Gitlab } from 'gitbeaker/rest' //https://www.npmjs.com/package/@gitbeaker/rest
 import { gitLabAdapter } from "./GitLabAdapter.js"
 import { wiController } from "./WiController.js"
 import { config } from "./Config.js"
