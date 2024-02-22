@@ -6,6 +6,49 @@ import { configView } from "./ConfigView.js"
 /**
  * Manages the dialog at the config tab
  */
+
+//Switch between nav links
+$(document).on('click', '#config-providers', function (e) {
+  configView.renderConfigData($(this), config.data);
+});
+$(document).on('click', '#config-import-export', function (e) {
+  configView.renderImportExport($(this), config.data);
+});
+$(document).on('click', '#config-encrypt', function (e) {
+  configView.renderEncrypt($(this), config.data.encrypted);
+});
+$(document).on('click', '#config-reset', function (e) {
+  configView.renderDecrypt($(this), config.data.encrypted);
+});
+
+// actions on events
+$(document).on('click', '.config-btn-add-github', function (e) {
+  configView.addProvider(config.setProviderDefaults({ provider: "GitHub" }));
+});
+$(document).on('click', '.config-btn-add-gitlab', function (e) {
+  configView.addProvider(config.setProviderDefaults({ provider: "GitLab" }));
+});
+$(document).on('click', '.config-btn-provider-remove', function (e) {
+  configView.removeProvider($(this));
+});
+$(document).on('click', '.config-btn-provider-down', function (e) {
+  configView.moveProvider($(this), +1);
+});
+$(document).on('click', '.config-btn-provider-up', function (e) {
+  configView.moveProvider($(this), -1);
+});
+
+// Data update events
+
+$(document).on('click', '.config-btn-provider-submit', function (e) {
+  if ($(".config-form")[0].checkValidity()) {
+    console.log("Saving config data");
+    configController.saveData();
+    e.preventDefault();
+  } else
+    console.log("Can't save config data due to validation issues");
+});
+
 $(document).on('click', '#inputEncryptButton', function (e) {
   if ($('#inputEncryptPassword').val().length > 0) {
     config.xtoken = $("#inputEncryptPassword").val();
@@ -14,7 +57,7 @@ $(document).on('click', '#inputEncryptButton', function (e) {
     config.save();
     $(this).closest("form")[0].reset();
     e.preventDefault()
-    configController.updateTab();
+    configController.updateMainTarget();
   } else {
     $('#inputEncryptPassword')[0].setCustomValidity("Please, enter a password to encrypt the token");
     $('#inputEncryptPassword')[0].reportValidity();
@@ -28,45 +71,54 @@ $(document).on('click', '#inputDecryptButton', function (e) {
     provider.token = "";
   config.data.encrypted = false;
   config.save();
-  configController.updateTab();
+  configController.updateMainTarget();
   e.preventDefault();
 });
 
-$(document).on('click', '#buttonConfigSave', function () {
-  console.log("Save config");
+$(document).on('click', '#buttonConfigSave', function (e) {
+  console.log("Save config json");
   try {
     config.updateFromString($("#configJson").val());
-    configController.updateTab();
+    configController.updateMainTarget();
     //to have a refresh effect when changing later to another tab
     wiController.reset(true);
     wiView.reset();
+    configController.displayToast("Configuration saved");
   } catch (error) {
     wiView.renderAlert("danger", error);
   }
+  e.preventDefault();
 });
 
 const configController = {
-  updateTab: function () {
-    configView.render();
-    if (config.data.encrypted)
-      this.encryptedMode();
-    else
-      this.decryptedMode();
+  //setup config view, goes to provider configuration by default
+  updateMainTarget: function () {
+    configView.renderHeader();
+    configView.renderConfigData($("#config-providers"), config.data);
+  },
 
-    //Display message if any GitHub provider does not specify token.
-    $("#config-unauthenticated-message").hide();
-    for (let provider of config.data.providers)
-      if (provider.provider == "GitHub" && provider.token == "")
-        $("#config-unauthenticated-message").show();
+  saveData: function () {
+    // Creates a local config data object to get common data from the ui
+    let data = config.setAllDefaults({});
+    data = configView.html2common(data);
+
+    // Finds each provider data in the ui and adds the provider to this config data object
+    for (let item of configView.getProviders()) {
+      let provider = config.setProviderDefaults({ provider: item.type });
+      provider = configView.html2provider(provider, item.key);
+      data.providers.push(provider);
+    }
+
+    // Replace the global config data with the local config data value, it is assumed that all data was validated at the ui
+    config.updateFromString(JSON.stringify(data));
+    configController.updateMainTarget();
+    this.displayToast("Configuration saved");
   },
-  encryptedMode: function () {
-    $("#config-encrypt").hide();
-    $("#config-decrypt").show();
+
+  displayToast: function (message) {
+    $(".toast-body").html(`<strong>${message}</strong>`);
+    bootstrap.Toast.getOrCreateInstance($('#liveToast')[0]).show();
   },
-  decryptedMode: function () {
-    $("#config-encrypt").show();
-    $("#config-decrypt").hide();
-  }
 
 }
 
