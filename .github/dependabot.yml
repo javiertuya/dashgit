@@ -2,10 +2,25 @@ version: 2
 updates:
   - package-ecosystem: 'npm'
     directory: 'dashgit-web/test/'
+    target-branch: "dependabot"
     schedule:
       interval: 'monthly'
     open-pull-requests-limit: 20
+
+  # app dependencies are grouped and should be manually updated in the index.html importmap
+  - package-ecosystem: 'npm'
+    directory: 'dashgit-web/app/'
+    groups:
+      web-manual-updates:
+        patterns:
+          - "*"
+    target-branch: "dependabot"
+    schedule:
+      interval: 'monthly'
+    open-pull-requests-limit: 20
+    
   - package-ecosystem: github-actions
+    target-branch: "dependabot"
     directory: "/"
     schedule:
       interval: 'monthly'
