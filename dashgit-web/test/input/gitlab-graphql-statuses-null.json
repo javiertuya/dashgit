@@ -1,0 +1,14 @@
+{
+    "data": {
+        "projects": {
+            "nodes": [
+                {
+                    "id": "gid://gitlab/Project/7", "fullPath": "org2/proj7", "lastActivityAt": "2024-02-07T17:49:00+01:00",
+                    "webUrl": "https://mygitlab.com/org2/proj7",
+                    "pipelines": null,
+                    "mergeRequests": null
+                }
+            ]
+        }
+    }
+}

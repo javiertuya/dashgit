@@ -7,7 +7,7 @@ const gitLabAdapter = {
 
   workitems2model: function (provider, items, allLabels) {
     let model = new Model().setHeader(provider.provider, provider.uid, provider.user, provider.url);
-    for (let issueMrOrTodo of items) {
+    for (let issueMrOrTodo of this.safe(items)) {
       // Items may come from a different data structures obtained from
       // issues and merge requests or to do lists
       // The common part is the repo name and url, and whether it is issue
@@ -61,8 +61,17 @@ const gitLabAdapter = {
     }
     return common;
   },
+
+  //To use in iterations to prevent null errors if the object being iterated is not defined
+  //fix issue #17
+  safe: function (item) {
+    if (item == null || item == undefined)
+      return [];
+    return item;
+  },
+
   addActionToToDoResponse: function (response, action) {
-    for (let item of response) {
+    for (let item of this.safe(response)) {
       if (item.target.custom_actions == undefined) //create if does not exist
         item.target["custom_actions"] = {};
       item.target.custom_actions[action] = true;
@@ -70,7 +79,7 @@ const gitLabAdapter = {
     return response;
   },
   getLabelsForItem: function (repoName, item, allLabels, model) {
-    for (let label of item.labels) {
+    for (let label of this.safe(item?.labels)) {
       let color = ""; //default if not found
       if (allLabels?.[this.getLabelId(repoName, label)] != undefined)
         color = allLabels[this.getLabelId(repoName, label)].color;
@@ -84,7 +93,7 @@ const gitLabAdapter = {
   labels2model: function (gqlresponse) {
     let labels = {};
     // Model is indexed by repo and label title
-    for (let proj of gqlresponse.data.projects.nodes) {
+    for (let proj of this.safe(gqlresponse?.data?.projects?.nodes)) {
       const repoName = proj.fullPath;
       if (!proj.archived)
         for (let label of proj.labels.nodes)
@@ -92,10 +101,9 @@ const gitLabAdapter = {
     }
     return labels;
   },
-
-  notifications2model: function (response) {
+   notifications2model: function (response) {
     let model = [];
-    for (let item of response) {
+    for (let item of this.safe(response)) {
       if (item.target_type == "Issue" || item.target_type == "MergeRequest") {
         model.push({
           repo_name: item.project.path_with_namespace, reason: item.action_name,
@@ -111,12 +119,12 @@ const gitLabAdapter = {
     let m = new Model().setHeader(provider.provider, provider.uid, provider.user, provider.url);
     if (gqlresponse.data == undefined)
       return m;
-    for (let proj of gqlresponse.data.projects.nodes) {
+    for (let proj of this.safe(gqlresponse?.data?.projects?.nodes)) {
       const repoName = proj.fullPath;
       const repoUrl = proj.webUrl;
-      if (!proj.archived) {
+      if (!proj.archived && proj.repository!=null && proj.repository.branchNames!=null) { //gitlab.com may give a null
         m.header.repo_names.push(repoName);
-        for (let repo of proj.repository.branchNames) {
+        for (let repo of this.safe(proj?.repository?.branchNames)) {
           const branch = repo;
           const modelItem = { //anyade un id que no esta en gitlab para poder usar como criterio de seleccion en siguiente query
             repo_name: repoName, type: "branch", iid: "",
@@ -134,7 +142,7 @@ const gitLabAdapter = {
   },
   model4projectIds: function (mod) {
     let gids = [];
-    for (let proj of mod.items) //filter out archived projects
+    for (let proj of this.safe(mod?.items)) //filter out archived projects
       if (!proj.archived && !gids.includes(proj.gid))
         gids.push(proj.gid);
     return gids;
@@ -143,7 +151,7 @@ const gitLabAdapter = {
   statuses2model: function (mod, gqlresponse) {
     if (gqlresponse.data == undefined)
       return mod;
-    for (let repo of gqlresponse.data.projects.nodes) {
+    for (let repo of this.safe(gqlresponse?.data?.projects?.nodes)) {
       const repoName = repo.fullPath;
 
       //Obtiene ramas y statuses a partir de las pipelines
@@ -155,7 +163,7 @@ const gitLabAdapter = {
     return mod;
   },
   transformPipelines: function (repo, repoName, mod) {
-    for (let ref of repo.pipelines.nodes) { //a branch
+    for (let ref of this.safe(repo?.pipelines?.nodes)) { //a branch
       const branch = ref.refPath.replace("refs/heads/", "");
       //en este momento solo hay ramas, que no tienen uid, localiza el item del modelo
       let uid = mod.getModelUid(repoName, "branch", "", branch);
@@ -177,7 +185,7 @@ const gitLabAdapter = {
     }
   },
   transformMergeRequests: function (repo, repoName, mod) {
-    for (let mr of repo.mergeRequests.nodes) {
+    for (let mr of this.safe(repo?.mergeRequests?.nodes)) {
       let uid = mod.getModelUid(repoName, "branch", "", mr.sourceBranch);
       let m = mod.getItemByUid(uid);
       if (m !== undefined) {

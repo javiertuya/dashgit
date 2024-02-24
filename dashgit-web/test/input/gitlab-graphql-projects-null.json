@@ -1,0 +1,28 @@
+{
+    "data": {
+        "projects": {
+            "nodes": [
+                {
+                    "id": "gid://gitlab/Project/4", "archived": false, "fullPath": "org/proj4", "lastActivityAt": "2024-02-04T14:49:00+01:00",
+                    "webUrl": "https://mygitlab.com/org/proj4",
+                    "repository": { "branchNames": [ "main" ] }
+                },
+                {
+                    "id": "gid://gitlab/Project/5", "archived": false, "fullPath": "org1/proj5", "lastActivityAt": "2024-02-05T15:50:00+01:00",
+                    "webUrl": "https://mygitlab.com/org1/proj5",
+                    "repository": null
+                },
+                {
+                    "id": "gid://gitlab/Project/6", "archived": false, "fullPath": "org2/proj6", "lastActivityAt": "2024-02-06T16:49:00+01:00",
+                    "webUrl": "https://mygitlab.com/org2/proj6",
+                    "repository": { "branchNames":null }
+                },
+                {
+                    "id": "gid://gitlab/Project/7", "archived": false, "fullPath": "org2/proj7", "lastActivityAt": "2024-02-07T17:49:00+01:00",
+                    "webUrl": "https://mygitlab.com/org2/proj7",
+                    "repository": { "branchNames": [ "branch1"] }
+                }
+            ]
+        }
+    }
+}

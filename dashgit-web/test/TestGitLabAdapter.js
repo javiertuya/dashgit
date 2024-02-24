@@ -47,7 +47,7 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
     });
 
     //Rest API with actions: Same as before, but calling the method to add the actions and then the transformation
-    it("Transform GitHub REST API results with actions", function () {
+    it("Transform Gitlab REST API results with actions", function () {
         let labels = { "org2/proj2-BLOCKING": { "color": "#FF0000" } }
         let input = JSON.parse(fs.readFileSync("./input/gitlab-rest-result2.json"));
         gitLabAdapter.addActionToToDoResponse(input, "review_request");
@@ -113,6 +113,31 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
         let actual = gitLabAdapter.statuses2model(projects, input);
         fs.writeFileSync("./actual/gitlab-graphql-statuses.json", JSON.stringify(actual, null, 2)); //to allow extenal diff
         let expected = JSON.parse(fs.readFileSync("./expected/gitlab-graphql-statuses.json"));
+        assert.deepEqual(expected, actual);
+    });
+
+    //Issue #17 shows some graphql responses that have null values in iterable nodes.
+    //Check null values in:
+    // - projects: repository, branches (must remove the entire project as there are no branches)
+    // - statuses: pipelines, merge requests
+    it("Transform Gitlab GraphQL API projects: must handle null iterables", function () {
+        let input = JSON.parse(fs.readFileSync("./input/gitlab-graphql-projects-null.json"));
+        let provider = { provider: "GitLab", uid: "0-gitlab", user: "usr1", url: 'https://mygitlab.com' };
+
+        let actual = gitLabAdapter.projects2model(provider, input);
+        fs.writeFileSync("./actual/gitlab-graphql-projects-null.json", JSON.stringify(actual, null, 2)); //to allow extenal diff
+        let expected = JSON.parse(fs.readFileSync("./expected/gitlab-graphql-projects-null.json"));
+        assert.deepEqual(expected, actual);
+    });
+    it("Transform Gitlab GraphQL API statuses: must handle null iterables", function () {
+        let input = JSON.parse(fs.readFileSync("./input/gitlab-graphql-statuses-null.json"));
+        //previous test leaves projects 4 and 7 and removes others, use these to match with statuses
+        let projectsObj = JSON.parse(fs.readFileSync("./expected/gitlab-graphql-projects-null.json"));
+        let projects = new Model().fromObject(projectsObj);
+
+        let actual = gitLabAdapter.statuses2model(projects, input);
+        fs.writeFileSync("./actual/gitlab-graphql-statuses-null.json", JSON.stringify(actual, null, 2)); //to allow extenal diff
+        let expected = JSON.parse(fs.readFileSync("./expected/gitlab-graphql-statuses-null.json"));
         assert.deepEqual(expected, actual);
     });
 
