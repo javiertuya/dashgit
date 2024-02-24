@@ -19,11 +19,11 @@ const gitLabApi = {
 
   getWorkItems: async function (target, provider) {
     const api = new Gitlab({ host: provider.url, token: config.decrypt(provider.token), });
-    const assigned = { state: "opened", assignee_username: provider.user, scope: "all" };
-    const unassigned = { state: "opened", assignee_id: "None", scope: "all" };
-    const reviewer = { state: "opened", reviewer_username: provider.user, scope: "all" };
-    const created = { state: "opened", author_username: provider.user, scope: "all" };
-    const dependabot = { state: "opened", author_username: provider.dependabotUser, scope: "all" };
+    const assigned = { state: "opened", assignee_username: provider.user, scope: "all", perPage: 100, maxPages: 1 };
+    const unassigned = { state: "opened", assignee_id: "None", scope: "all", perPage: 100, maxPages: 1 };
+    const reviewer = { state: "opened", reviewer_username: provider.user, scope: "all", perPage: 100, maxPages: 1 };
+    const created = { state: "opened", author_username: provider.user, scope: "all", perPage: 100, maxPages: 1 };
+    const dependabot = { state: "opened", author_username: provider.dependabotUser, scope: "all", perPage: 100, maxPages: 1 };
 
     let promises = [];
     if (target == "assigned")
@@ -65,6 +65,13 @@ const gitLabApi = {
       ];
     else
       return;
+
+    if (target == "unassigned" && provider.url == "https://gitlab.com") {
+      let emptyModel = gitLabAdapter.workitems2model(provider, [], cache.labelsCache[provider.uid]);
+      emptyModel.header.message = "On gitlab.com, this view is disabled because api call timeouts.";
+      return emptyModel;
+    }
+
     let responses = await Promise.all(promises);
     this.log(provider.uid, "Data received from the api:", responses);
     //creates single result with all responses
@@ -106,7 +113,7 @@ const gitLabApi = {
     //- Get the label colors (only once in the page life)
     let query0 = this.getProjectsQuery(provider, provider.graphql.maxProjects, true);
     const t0 = Date.now();
-    let gqlresponse0 = await this.callGraphqlApi(provider, query0);
+    let gqlresponse0 = await this.callGraphqlApi(provider, query0, true);
     console.log(`time to get projects: ${Date.now() - t0}`)
     this.log(provider.uid, "Statuses graphql response (projects):", gqlresponse0);
 
@@ -133,7 +140,7 @@ const gitLabApi = {
 
     // Now gets the statuses of all pipelines and complete the model
     let query = this.getStatusesQuery(provider, "ids:" + JSON.stringify(gids));
-    let gqlresponse = await this.callGraphqlApi(provider, query);
+    let gqlresponse = await this.callGraphqlApi(provider, query, true);
     this.log(provider.uid, "Statuses graphql response (branches/prs):", gqlresponse);
 
     const model = gitLabAdapter.statuses2model(model0, gqlresponse);
@@ -156,7 +163,8 @@ const gitLabApi = {
   updateLabelsAsync: async function (provider, gids) {
     cache.labelsCache[provider.uid] = {}; // don't enter here any more
     let queryx = this.getLabelsQuery("ids:" + JSON.stringify(gids));
-    let gqlresponsex = await this.callGraphqlApi(provider, queryx);
+    //this call may intermitently fail on gitlab.com due to insufficient permssions (do not show altert)
+    let gqlresponsex = await this.callGraphqlApi(provider, queryx, false);
     this.log(provider.uid, "Labels graphql model (projects):", gqlresponsex);
     let labels = gitLabAdapter.labels2model(gqlresponsex);
     wiController.updateLabels(provider.uid, labels);
@@ -187,7 +195,7 @@ const gitLabApi = {
     });
   },
 
-  callGraphqlApi: async function (provider, query) {
+  callGraphqlApi: async function (provider, query, displayErrors) {
     //https://www.ansango.com/blog/javascript/ajax-async-await
     let result = await $.ajax({
       url: `${provider.url}/api/graphql`,
@@ -199,8 +207,9 @@ const gitLabApi = {
     if (result.errors != undefined) {
       console.error("GitLab GraphQL api call failed");
       console.error(result);
-      for (let error of result.errors)
-        wiController.displayError("GitLab GraphQL api call failed. Message: " + error.message);
+      if (displayErrors)
+        for (let error of result.errors)
+          wiController.displayError("GitLab GraphQL api call failed. Message: " + error.message);
       return {};
     }
     return result;
