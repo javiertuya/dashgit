@@ -1,0 +1,9 @@
+test-job:
+  stage: test
+  except:
+    - /^dependabot\/test.*$/
+  script:
+    - ls -la
+    - chmod ug+rx main-script.sh
+    - ./main-script.sh
+
