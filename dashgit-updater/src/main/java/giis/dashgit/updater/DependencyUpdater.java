@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class DependencyUpdater {
-	private static final String COMBINED_BRANCH_PREFIX = "dependabot/dashgit/update";
+	private static final String COMBINED_BRANCH_PREFIX = "dashgit/combined/update";
 
 	// only for combined updates, create the combined PR but does not delete branches nor merge
 	private static final boolean WET_RUN = false;
@@ -78,11 +78,11 @@ public class DependencyUpdater {
 		String combinedBranch = COMBINED_BRANCH_PREFIX + "-" + gitLocal.getTimestamp();
 		gitLocal.checkout(combinedBranch, true);
 		int successCount = 0;
-		// Adds each change (note that QABot used Cherry Pick, here we use merge)
+		// Adds each change (note that QABot used Cherry Pick, here we use merge with conflict resolver)
 		for (Branch branch : project.branches()) {
 			PullRequest pr = branch.pullRequest();
 			log.info("Combine pull request: {}", pr.title());
-			boolean success = gitLocal.merge(pr.sha(), pr.title());
+			boolean success = gitLocal.merge(pr.sha(), pr.title(), new ConflictResolver());
 			pr.canBeMerged(success);
 			pr.cantBeMergedReason(success ? "" : "cannot be merged");
 			branch.buildSummary(); // propagates the status (needed in dashgit?)

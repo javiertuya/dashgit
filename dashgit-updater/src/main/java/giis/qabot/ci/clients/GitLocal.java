@@ -223,22 +223,49 @@ public class GitLocal implements AutoCloseable {
 		return res.getStatus() == CherryPickResult.CherryPickStatus.OK;
 	}
 	
-	@SneakyThrows(GitAPIException.class)
+	/**
+	 * Merges the commit with the indicated sha; if there are conflicts returns false and 
+	 * undoes the changes by resetting to the latest commit
+	 */
 	public boolean merge(String sha, String prTitle) {
+		return merge(sha, prTitle, null);
+	}
+	
+	/**
+	 * Merges the commit with the indicated sha, if there are conflicts tries to resolve
+	 * the conflicts using the IConflictResolver received as parameter;
+	 * If any conflict remains returns false undoes the changes by resetting to the latest commit
+	 */
+	@SneakyThrows(GitAPIException.class)
+	public boolean merge(String sha, String prTitle, IConflictResolver resolver) {
 		log.debug("Merge from {}", sha);
 		ObjectId commitId = getCommitId(sha);
 		MergeResult res = git.merge().include(commitId).call();
 		log.debug("Merge status: {}", res.getMergeStatus().toString());
 		// Si no tiene exito muestra conflictos y reset de la rama para deshacer cambios
-		if (!res.getMergeStatus().isSuccessful()) {
-			for (Map.Entry<String, int[][]> conflict : res.getConflicts().entrySet()) {
-				log.warn("Conflicting file: {}", conflict.getKey());
-				String fileContent = readWorkspaceFile(this, conflict.getKey());
-				log.trace("Conflicting file content: {}", fileContent);
+		boolean successful = res.getMergeStatus().isSuccessful();
+		// Show conflicting files and try to resolve (if resolver is set)
+		if (!successful && resolver != null) {
+			successful = resolveConflicts(res.getConflicts(), resolver);
+			// repo was in MERGING state, add to the index and continue the commit
+			if (successful) {
+				git.add().addFilepattern(".").call();
+				git.commit().call();
 			}
-			git.reset().setMode(ResetType.HARD).call();
 		}
-		return res.getMergeStatus().isSuccessful();
+		// if there are conflicts, reset to skip merge changes
+		if (!successful)
+			git.reset().setMode(ResetType.HARD).call();
+		return successful;
+	}
+	private boolean resolveConflicts(Map<String, int[][]> conflicts, IConflictResolver resolver) {
+		int remainingConflicts = 0;
+		for (Map.Entry<String, int[][]> conflict : conflicts.entrySet()) {
+			log.warn("Conflicting file: {}", conflict.getKey());
+			String fullFileName = Paths.get(this.getWorkTree(), conflict.getKey()).toString();
+			remainingConflicts += resolver.resolve(fullFileName);
+		}
+		return remainingConflicts == 0;
 	}
 
 	@SneakyThrows(IOException.class)

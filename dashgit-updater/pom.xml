@@ -36,6 +36,11 @@
 		</dependency>
 		<dependency>
 			<groupId>io.github.javiertuya</groupId>
+			<artifactId>portable-java</artifactId>
+			<version>2.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.javiertuya</groupId>
 			<artifactId>visual-assert</artifactId>
 			<version>2.4.1</version>
 			<scope>test</scope>

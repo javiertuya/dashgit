@@ -2,6 +2,7 @@ package giis.dashgit.updater.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -10,6 +11,9 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestName;
 
 import giis.qabot.ci.clients.GitLocal;
 import giis.qabot.ci.clients.IGitClient;
@@ -32,6 +36,13 @@ public class Base {
 	protected long rateLimitDelay = 1000;
 	protected int numTestBranches = 3;
 
+	@Rule public TestName testName = new TestName();
+	
+	@Before
+	public void setUp() {
+		log.info("****** Running test: {} ******", testName.getMethodName());
+	}
+
 	public Project getTestProject() {
 		Project project = (Project) new Project();
 		for (int i = 0; i < numTestBranches; i++)
@@ -47,7 +58,7 @@ public class Base {
 		}
 	}
 
-	public void setupTestBranchesAndPrs(IGitClient gitClient, GitLocal git, Project project) throws IOException {
+	public void setupTestBranchesAndPrs(IGitClient gitClient, GitLocal git, Project project, boolean unresolvedConflict) throws IOException {
 		log.debug("*** Setup Test Branches and PRs");
 		// Clone, reset and push the test repository with the script that will be changed
 		// Requires previous configuration of the CI in each repo using one of the files at src/test/resources/git-project
@@ -65,7 +76,14 @@ public class Base {
 			Branch branch = project.branches().get(i);
 			git.checkoutDefault().checkout(branch.name(), true);
 			String script = readWorkspaceFile(git, "main-script.sh");
-			writeWorkspaceFile(git, "main-script.sh", script.replace("line" + i + "pass", "line" + i + "fail"));
+			//Sets a change of minor version at row i
+			script = script.replace(
+					i + "." + i + "." + i ,
+					i + "." + i + "." + (i+1));
+			//If indicated in the parameter, ensures that conflict in the middle row can't be resolved (changes the tag)
+			if (i==1 && unresolvedConflict)
+				script=script.replace("d1>", "dxx>");
+			writeWorkspaceFile(git, "main-script.sh", script);
 
 			// Note that pushes are against main branch (the checked-out)
 			git.commit("Set change at branch " + branch.name()).push(true);
@@ -80,27 +98,36 @@ public class Base {
 	protected void createWorkspaceFile(GitLocal git, String folder, String fileName) throws IOException {
 		String script = """
 				#!/bin/bash
-				echo "this is line0pass"
-				echo "this is line1pass"
-				echo "this is line2pass"
+				echo "this is <d0>0.0.0</d0>"
+				echo "this is <d1>1.1.1</d1>"
+				echo "this is <d2>2.2.2</d2>"
 				echo "ending"
 				sleep 5
 				""";
 		writeWorkspaceFile(git, FilenameUtils.concat(folder, fileName), script);
 	}
 
-	public void assertCombinedPullRequestValues(IGitClient gitClient, Project project, PullRequest combinedPr) {
+	public void assertCombinedPullRequestValues(IGitClient gitClient, Project project, PullRequest combinedPr, boolean unresolvedConflict) {
 		log.debug("*** Assert Combined Pull Request Values");
 		log.debug("Combined PR content check: {} {} {}", project.name(), combinedPr.prId(), combinedPr.title());
 		PullRequest pr = gitClient.getPullRequest(project.name(), combinedPr.prId());
 		log.debug("Combined PR description: {}", pr.description());
 		String[] description = pr.description().split("Does not include these updates");
-		for (int i = 0; i < numTestBranches; i = i + 2) // even PRs are in first part (included)
-			assertTrue("Branch " + i + "must be included",
+		// If unresolvedConflict is false all branches must be included, if not, odd branches are excluded
+		if (!unresolvedConflict) {
+			assertFalse("Description should not say that excludes updates as conflicts should be resolved",
+				pr.description().contains("Does not include these updates"));
+			for (int i = 0; i < numTestBranches; i++) // even PRs are in first part (included)
+				assertTrue("Branch " + i + "must be included",
+						description[0].contains("[Test pull Request for dependabot/testupdate/branch-" + i + "]"));
+		} else { // some branch is excluded
+			for (int i = 0; i < numTestBranches; i = i + 2) // even PRs are in first part (included)
+				assertTrue("Branch " + i + "must be included",
 					description[0].contains("[Test pull Request for dependabot/testupdate/branch-" + i + "]"));
-		for (int i = 1; i < numTestBranches; i = i + 2) // even PRs are in first part (included)
-			assertTrue("Branch " + i + "must not be included",
+			for (int i = 1; i < numTestBranches; i = i + 2) // even PRs are in first part (included)
+				assertTrue("Branch " + i + "must not be included",
 					description[1].contains("[Test pull Request for dependabot/testupdate/branch-" + i + "]"));
+		}
 	}
 
 	public void assertCombinedPullRequestStatus(IGitClient gitClient, Project project, PullRequest combinedPr) {
@@ -118,7 +145,7 @@ public class Base {
 		}
 	}
 
-	public void assertPristinePullRequestStatus(IGitClient gitlab, Formatter formatter, Project project) {
+	public void assertPristinePullRequestStatus(IGitClient gitlab, Formatter formatter, Project project, boolean unresolvedConflict) {
 		// Checks status of branches (closed/not closed), storing all results in a string to better comparison
 		log.debug("*** Assert Pristine Pull Request Status");
 		StringBuilder errors = new StringBuilder();
@@ -131,10 +158,13 @@ public class Base {
 			log.debug("Check merge result {}", prData);
 			log.debug("  Is open: {}. Can be merged: {}", pr.isOpen(), pr.canBeMerged());
 			prData = "\n" + prData;
+			// If unresolvedConflict is false all repos should have been removed, if not:
 			// even repos have not conflicts, should have been removed, odd repost shouldn't
-			if (pr.isOpen() && i % 2 == 0)
+			if (!unresolvedConflict && pr.isOpen())
 				errors.append(prData + " should not be open");
-			if (!pr.isOpen() && i % 2 != 0)
+			if (unresolvedConflict && pr.isOpen() && i % 2 == 0)
+				errors.append(prData + " should not be open");
+			if (unresolvedConflict && !pr.isOpen() && i % 2 != 0)
 				errors.append(prData + " should be open");
 		}
 		assertEquals("Any PR is not in the right state after generating the combined PR", "", errors.toString());
