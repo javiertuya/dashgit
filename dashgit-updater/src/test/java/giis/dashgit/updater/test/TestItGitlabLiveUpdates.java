@@ -21,8 +21,14 @@ public class TestItGitlabLiveUpdates extends TestItGithubLiveUpdates {
 
 	@Override
 	@Test
-	public void testCombinedUpdates() throws IOException {
-		super.testCombinedUpdates();
+	public void testCombinedUpdatesUnresolvedConflict() throws IOException, InterruptedException {
+		super.testCombinedUpdatesUnresolvedConflict();
+	}
+	
+	@Override
+	@Test
+	public void testCombinedUpdatesResolvedConflict() throws IOException, InterruptedException {
+		super.testCombinedUpdatesResolvedConflict();
 	}
 
 }
