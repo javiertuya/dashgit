@@ -1,6 +1,7 @@
 import { gitHubApi } from "./GitHubApi.js"
 import { gitLabApi } from "./GitLabApi.js"
 import { wiView } from "./WiView.js"
+import { wiServices } from "./WiServices.js"
 import { cache } from "./Cache.js"
 import { config } from "./Config.js"
 
@@ -38,6 +39,28 @@ import { config } from "./Config.js"
  *   - Query transformations: detected with try/catch
  * - Testing: bad credential, bad url (gitlab), bad GraphQL query
  */
+
+
+// Response to events from the UI (dependabot tab)
+$(document).on('change', '.wi-update-check', function (e) {
+  wiView.confirmUpdateClear();
+});
+$(document).on('click', '#wi-btn-update-select-all', function (e) {
+  $(`.wi-update-check`).prop("checked", true);
+  wiView.confirmUpdateClear();
+});
+$(document).on('click', '#wi-btn-update-unselect-all', function (e) {
+  $(`.wi-update-check`).prop("checked", false);
+  wiView.confirmUpdateClear();
+});
+$(document).on('click', '#wi-btn-update-dispatch', function (e) {
+  wiView.confirmUpdate();
+});
+$(document).on('click', '#wi-btn-update-dispatch-confirm', async function (e) {
+  wiView.confirmUpdateProgress();
+  wiController.sendCombinedUpdates();
+});
+
 const wiController = {
   reset: function (hard) {
     cache.reset(hard); //used for reload operations
@@ -182,6 +205,29 @@ const wiController = {
     for (let prop in cache.notifCache)
       notifCount += Object.keys(cache.notifCache[prop]).length;
     wiView.updateNotifications(providerId, notifCount); //don't pass model as it is alredy in cache
+  },
+
+  // To perform combined dependency updates, a json file with the updates selected is sent
+  // to the dedicated update manager repository in a new branch for this set of combined updates.
+  // The GitHub Actions configured in the manager repository will perform all required tasks.
+  // Note that the workflow file must execute on push when changes are made in the path.dashgit/manage-update/**
+  // If it would set on push to branches, an additonal execution would be triggered for the branch creation
+  sendCombinedUpdates: async function() {
+    const itemsToUpdate = wiView.getUpdateCheckItems();
+    const model = wiServices.getUpdatesModel(itemsToUpdate);
+    const content = JSON.stringify(model, null, 2);
+    const currentDate = new Date();
+    const branch = "dashgit/manage/update-" + currentDate.toISOString().replaceAll("-", "").replaceAll("T", "-").replaceAll(":", "").replaceAll(".", "-");
+    const message = `DashGit combined updates for ${itemsToUpdate.length} dependencies at ${currentDate.toString()}`;
+    const path = ".dashgit/manage-update/update.json";
+    const ownerRepo = config.data.updateManagerRepo.split("/");
+    gitHubApi.createContent(config.data.updateManagerToken, ownerRepo[0], ownerRepo[1], branch, path, btoa(content), message)
+    .then(async function(responseUrl) {
+      wiView.confirmUpdateEnd(`https://github.com/${config.data.updateManagerRepo}/actions`, responseUrl);
+    }).catch(async function(error) {
+      wiView.confirmUpdateClear();
+      wiView.renderAlert("danger", error);
+    });
   },
 
 }

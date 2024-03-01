@@ -14,7 +14,9 @@ import { config } from "../app/Config.js"
 describe("TestConfig - Sanitizing config data", async function () {
 
     it("Set default config attributes when reading empty", function () {
-        let expected = { version: 1, encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 30, maxAge: 0, providers: [] };
+        let expected = { version: 1, encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 30, maxAge: 0, 
+            enableCombinedUpdates: false, updateManagerRepo: "", updateManagerToken: "",
+            providers: [] };
         assert.deepEqual(expected, config.parseAndSanitizeData(""));
         assert.deepEqual(expected, config.parseAndSanitizeData(null));
         assert.deepEqual(expected, config.parseAndSanitizeData(undefined));
@@ -24,6 +26,7 @@ describe("TestConfig - Sanitizing config data", async function () {
         let expected = {
             version: 1,
             encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 60, maxAge: 0,
+            enableCombinedUpdates: false, updateManagerRepo: "", updateManagerToken: "",
             providers: [{
                 provider: 'GitHub', uid: '', user: '', token: '', enabled: true,
                 url: 'https://github.com', api: 'https://api.github.com',
@@ -39,6 +42,7 @@ describe("TestConfig - Sanitizing config data", async function () {
         let expected = {
             version: 1,
             encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 30, maxAge: 0,
+            enableCombinedUpdates: false, updateManagerRepo: "", updateManagerToken: "",
             providers: [{
                 provider: 'GitHub', uid: 'repo_user_id', user: 'user', token: 'XXXXXXXXXXXX', enabled: false,
                 url: 'https://github.com', api: 'https://api.github.com',

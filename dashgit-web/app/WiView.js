@@ -53,6 +53,8 @@ const wiView = {
     let grouping = $("#checkGroup").is(':checked');
     console.log(`Render Work Items, sort order: ${sorting}, grouping: ${grouping}`);
     let html = `<div class="accordion" id="wi-providers-panel">`;
+    if (config.data.enableCombinedUpdates && target == "dependabot")
+      html = html + this.updateHeader2html();
     for (let mod of models) {
       let header = mod.header;
       let items = mod.items;
@@ -93,9 +95,12 @@ const wiView = {
       <div id="wi-providers-panel-${target}-${provider}" 
           class="${this.statePanelBody(target, provider)}">
         <div class="accordion-body">
-<table id="wi-items-${this.getId(target, header.uid, "all")}" class='table table-sm table-borderless m-0'>
 `;
+    // adds the header for combined updates (if applicable)
+    if (config.data.enableCombinedUpdates && target == "dependabot")
+      html += this.updateProvider2html(provider);
     // adds every row
+    html += `<table id="wi-items-${this.getId(target, header.uid, "all")}" class='table table-sm table-borderless m-0'>`;
     html += this.rowsmodel2html(target, header, items, grouping, sorting);
     html += `</table>`;
     html += `</div></div></div>`;
@@ -134,6 +139,7 @@ const wiView = {
         ${this.notification2html(header.uid, item.uid)}
       </td>
       <td>
+        ${this.updateCheck2html(target, header.uid, item.repo_name, item.iid)}
         ${this.actions2html(item.actions)}
         ${grouping ? "" : this.repourl2html(item.repo_url, item.repo_name)}
         ${this.branch2html(item.branch_url, item.branch_name)}
@@ -146,6 +152,9 @@ const wiView = {
     </tr>
     `;
   },
+
+  // Other low level content
+
   actions2html: function (actions) {
     if (actions == undefined)
       return "";
@@ -288,6 +297,76 @@ const wiView = {
       $(selector).show();
     else
       $(selector).hide();
+  },
+
+  // Content of UI related with dependabot updates
+
+  updateHeader2html: function () {
+    return `
+      <div style="padding-left:8px">
+        <p class="mb-3 mt-2">
+          You can select the dependabot updates that you want combine and merge in a single pull request for each repository. 
+        </p>
+        <div class="col-auto mb-2">
+          <button type="button" id="wi-btn-update-select-all" class="btn btn-success btn-sm">Select all</button>
+          <button type="button" id="wi-btn-update-unselect-all" class="btn btn-success btn-sm">Unselect all</button>
+          <button type="button" id="wi-btn-update-dispatch" class="btn btn-primary btn-sm">Combine and merge the selected dependency updates</button>
+        </div>
+        <div class="col-auto m-3" id="wi-update-header-confirm"></div>
+      </div>
+      `;
+  },
+  updateProvider2html: function (provider) {
+    return `
+      <div class="mb-0">
+        <p>This first version only allows GitHub using the provider username and the GITHUB_TOKEN of the Manager Repository</p>
+      </div>
+      `;
+  },
+  updateCheck2html: function (target, providerId, repoName, iid) {
+    if (config.data.enableCombinedUpdates && target == "dependabot") {
+      console.log(`${providerId} ${repoName} ${iid}`)
+      return `<input class="form-check-input wi-update-check" type="checkbox" value="" aria-label="..."
+          provider="${providerId}" repo="${repoName}" iid="${iid}"></input>&nbsp;`;
+    }
+    return "";
+  },
+
+  confirmUpdateClear: function () {
+    $("#wi-update-header-confirm").html("");
+  },
+  confirmUpdate: function () {
+    if (this.getUpdateCheckItems().length == 0)
+      return;
+    $("#wi-update-header-confirm").html(`
+        <p class="text-danger">You are going to update ${this.getUpdateCheckItems().length} dependencies, please, press CONFIRM to start the update process<p>
+        <button type="button" id="wi-btn-update-dispatch-confirm" class="btn btn-danger btn-sm">
+        CONFIRM (takes a few seconds)
+        <span id="wi-update-header-confirm-spinner"></span>
+        </button>
+      `);
+  },
+  confirmUpdateProgress: function () {
+    //setTimeout(function() {
+    $("#wi-update-header-confirm-spinner").html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`);
+    //}, 0);
+  },
+  confirmUpdateEnd: function (logUrl, updateUrl) {
+    $("#wi-update-header-confirm").html(`
+        <p class="text-success"><strong>${this.getUpdateCheckItems().length} dependencies are being updated. &nbsp;
+        <a href="${logUrl}" target="_blank">[See the logs at GitHub Actions]</a> &nbsp; 
+        <a href="${updateUrl}" target="_blank">[See the update file]
+        </strong><p>
+      `);
+    $("#tab-content").find(`.wi-update-check:checkbox:checked`).attr("disabled", true);
+  },
+  getUpdateCheckItems: function () { // all selected, but not disabled
+    const items = $("#tab-content").find(`.wi-update-check:checkbox:checked`);
+    let updates = [];
+    for (let item of items)
+      if (!$(item).attr("disabled")) //exclude previous updates (that have been disabled)
+        updates.push({ provider: $(item).attr("provider"), repo: $(item).attr("repo"), iid: $(item).attr("iid") });
+    return updates;
   },
 
   //Primitive functions related to the display of single elements

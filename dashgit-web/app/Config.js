@@ -26,6 +26,7 @@ const config = {
     localStorage.setItem("dashgit-config", JSON.stringify(config.data));
   },
   encryptTokens: function () {
+    config.data.updateManagerToken=this.encrypt(config.data.updateManagerToken, config.xtoken);
     for (let provider of config.data.providers)
       provider.token = this.encrypt(provider.token, config.xtoken);
   },
@@ -63,6 +64,9 @@ const config = {
     this.setDefault(data, "statusCacheUpdateTime", 30);
     this.setDefault(data, "statusCacheRefreshTime", 3600);
     this.setDefault(data, "maxAge", 0);
+    this.setDefault(data, "enableCombinedUpdates", false)
+    this.setDefault(data, "updateManagerRepo", "")
+    this.setDefault(data, "updateManagerToken", "")
     this.setDefault(data, "providers", []);
     for (const provider of data.providers)
       this.setProviderDefaults(provider);

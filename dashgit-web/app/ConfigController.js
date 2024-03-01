@@ -38,6 +38,11 @@ $(document).on('click', '.config-btn-provider-up', function (e) {
   configView.moveProvider($(this), -1);
 });
 
+//Events that are particular to some items in the configuration
+$(document).on('change', '#config-common-enableCombinedUpdates', function (e) {
+  configView.setToggleDependencies();
+});
+
 // Data update events
 
 $(document).on('click', '.config-btn-provider-submit', function (e) {

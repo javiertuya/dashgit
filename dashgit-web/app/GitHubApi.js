@@ -177,6 +177,30 @@ const gitHubApi = {
     }`
   },
 
+  // Creates the dedicated branch with a json file in the update repository manager to
+  // trigger the GitHub Actions that perform the required tasks.
+  createContent: async function (token, owner, repo, branch, path, content, message) {
+    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(token), });
+
+    console.log("Get default branch, sha, create branch, create update.json file")
+    const repoResponse = await octokit.request("GET /repos/{owner}/{repo}", { owner: owner, repo: repo });
+    console.log(repoResponse);
+
+    const masterResponse = await octokit.rest.git.getRef({ owner: owner, repo: repo, ref: "heads/" + repoResponse.data.default_branch });
+    console.log(masterResponse);
+
+    const branchResponse = await octokit.rest.git.createRef({
+      owner: owner, repo: repo, ref: "refs/heads/" + branch, sha: masterResponse.data.object.sha
+    });
+    console.log(branchResponse);
+
+    const response = await octokit.rest.repos.createOrUpdateFileContents({
+      owner: owner, repo: repo, branch: branch, path: path, content: content, sha: branchResponse.data.object.sha, message: message
+    });
+    console.log(response);
+    return response.data.content.download_url;
+  },
+
 }
 export { gitHubApi };
 
