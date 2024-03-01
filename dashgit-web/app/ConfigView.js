@@ -29,7 +29,7 @@ const configView = {
   },
 
   // Main entry point to show the providers configuration form,
-  // composed of a subform with common data and addiitonal subforms for the providers
+  // composed of a subform with common data and additional subforms for the providers
   renderData: function (data) {
     let html = this.common2html(data);
     html += `<div id="config-providers-all">`; //only to group all providers
@@ -38,6 +38,7 @@ const configView = {
     html += "</div>"
     $("#config-form").html(html);
     this.setMoveStatus();
+    this.setToggleDependencies(); // eg. visibility of elements that depends on a checkbox
     // activate tooltips at the input labels
     $(`.info-icon`).tooltip({ delay: 200 });
   },
@@ -55,6 +56,7 @@ const configView = {
         ${this.anyGitHubWithoutToken(data)
         ? `<p class="card-text mb-1 text-danger">GitHub unauthenticated providers are subject to lower rate limits and do not allow you to view branches, build statuses and notifications.</p>`
         : ""}
+
         <h6 class="card-subtitle mb-1 mt-1 text-body-secondary">Common parameters:</h6>
         <div class="row">
           ${this.input2html("config-common-max-age", "number", "Max age", data.maxAge == 0 ? "" : data.maxAge, 'min="0" max="365"', "100", "100", 
@@ -64,6 +66,17 @@ const configView = {
           ${this.input2html("config-common-statusCacheRefreshTime", "number", "Status Cache Refresh Time", data.statusCacheRefreshTime, 'min="60" max="7200"', "200", "100",
             "Specifies a much longer period (in seconds) than Status Cache Update Time. When this time expires, the cache is fully refreshed")}
         </div>
+
+        <h6 class="card-subtitle mb-1 mt-1 text-body-secondary">Automatically create and merge combined dependency updates
+          <a href="https://github.com/javiertuya/dashgit/blob/main/README.md" target="_blank">[more info]</a></h6>
+        <div class="row">
+          ${this.input2html(`config-common-updateManagerRepo`, "text", "Update Manager Repo", data.updateManagerRepo, 'required', "200", "200",
+            "The full name (OWNER/REPO) of a dedicated GitHub repository where the combined updates will be generated and merged")}
+          ${this.input2html(`config-common-updateManagerToken`, "password", "Access token", data.updateManagerToken, '', "150", "225",
+            "An API access token with write permission to the Update Manager Repo that combines and merges the updates")}
+          ${this.check2html(`config-common-enableCombinedUpdates`, "Enable combined dependency updates", data.enableCombinedUpdates,
+            "Enables the ability to automatically create and merge combined dependency updates for each repository")}
+    </div>
         <div class="row">
           ${this.button2html("", "submit", "Save configuration", "config-btn-provider-submit btn-primary")}
           ${this.button2html("", "button", `${this.provider2icon("GitHub")} Add GitHub provider`, "config-btn-add-github btn-success")}
@@ -149,6 +162,9 @@ const configView = {
     data.maxAge = age == "" ? 0 : age;
     data.statusCacheUpdateTime = $("#config-common-statusCacheUpdateTime").val();
     data.statusCacheRefreshTime = $("#config-common-statusCacheRefreshTime").val();
+    data.enableCombinedUpdates = $("#config-common-enableCombinedUpdates").is(':checked');
+    data.updateManagerRepo = $("#config-common-updateManagerRepo").val();
+    data.updateManagerToken = $("#config-common-updateManagerToken").val();
     return data;
   },
 
@@ -183,6 +199,21 @@ const configView = {
   },
 
   // View mannipulation 
+
+  //Sets the appropriate view state for toggles that have dependent inputs that must be hidden or shown
+  setToggleDependencies: function() {
+    if ($(`#config-common-enableCombinedUpdates`).is(':checked')) {
+      $(`#config-common-updateManagerRepo-div-container`).show();
+      $(`#config-common-updateManagerRepo`).attr('required', 'required');
+      $(`#config-common-updateManagerToken-div-container`).show();
+      $(`#config-common-updateManagerToken`).attr('required', 'required');
+    } else {
+      $(`#config-common-updateManagerRepo-div-container`).hide();
+      $(`#config-common-updateManagerRepo`).removeAttr('required');
+      $(`#config-common-updateManagerToken-div-container`).hide();
+      $(`#config-common-updateManagerToken`).removeAttr('required');
+    }
+  },
 
   addProvider: function (provider) {
     //get latest id to increase it in the new provider
@@ -271,7 +302,7 @@ const configView = {
     let labelStyle = labelWidth == "" ? "" : `style="width:${labelWidth}px"`;
     let valueStyle = valueWidth == "" ? "" : `style="width:${valueWidth}px"`;
     return `
-    <div class="col-auto">
+    <div class="col-auto" id="${id}-div-container">
       <div class="input-group input-group-sm">
         <span class="input-group-text" id="${id}-label" ${labelStyle}>${label}${this.infoIcon(info)}</span>
         <input id="${id}" type="${type}" value="${value}" ${validation} ${valueStyle}
@@ -297,12 +328,12 @@ const configView = {
     `;
   },
 
-  check2html: function (id, label, checked) {
+  check2html: function (id, label, checked, info) {
     return `
       <div class="col-auto">
         <div class="form-check">
           <input class="form-check-input" type="checkbox" value="" ${checked ? "checked" : ""} id="${id}">
-          <label class="form-check-label" for="${id}">${label}</label>
+          <label class="form-check-label" for="${id}">${label}${this.infoIcon(info)}</label>
         </div>
       </div>
     `;

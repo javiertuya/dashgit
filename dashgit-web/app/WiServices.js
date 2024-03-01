@@ -76,6 +76,29 @@ const wiServices = {
     return items;
   },
 
+  // Creates the model required for combined updates:
+  // takes the list of selected items and produces a hierarchical structure by providers and repositories
+  getUpdatesModel: function (items) {
+    // items [{ provider, repo, iid}]
+    console.log("Generate update model");
+    console.log(items);
+    let updates = {};
+    for (let item of items) {
+      if (updates[item.provider] == undefined) {
+        updates[item.provider] = {
+          urlValue:config.getProviderByUid(item.provider).url, 
+          userValue:config.getProviderByUid(item.provider).user,
+          tokenSecret:"GITHUB_TOKEN", 
+          repositories:{}
+        };
+      }
+      if (updates[item.provider]["repositories"][item.repo] == undefined)
+        updates[item.provider]["repositories"][item.repo] = [];
+      updates[item.provider]["repositories"][item.repo].push(item.iid);
+    }
+    return {updates:{updateManagerRepo:config.data.updateManagerRepo, providers:updates}};
+  },
+
   // Date conversions and display (relative to now)
 
   intervalToString: function (sdate2, sdate1, today) {
