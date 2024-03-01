@@ -2,6 +2,11 @@ import assert from 'assert';
 import fs from "fs"
 import { gitHubAdapter } from "../app/GitHubAdapter.js"
 
+beforeEach(function() {
+    if (!fs.existsSync("actual")){
+        fs.mkdirSync("actual");
+    }});
+
 /**
  * Test the (GitHub) adapters taking as input the provider api response from an external file.
  * Test inputs are created by getting real data, removing unneeded fields

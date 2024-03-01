@@ -25,14 +25,20 @@ const config = {
   save: function () {
     localStorage.setItem("dashgit-config", JSON.stringify(config.data));
   },
+  encryptTokens: function () {
+    for (let provider of config.data.providers)
+      provider.token = this.encrypt(provider.token, config.xtoken);
+  },
 
   // Save from a string representation of the data object
   updateFromString: function (dataStr) {
     config.data = this.parseAndSanitizeData(dataStr);
-    for (let i = 0; i < config.data.providers.length; i++) { //set generated uid and index
+    //ensure new tokens are encrypted, if applicable
+    if (config.data.encrypted)
+      this.encryptTokens();
+    //set config data not directly set from the ui
+    for (let i = 0; i < config.data.providers.length; i++) {
       config.data.providers[i].uid = i.toString() + "-" + config.data.providers[i].provider.toLowerCase();
-      if (config.data.encrypted)
-        config.data.providers[i].token = this.encrypt(config.data.providers[i].token, this.xtoken);
     }
     config.save();
   },
@@ -116,12 +122,7 @@ const config = {
     }
     return true;
   },
-  encryptTokens: function (providers, pass) {
-    for (let provider of providers) {
-      provider.token = this.encrypt(provider.token, pass);
-    }
-    return providers;
-  },
+
   // encrypted tokens are prefixed with "aes:" to avoid a duble encryption and decrypt non encrypted tokens
   // Allows empty tokens (e.g. for anonymous access to GitHub)
   encrypt: function (text, pass) {

@@ -3,6 +3,11 @@ import fs from "fs"
 import { Model } from "../app/Model.js"
 import { gitLabAdapter } from "../app/GitLabAdapter.js"
 
+beforeEach(function() {
+    if (!fs.existsSync("actual")){
+        fs.mkdirSync("actual");
+    }});
+
 /**
  * Test the (GitLab) adapters taking as input the provider api response from an external file.
  * Test inputs are created by getting real data, removing unneeded fields

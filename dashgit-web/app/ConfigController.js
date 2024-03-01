@@ -53,7 +53,7 @@ $(document).on('click', '#inputEncryptButton', function (e) {
   if ($('#inputEncryptPassword').val().length > 0) {
     config.xtoken = $("#inputEncryptPassword").val();
     config.data.encrypted = true;
-    config.encryptTokens(config.data.providers, config.xtoken);
+    config.encryptTokens();
     config.save();
     $(this).closest("form")[0].reset();
     e.preventDefault()
@@ -101,6 +101,8 @@ const configController = {
     // Creates a local config data object to get common data from the ui
     let data = config.setAllDefaults({});
     data = configView.html2common(data);
+    // Updates with current common config data that is not configurable from the ui
+    data.encrypted = config.data.encrypted;
 
     // Finds each provider data in the ui and adds the provider to this config data object
     for (let item of configView.getProviders()) {
