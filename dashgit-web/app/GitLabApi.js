@@ -24,6 +24,7 @@ const gitLabApi = {
     const reviewer = { state: "opened", reviewer_username: provider.user, scope: "all", perPage: 100, maxPages: 1 };
     const created = { state: "opened", author_username: provider.user, scope: "all", perPage: 100, maxPages: 1 };
     const dependabot = { state: "opened", author_username: provider.dependabotUser, scope: "all", perPage: 100, maxPages: 1 };
+    const dependabotTest = { state: "opened", in: "Test pull Request for dependabot/testupdate" };
 
     let promises = [];
     if (target == "assigned")
@@ -59,11 +60,13 @@ const gitLabApi = {
         api.TodoLists.all({ state: "done", action: "mentioned", perPage: 40, maxPages: 1 }),
         api.TodoLists.all({ state: "done", action: "directly_addressed", perPage: 40, maxPages: 1 }),
       ];
-    else if (target == "dependabot")
+    else if (target == "dependabot") {
       promises = [
         api.MergeRequests.all(dependabot)
       ];
-    else
+      if (config.ff["updtest"])
+        promises.push(api.MergeRequests.all(dependabotTest))
+    } else
       return;
 
     if (target == "unassigned" && provider.url == "https://gitlab.com") {

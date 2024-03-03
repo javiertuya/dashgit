@@ -168,18 +168,19 @@ public class GitlabClient implements IGitClient {
 		if (assignee!=null && !"".equals(assignee))
 			params.withAssigneeId(getUserIdByName(assignee));
 		MergeRequest mr=api.getMergeRequestApi().createMergeRequest(asObject(projectId), params);
+		String commitMessage = title + "\n\n" + description;
 		if (setAutoMerge)
-			this.setAutoMerge(projectId, mr.getIid());
+			this.setAutoMerge(projectId, mr.getIid(), commitMessage);
 		return mapMergeRequest(mr);
 	}
 	
 	@SneakyThrows
-	public void setAutoMerge(String projectId, Long mrIid) {
+	public void setAutoMerge(String projectId, Long mrIid, String commitMessage) {
 		// Si el automerge se ejecuta inmediatamente de la pr, aparece gitlab api
 		// exception 405 method not allowed
 		log.info("Set automerge to this pull request");
 		for (int i = 0; i <= AUTOMERGE_RETRY_COUNT; i++) { // NOSONAR for clarity
-			String result = trySetAutoMerge(projectId, mrIid);
+			String result = trySetAutoMerge(projectId, mrIid, commitMessage);
 			if ("success".equals(result)) {
 				log.info("Automerge is set");
 				break;
@@ -195,9 +196,10 @@ public class GitlabClient implements IGitClient {
 		}
 	}
 
-	private String trySetAutoMerge(String projectId, Long mrIid) {
+	private String trySetAutoMerge(String projectId, Long mrIid, String commitMessage) {
 		try {
 			AcceptMergeRequestParams params = new AcceptMergeRequestParams()
+					.withSquashCommitMessage(commitMessage)
 					.withShouldRemoveSourceBranch(true).withSquash(true).withMergeWhenPipelineSucceeds(true);
 			api.getMergeRequestApi().acceptMergeRequest(projectId, mrIid, params);
 			return "success";

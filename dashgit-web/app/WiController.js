@@ -45,8 +45,8 @@ import { config } from "./Config.js"
 $(document).on('change', '.wi-update-check', function (e) {
   wiView.confirmUpdateClear();
 });
-$(document).on('click', '#wi-btn-update-select-all', function (e) {
-  $(`.wi-update-check`).prop("checked", true);
+$(document).on('click', '#wi-btn-update-select-all', function (e) { //only visible for safety
+  $(".accordion-item .show .wi-update-check").prop("checked", true);
   wiView.confirmUpdateClear();
 });
 $(document).on('click', '#wi-btn-update-unselect-all', function (e) {
@@ -58,7 +58,14 @@ $(document).on('click', '#wi-btn-update-dispatch', function (e) {
 });
 $(document).on('click', '#wi-btn-update-dispatch-confirm', async function (e) {
   wiView.confirmUpdateProgress();
-  wiController.sendCombinedUpdates();
+  wiController.sendCombinedUpdates($(`#wi-btn-update-dry-run`).is(':checked'));
+});
+$(document).on('click', '#wi-update-workflow-file-show', async function (e) {
+  wiController.fillUpdateWorkflowTemplate("wi-update-workflow-file-content");
+  $("#wi-update-workflow-file-div").show();
+});
+$(document).on('click', '#wi-update-workflow-file-hide', async function (e) {
+  $("#wi-update-workflow-file-div").hide();
 });
 
 const wiController = {
@@ -207,20 +214,41 @@ const wiController = {
     wiView.updateNotifications(providerId, notifCount); //don't pass model as it is alredy in cache
   },
 
+  // To perform combined dependency updates, the dedicated update manager repository 
+  // has a workflow that runs the updates. This methods gets the appropriate content
+  // according to the providers configuration
+  fillUpdateWorkflowTemplate: function() {
+    $("#wi-update-workflow-file-content").load("assets/manage-updates-template.yml", function () {
+      let content =  $("#wi-update-workflow-file-content").val();
+      let secrets = [];
+      // fills the names of secrets that must be known to the updater
+      for (let provider of config.data.providers)
+        if (provider.updates.tokenSecret != "") { //exact indentation to mach the lines above this, no repeated
+          let newSecret = "          " + provider.updates.tokenSecret + ": ${{ secrets." + provider.updates.tokenSecret + "}}";
+          if (!secrets.includes(newSecret))
+            secrets.push(newSecret);
+        }
+      content = content.replace("### PROVIDER-SECRETS-HERE ###", secrets.join("\n"));
+      $("#wi-update-workflow-file-content").val(content);
+    });
+  },
   // To perform combined dependency updates, a json file with the updates selected is sent
   // to the dedicated update manager repository in a new branch for this set of combined updates.
-  // The GitHub Actions configured in the manager repository will perform all required tasks.
-  // Note that the workflow file must execute on push when changes are made in the path.dashgit/manage-update/**
+  // The name of the file is the version number taken from the UI so that the update manager
+  // can get this name and select the appropriate version of the updater (written in java)
+  // The GitHub Actions configured in the update manager will perform all required tasks.
+  // Note that the workflow file must execute on push when changes are made in the path .dashgit/manage-update/**
   // If it would set on push to branches, an additonal execution would be triggered for the branch creation
-  sendCombinedUpdates: async function() {
+  sendCombinedUpdates: async function(dryRun) {
     const itemsToUpdate = wiView.getUpdateCheckItems();
-    const model = wiServices.getUpdatesModel(itemsToUpdate);
-    const content = JSON.stringify(model, null, 2);
     const currentDate = new Date();
     const branch = "dashgit/manage/update-" + currentDate.toISOString().replaceAll("-", "").replaceAll("T", "-").replaceAll(":", "").replaceAll(".", "-");
     const message = `DashGit combined updates for ${itemsToUpdate.length} dependencies at ${currentDate.toString()}`;
-    const path = ".dashgit/manage-update/update.json";
+    const path = `.dashgit/manage-update/${config.appVersion}`;
     const ownerRepo = config.data.updateManagerRepo.split("/");
+    const model = wiServices.getUpdatesModel(itemsToUpdate, config.data.updateManagerRepo, branch, dryRun);
+    const content = JSON.stringify(model, null, 2);
+    console.log("Push combined updates, model: " + JSON.stringify(model, null, 2));
     gitHubApi.createContent(config.data.updateManagerToken, ownerRepo[0], ownerRepo[1], branch, path, btoa(content), message)
     .then(async function(responseUrl) {
       wiView.confirmUpdateEnd(`https://github.com/${config.data.updateManagerRepo}/actions`, responseUrl);

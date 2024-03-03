@@ -12,6 +12,7 @@ import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
+import giis.portable.util.FileUtil;
 import giis.qabot.core.models.Util;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,7 @@ public class GitLocal implements AutoCloseable {
 	private String rootDir; // bajo esta carpeta se crean los workdir al hacer clone
 	private String rootUrl; // url de git, sin nombre de repositorio
 	private String user;
+	private String email;
 	private String token;
 	// Las siguientes establecen el contexto cuando se clona un repositorio
 	private Git git; // objeto del api creado al hacer cloneRepository
@@ -48,12 +50,13 @@ public class GitLocal implements AutoCloseable {
 	private String defaultBranch; // solo se podra conocer si este objeto ha clonado el repo
 	private String timestamp; // identifica de forma unica esta instancia
 
-	public GitLocal(String rootDir, String rootUrl, String user, String token) {
+	public GitLocal(String rootDir, String rootUrl, String user, String mail, String token) {
 		this.rootDir = rootDir;
 		this.rootUrl = rootUrl;
 		if (rootUrl.contains("api.github.com")) // para uso en local, github no debe usar la direccion del api
 			this.rootUrl = "https://github.com";
 		this.user = user;
+		this.email = mail;
 		this.token = token;
 		this.timestamp = new SimpleDateFormat("yyyyMMdd-HHmmssSSS").format(new Date());
 	}
@@ -95,9 +98,23 @@ public class GitLocal implements AutoCloseable {
 		workTree = createWorkTree(repoName);
 		git = Git.cloneRepository().setURI(rootUrl + "/" + repoName).setDirectory(new File(workTree))
 				.setCredentialsProvider(new UsernamePasswordCredentialsProvider(user, token)).call();
+		configUserAndEmail(workTree);
 		defaultBranch = getCurrentBranch();
 		log.debug("Default branch: {}", defaultBranch);
 		return this;
+	}
+	
+	// Not all methods have a method like setCommitter to indicate who performed every command.
+	// The solution is to add this info to the config file just after reository clone
+	private void configUserAndEmail(String workTree) {
+		if (this.user==null || this.email ==null || "".equals(this.user)|| "".equals(this.email))
+			return; // do not modify config if some value is missing
+		String config = FileUtil.fileRead(workTree + "/.git/config");
+		config += "\n[user]"
+				+ "\n\tname = " + this.user
+				+ "\n\temail = " + this.email
+				+ "\n";
+		FileUtil.fileWrite(workTree + "/.git/config", config);
 	}
 
 	@SneakyThrows(IOException.class)
@@ -240,7 +257,7 @@ public class GitLocal implements AutoCloseable {
 	public boolean merge(String sha, String prTitle, IConflictResolver resolver) {
 		log.debug("Merge from {}", sha);
 		ObjectId commitId = getCommitId(sha);
-		MergeResult res = git.merge().include(commitId).call();
+		MergeResult res = git.merge().include(commitId).setMessage("Merge: " + prTitle).call();
 		log.debug("Merge status: {}", res.getMergeStatus().toString());
 		// Si no tiene exito muestra conflictos y reset de la rama para deshacer cambios
 		boolean successful = res.getMergeStatus().isSuccessful();
@@ -250,7 +267,7 @@ public class GitLocal implements AutoCloseable {
 			// repo was in MERGING state, add to the index and continue the commit
 			if (successful) {
 				git.add().addFilepattern(".").call();
-				git.commit().call();
+				git.commit().setMessage("Resolve: "+prTitle).call();
 			}
 		}
 		// if there are conflicts, reset to skip merge changes

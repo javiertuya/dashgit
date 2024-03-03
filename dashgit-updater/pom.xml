@@ -85,11 +85,10 @@
 			<artifactId>github-api</artifactId>
 			<version>1.318</version>
 		</dependency>
-		<!-- Version rc de gitlab compatible con Spring Boot 3, sustituir por la definitiva cuando salga) -->
 		<dependency>
 			<groupId>org.gitlab4j</groupId>
 			<artifactId>gitlab4j-api</artifactId>
-			<version>6.0.0-rc.4</version>
+			<version>5.5.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.jgit</groupId>
@@ -98,5 +97,35 @@
 		</dependency>
 
 	</dependencies>
+	
+	<build>
+		<plugins>
+			<plugin>
+			    <groupId>org.apache.maven.plugins</groupId>
+			    <artifactId>maven-assembly-plugin</artifactId>
+			    <executions>
+			        <execution>
+			            <phase>package</phase>
+			            <goals>
+			                <goal>single</goal>
+			            </goals>
+			            <configuration>
+							<finalName>dashgit-updater</finalName>
+			                <archive>
+								<manifest>
+				                    <mainClass>
+				                        giis.dashgit.updater.Main
+				                    </mainClass>
+				                </manifest>
+			                </archive>
+			                <descriptorRefs>
+			                    <descriptorRef>jar-with-dependencies</descriptorRef>
+			                </descriptorRefs>
+			            </configuration>
+			        </execution>
+			    </executions>
+			</plugin>
+		</plugins>
+	</build>
 
 </project>

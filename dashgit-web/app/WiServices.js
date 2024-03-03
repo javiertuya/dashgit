@@ -77,26 +77,30 @@ const wiServices = {
   },
 
   // Creates the model required for combined updates:
-  // takes the list of selected items and produces a hierarchical structure by providers and repositories
-  getUpdatesModel: function (items) {
+  // takes the list of selected items and produces a hierarchical structure by providers and repositories.
+  // Keep in sync with the model creation from javascript in dashgit-updater: UpdaterModel.js
+  getUpdatesModel: function (items, updateManagerRepo, updateManagerBranch, dryRun) {
     // items [{ provider, repo, iid}]
     console.log("Generate update model");
     console.log(items);
     let updates = {};
     for (let item of items) {
       if (updates[item.provider] == undefined) {
+        let provider = config.getProviderByUid(item.provider);
         updates[item.provider] = {
-          urlValue:config.getProviderByUid(item.provider).url, 
-          userValue:config.getProviderByUid(item.provider).user,
-          tokenSecret:"GITHUB_TOKEN", 
-          repositories:{}
+          providerType: provider.provider,
+          urlValue: provider.url,
+          userValue: provider.user,
+          tokenSecret: provider.updates.tokenSecret,
+          userEmail: provider.updates.userEmail,
+          repositories: {}
         };
       }
       if (updates[item.provider]["repositories"][item.repo] == undefined)
         updates[item.provider]["repositories"][item.repo] = [];
       updates[item.provider]["repositories"][item.repo].push(item.iid);
     }
-    return {updates:{updateManagerRepo:config.data.updateManagerRepo, providers:updates}};
+    return { updates: { updateManagerRepo: updateManagerRepo, updateManagerBranch: updateManagerBranch, dryRun: dryRun, providers: updates } };
   },
 
   // Date conversions and display (relative to now)

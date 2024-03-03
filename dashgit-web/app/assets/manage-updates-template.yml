@@ -1,0 +1,31 @@
+# Workflow required to create and run the DashGit combined dependency updates
+name: dashgit-manage-updates
+on:
+  push:
+    paths:
+      - '.dashgit/manage-update/**'
+jobs:
+  manage-updates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Prepare the updater
+        run: |
+          echo "Updater version: $(ls .dashgit/manage-update)"
+          git clone --depth 1 -b "$(ls .dashgit/manage-update)" https://github.com/javiertuya/dashgit-integration all
+          cp all/dashgit-updater/pom.xml ./ && cp -r all/dashgit-updater/src ./
+          mvn clean package -q -DskipTests=true
+      - name: Run the updater
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # needed to clean up the branch where the update is executed
+          # Below secret names must match with the values in the configuration of each provider at the DashGit UI (Dependabot tab)
+          # Each secret has to store an api access token with write access to the provider
+### PROVIDER-SECRETS-HERE ###
+        run: java -jar target/dashgit-updater-jar-with-dependencies.jar .dashgit/manage-update/$(ls .dashgit/manage-update)
+  

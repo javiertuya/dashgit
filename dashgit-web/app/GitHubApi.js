@@ -27,6 +27,7 @@ const gitHubApi = {
     const created = `is:open author:${provider.user} archived:false`
     const involved = `is:open involves:${provider.user} archived:false`
     const dependabot = `is:open is:pr author:app/dependabot owner:${provider.user} ${this.additionalOwners(provider, provider.dependabotAdditionalOwner)} archived:false`;
+    const dependabotTest = `is:open is:pr author:${provider.user} archived:false in:title "Test pull Request for dependabot/testupdate"`;
     let promises = [];
     if (target == "assigned")
       promises = [
@@ -46,11 +47,13 @@ const gitHubApi = {
       promises = [
         octokit.rest.search.issuesAndPullRequests({ q: involved, })
       ];
-    else if (target == "dependabot")
+    else if (target == "dependabot") {
       promises = [
-        octokit.rest.search.issuesAndPullRequests({ q: dependabot, per_page: 60 })
+        octokit.rest.search.issuesAndPullRequests({ q: dependabot, per_page: 60 }),
       ];
-    else
+      if (config.ff["updtest"])
+        promises.push(octokit.rest.search.issuesAndPullRequests({ q: dependabotTest, per_page: 60 }));
+    } else
       return;
     const responses = await Promise.all(promises);
     this.log(provider.uid, "Data received from the api:", responses);

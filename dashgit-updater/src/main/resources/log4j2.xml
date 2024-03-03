@@ -11,19 +11,15 @@
     <Loggers>
         <Root level="info">
             <AppenderRef ref="ConsoleAppender"/>
-            <AppenderRef ref="FileAppender"/>
         </Root>
         <Logger name="giis.dashgit.updater.ConflictResolver" level="debug" additivity="false">
             <AppenderRef ref="ConsoleAppender"/>
-            <AppenderRef ref="FileAppender"/>
         </Logger>
         <Logger name="giis" level="debug" additivity="false">
             <AppenderRef ref="ConsoleAppender"/>
-            <AppenderRef ref="FileAppender"/>
         </Logger>
         <Logger name="org.eclipse.jgit.transport" level="warn" additivity="false">
             <AppenderRef ref="ConsoleAppender"/>
-            <AppenderRef ref="FileAppender"/>
         </Logger>
     </Loggers>
 </Configuration>

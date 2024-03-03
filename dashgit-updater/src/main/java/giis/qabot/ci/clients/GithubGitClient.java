@@ -224,20 +224,21 @@ public class GithubGitClient implements IGitClient {
 			GHUser ghuser = api.getUser(assignee);
 			ghpr.assignTo(ghuser);
 		}
-		ghpr.setLabels(labels.toArray(new String[0]));
+		// setLabels does not work when running from the update manager action, why?, changed to addLabels
+		ghpr.addLabels(labels.toArray(new String[0]));
 		ghpr.refresh();
 
 		if (setAutoMerge)
-			setAutoMerge(ghpr.getNodeId());
+			setAutoMerge(ghpr.getNodeId(), title, description);
 
 		// obtengo el modelo de la pull request buscandola por su numero
 		return this.getPullRequest(projectId, ghpr.getNumber());
 	}
 
-	private void setAutoMerge(String nodeId) throws InterruptedException {
+	private void setAutoMerge(String nodeId, String title, String description) throws InterruptedException {
 		log.info("Set automerge to this pull request");
 		for (int i = 0; i <= AUTOMERGE_RETRY_COUNT; i++) { // NOSONAR for clarity
-			String result = trySetAutoMerge(nodeId);
+			String result = trySetAutoMerge(nodeId, title, description);
 			if ("success".equals(result)) {
 				log.info("Automerge is set");
 				break;
@@ -256,8 +257,8 @@ public class GithubGitClient implements IGitClient {
 		}
 	}
 
-	private String trySetAutoMerge(String nodeId) {
-		JsonNode json = graphql.postGraphql(graphql.getAutoMergeQuery(nodeId));
+	private String trySetAutoMerge(String nodeId, String title, String description) {
+		JsonNode json = graphql.postGraphql(graphql.getAutoMergeQuery(nodeId, title, description));
 		JsonNode data = json.get("data");
 		JsonNode errors = json.get("errors");
 		if (errors == null) {
