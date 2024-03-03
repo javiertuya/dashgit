@@ -43,10 +43,11 @@ public class Base {
 		log.info("****** Running test: {} ******", testName.getMethodName());
 	}
 
-	public Project getTestProject() {
+	public Project getTestProject(Config config) {
 		Project project = (Project) new Project();
 		for (int i = 0; i < numTestBranches; i++)
 			project.addItem(new Branch().name(BRANCH_PREFIX + "branch-" + i));
+		project.name(config.repo());
 		return project;
 	}
 

@@ -45,11 +45,11 @@ const configView = {
 
   common2html: function (data) {
     return `
-    <div class="card mt-2" id="config-providers-common">
+    <div class="card mt-2 text-bg-light" id="config-providers-common">
       <div class="card-body pt-2 pb-2">
         <p class="card-text mb-1">
           ${data.encrypted
-        ? "API access tokens in this configuration will be saved encrypted. If you forgot your password you need to reset both password and tokens."
+        ? "API access tokens in this configuration will be saved encrypted. If you forget your password you will have to reset both password and tokens."
         : "This configuration is stored in the browser local memory. You can set up a password to encrypt the API access tokens."
       }
         </p>
@@ -68,15 +68,16 @@ const configView = {
         </div>
 
         <h6 class="card-subtitle mb-1 mt-1 text-body-secondary">Automatically create and merge combined dependency updates
-          <a href="https://github.com/javiertuya/dashgit/blob/main/README.md" target="_blank">[more info]</a></h6>
+          <a href="https://github.com/javiertuya/dashgit-integration?tab=readme-ov-file#combined-dependabot-updates" target="_blank">[learn more]</a></h6>
         <div class="row">
           ${this.input2html(`config-common-updateManagerRepo`, "text", "Update Manager Repo", data.updateManagerRepo, 'required', "200", "200",
-            "The full name (OWNER/REPO) of a dedicated GitHub repository where the combined updates will be generated and merged")}
+            "The full name (OWNER/REPO) of a dedicated private GitHub repository where the combined updates will be pushed and merged")}
           ${this.input2html(`config-common-updateManagerToken`, "password", "Access token", data.updateManagerToken, '', "150", "225",
             "An API access token with write permission to the Update Manager Repo that combines and merges the updates")}
           ${this.check2html(`config-common-enableCombinedUpdates`, "Enable combined dependency updates", data.enableCombinedUpdates,
             "Enables the ability to automatically create and merge combined dependency updates for each repository")}
-    </div>
+        </div>
+
         <div class="row">
           ${this.button2html("", "submit", "Save configuration", "config-btn-provider-submit btn-primary")}
           ${this.button2html("", "button", `${this.provider2icon("GitHub")} Add GitHub provider`, "config-btn-add-github btn-success")}
@@ -115,12 +116,13 @@ const configView = {
             "The default scope of Dependabot view is restricted to the repository of the token owner. Here you can include other users or organizations (separated by spaces)")}
           ${this.check2html(`config-providers-enableNotifications-${key}`, "Show notifications", provider.enableNotifications)}
         </div>
+
         <h6 class="card-subtitle mb-1 mt-1 text-body-secondary">GraphQL API parameters:</h6>
         <div class="row">
           ${this.input2html(`config-graphql-maxProjects-${key}`, "number", "Max projects", provider.graphql.maxProjects, 'required min="2" max="100"', "150", "100",
             "Maximum number of repositories/projects that are retrieved to get the branches and statuses")}
           ${this.input2html(`config-graphql-maxBranches-${key}`, "number", "Max branches", provider.graphql.maxBranches, 'required min="2" max="100"', "150", "100",
-            "Maximum number of branches that are retrieved for each repository/project to get the branches and statuses")}
+            "Maximum number of branches that are retrieved for each repository/project to get the build statuses")}
           ${provider.provider == "GitLab"
             ? this.input2html(`config-graphql-maxPipelines-${key}`, "number", "Max pipelines", provider.graphql.maxPipelines, 'required min="2" max="100"', "150", "100",
               "Maximum number of pipeline runs that are retrieved for each repository/project to get the branches and statuses")
@@ -130,6 +132,19 @@ const configView = {
               + this.check2html(`config-graphql-scope-collaborator-${key}`, "Collaborator", provider.graphql.ownerAffiliations.includes("COLLABORATOR")))
           }
         </div>
+
+        <div class="config-provider-updates-div-container">
+        <h6 class="card-subtitle mb-1 mt-1 text-body-secondary">Combined dependency updates, additional parameters:
+          <a href="https://github.com/javiertuya/dashgit-integration?tab=readme-ov-file#combined-dependabot-updates" target="_blank">[learn more]</a></h6>
+        <div class="row">
+          ${this.input2html(`config-updates-tokenSecret-${key}`, "text", "Secret Name to store the token", 
+            provider.updates.tokenSecret, provider.user == "" ? "disabled" : "", "250", "300",
+            "The name of a GitHub secret to store the API access token used to access each repository from the update manager")}
+          ${this.input2html(`config-updates-userEmail-${key}`, "email", "User identified by this email", provider.updates.userEmail, '', "250", "300",
+            "Optional email used to identify who creates the combined pull request and commits (if not set, some commits may not be identified as done by you)")}
+        </div>
+        </div>
+
         <div class="row">
           ${this.button2html("", "submit", "Save configuration", "config-btn-provider-submit btn-primary")}
           ${this.button2html("", "button", "Move up", "config-btn-provider-up btn-success")}
@@ -158,32 +173,36 @@ const configView = {
   },
 
   html2common: function (data) {
-    const age = $("#config-common-max-age").val();
+    const age = $("#config-common-max-age").val().trim();
     data.maxAge = age == "" ? 0 : age;
-    data.statusCacheUpdateTime = $("#config-common-statusCacheUpdateTime").val();
-    data.statusCacheRefreshTime = $("#config-common-statusCacheRefreshTime").val();
+    data.statusCacheUpdateTime = $("#config-common-statusCacheUpdateTime").val().trim();
+    data.statusCacheRefreshTime = $("#config-common-statusCacheRefreshTime").val().trim();
     data.enableCombinedUpdates = $("#config-common-enableCombinedUpdates").is(':checked');
-    data.updateManagerRepo = $("#config-common-updateManagerRepo").val();
-    data.updateManagerToken = $("#config-common-updateManagerToken").val();
+    data.updateManagerRepo = $("#config-common-updateManagerRepo").val().trim();
+    data.updateManagerToken = $("#config-common-updateManagerToken").val().trim();
     return data;
   },
 
   html2provider: function (provider, id) {
     provider.enabled = $(`#config-providers-enabled-${id}`).is(':checked');
-    provider.user = $(`#config-providers-user-${id}`).val();
-    provider.token = $(`#config-providers-token-${id}`).val();
+    provider.user = $(`#config-providers-user-${id}`).val().trim();
+    provider.token = $(`#config-providers-token-${id}`).val().trim();
     if (provider.provider == "GitLab")
-      provider.url = $(`#config-providers-url-${id}`).val();
+      provider.url = $(`#config-providers-url-${id}`).val().trim();
 
-    provider.filterIfLabel = $(`#config-providers-filterIfLabel-${id}`).val();
-    provider.unassignedAdditionalOwner = $(`#config-providers-unassignedAdditionalOwner-${id}`).val().split(" ");
-    provider.dependabotAdditionalOwner = $(`#config-providers-dependabotAdditionalOwner-${id}`).val().split(" ");
+    provider.filterIfLabel = $(`#config-providers-filterIfLabel-${id}`).val().trim();
+    provider.unassignedAdditionalOwner = $(`#config-providers-unassignedAdditionalOwner-${id}`).val().trim().split(" ");
+    provider.dependabotAdditionalOwner = $(`#config-providers-dependabotAdditionalOwner-${id}`).val().trim().split(" ");
     provider.enableNotifications = $(`#config-providers-enableNotifications-${id}`).is(':checked');
 
-    provider.graphql.maxProjects = $(`#config-graphql-maxProjects-${id}`).val();
-    provider.graphql.maxBranches = $(`#config-graphql-maxBranches-${id}`).val();
+    provider.graphql.maxProjects = $(`#config-graphql-maxProjects-${id}`).val().trim();
+    provider.graphql.maxBranches = $(`#config-graphql-maxBranches-${id}`).val().trim();
+
+    provider.updates.tokenSecret = $(`#config-updates-tokenSecret-${id}`).val().trim();
+    provider.updates.userEmail = $(`#config-updates-userEmail-${id}`).val().trim();
+
     if (provider.provider == "GitLab") {
-      provider.graphql.maxPipelines = $(`#config-graphql-maxPipelines-${id}`).val();
+      provider.graphql.maxPipelines = $(`#config-graphql-maxPipelines-${id}`).val().trim();
     } else {
       provider.graphql.ownerAffiliations = [];
       if ($(`#config-graphql-scope-owner-${id}`).is(':checked'))
@@ -192,7 +211,7 @@ const configView = {
         provider.graphql.ownerAffiliations.push("ORGANIZATION_MEMBER");
       if ($(`#config-graphql-scope-collaborator-${id}`).is(':checked'))
         provider.graphql.ownerAffiliations.push("COLLABORATOR");
-      if (provider.graphql.ownerAffiliations.length == 0)
+      if (provider.graphql.ownerAffiliations.length == 0) //default if none selected
         provider.graphql.ownerAffiliations.push("OWNER");
     }
     return provider;
@@ -207,11 +226,13 @@ const configView = {
       $(`#config-common-updateManagerRepo`).attr('required', 'required');
       $(`#config-common-updateManagerToken-div-container`).show();
       $(`#config-common-updateManagerToken`).attr('required', 'required');
+      $(`.config-provider-updates-div-container`).show();
     } else {
       $(`#config-common-updateManagerRepo-div-container`).hide();
       $(`#config-common-updateManagerRepo`).removeAttr('required');
       $(`#config-common-updateManagerToken-div-container`).hide();
       $(`#config-common-updateManagerToken`).removeAttr('required');
+      $(`.config-provider-updates-div-container`).hide();
     }
   },
 

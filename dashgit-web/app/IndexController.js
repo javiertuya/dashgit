@@ -63,7 +63,8 @@ const indexController = {
 
   // Initial configuration to be run by jquery on document ready
   load: function() {
-    config.appVersion = $("#appVersion").text();
+    //config.appVersion = $("#appVersion").text();
+    config.loadFeatureFlags();
     config.load();
     $("#appVersion").text(config.appVersion);
     if (config.data.encrypted) {

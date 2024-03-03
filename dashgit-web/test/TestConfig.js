@@ -32,6 +32,7 @@ describe("TestConfig - Sanitizing config data", async function () {
                 url: 'https://github.com', api: 'https://api.github.com',
                 enableNotifications: true,
                 filterIfLabel: '', unassignedAdditionalOwner: [], dependabotAdditionalOwner: [],
+                updates: { tokenSecret: "", userEmail: "" },
                 graphql: { ownerAffiliations: ['OWNER'], maxProjects: 20, maxBranches: 10 }
             }]
         };
@@ -48,6 +49,7 @@ describe("TestConfig - Sanitizing config data", async function () {
                 url: 'https://github.com', api: 'https://api.github.com',
                 enableNotifications: true,
                 filterIfLabel: 'lbl', unassignedAdditionalOwner: [], dependabotAdditionalOwner: ["org1", "org2"],
+                updates: { tokenSecret: "DASHGIT_GITHUB_USER_TOKEN", userEmail: "" },
                 graphql: { ownerAffiliations: ['OWNER', 'ORGANIZATION_MEMBER'], maxProjects: 10, maxBranches: 20 }
             }]
         };

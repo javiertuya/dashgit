@@ -19,4 +19,5 @@ rm -rf ./dist/
 cp -rf ./app ./dist
 find ./dist/*.js -type f -exec sed -i "s/.js\"/.js\?v=${VERSION}\"/g" {} \;
 sed -i "s/IndexController.js/IndexController.js?v=${VERSION}/g" dist/index.html
-sed -i "s/v0.0.0-local/${VERSION}/g" dist/index.html
+#sed -i "s/v0.0.0-local/${VERSION}/g" dist/index.html
+sed -i "s/appVersion\: \"/appVersion\: \"${VERSION}\", \/\//g" dist/Config.js

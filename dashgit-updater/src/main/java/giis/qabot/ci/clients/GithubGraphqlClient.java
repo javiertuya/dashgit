@@ -130,13 +130,20 @@ public class GithubGraphqlClient {
 				+ "  }\n}\n}";
 	}
 	
-	public String getAutoMergeQuery (String nodeId) {
+	public String getAutoMergeQuery (String nodeId, String commitHeadline, String commitBody) {
 		String query="mutation MyMutation {\n"
-				+ "  enablePullRequestAutoMerge(input: { pullRequestId: \\\"{nodeId}\\\", mergeMethod: SQUASH } ) {\n"
+				+ "  enablePullRequestAutoMerge(input: {"
+				+ "      pullRequestId: \\\"{nodeId}\\\", "
+				+ "      mergeMethod: SQUASH, "
+				+ "      commitHeadline:\\\"{commitHeadline}\\\", "
+				+ "      commitBody:\\\"{commitBody}\\\""
+				+ "    } ) {\n"
 				+ "    clientMutationId\n"
 				+ "  }\n"
 				+ "}";
-		query=query.replace("{nodeId}", nodeId);
+		query=query.replace("{nodeId}", nodeId)
+				.replace("{commitHeadline}", commitHeadline.replace("\"", "\\\\\\\""))
+				.replace("{commitBody}", commitBody.replace("\"", "\\\\\\\"").replace("\n", "\\n"));
 		return query;
 	}
 

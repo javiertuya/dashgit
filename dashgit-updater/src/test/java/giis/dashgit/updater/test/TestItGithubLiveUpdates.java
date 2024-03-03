@@ -7,7 +7,6 @@ import org.junit.Test;
 import giis.dashgit.updater.DependencyUpdater;
 import giis.dashgit.updater.DependencyUpdaterFacade;
 import giis.qabot.ci.clients.GitLocal;
-import giis.qabot.ci.clients.GithubGitClient;
 import giis.qabot.ci.clients.IGitClient;
 import giis.qabot.ci.models.Project;
 import giis.qabot.ci.models.PullRequest;
@@ -21,9 +20,28 @@ import lombok.extern.slf4j.Slf4j;
  *   - Conflict can be resolved automatically
  *   - Conflict can't be resolved (update should be excluded)
  * 
- * Requires a dedicated repository and configuration file (see readme for configuration details).
+ * Requires a dedicated repository and configuration file:
  * 
+ * - Configuration file must be named it.properties, placed at the root of this project.
+ * - It must contain these keys:
+ *   - github.server: the url of the repository (e.g. https://github.com)
+ *   - github.repo: the full name of the test repository (in the form OWNER/REPO)
+ *   - github.token: a token with write access to the test repository
+ *   - github.user: the username that owns this token
+ *   - github.email: the email of this username
+ * - Add the workflow file that can be found in src/test/resources/git-project/github-ci.yml to the test repository
+ *   (this workflow executes a script that will be pushed at the test setup)
+ * - The test repository must have configured:
+ *   - in Setup-General: Allow auto-merge, Automatically delete head branches
+ *   - in Setup-branches: Create a branch protection rule for main, set Require status checks to pass before merging
+ *     and indicate required status check is test (the job defined in github-ci.yml)
+ *     
  * This is the GitHub test, GitLab test uses a subclass of this.
+ * Configuration requires:
+ *  - The same keys in it.properties, but with the prefix gitlab instead of github.
+ *  - The workflow file can be found in src/test/resources/git-project/.gitlab-ci.yml
+ *  - No special configuration is required to allow auto-merge
+ * 
  */
 @Slf4j
 public class TestItGithubLiveUpdates extends Base {
@@ -35,14 +53,6 @@ public class TestItGithubLiveUpdates extends Base {
 	
 	protected Config setUpConfig() {
 		return new Config().read("github");
-	}
-
-	protected IGitClient getGitClient() {
-		return new GithubGitClient(config.server(), config.user(), config.token(), true);
-	}
-
-	protected GitLocal getGitLocal() {
-		return new GitLocal("target", config.server(), config.user(), config.token());
 	}
 
 	/**
@@ -62,19 +72,18 @@ public class TestItGithubLiveUpdates extends Base {
 	 */
 	private void runTestCombinedUpdates(boolean unresolvedConflict) throws IOException, InterruptedException {
 		config = setUpConfig();
-		IGitClient gitClient = getGitClient();
-		Project project = super.getTestProject();
-		project.name(config.repo());
+		IGitClient gitClient = config.getGitClient();
+		Project project = super.getTestProject(config);
 
 		cleanTestBranchesAndPrs(gitClient, project, rateLimitDelay);
-		try (GitLocal gitLocal = getGitLocal()) {
+		try (GitLocal gitLocal = config.getGitLocal()) {
 			setupTestBranchesAndPrs(gitClient, gitLocal, project, unresolvedConflict);
 		}
 		// Here, we do not wait for build finish as we do not need to check the status
 		// (this is left to the user)
 
 		PullRequest combinedPr = null;
-		try (GitLocal gitLocal = getGitLocal()) {
+		try (GitLocal gitLocal = config.getGitLocal()) {
 			combinedPr = updateService.runCreateCombinedProjectPr(gitClient, gitLocal, project, rateLimitDelay);
 		}
 
@@ -105,10 +114,10 @@ public class TestItGithubLiveUpdates extends Base {
 	// @Test
 	public void testManualTemplate() {
 		config = setUpConfig();
-		IGitClient gitClient = getGitClient();
-		try (GitLocal gitLocal = getGitLocal()) {
+		IGitClient gitClient = config.getGitClient();
+		try (GitLocal gitLocal = config.getGitLocal()) {
 			new DependencyUpdaterFacade().mergeCombinedPullRequest(gitClient, gitLocal, 
-					"*****/*****", new long[] { 1, 2, 3 }, 1000);
+					"*****/*****", new long[] { 1, 2, 3 }, 1000, false);
 		}
 	}
 	

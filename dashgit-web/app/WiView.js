@@ -75,7 +75,7 @@ const wiView = {
   model2html: function (target, header, items, grouping, sorting) {
     let provider = header.uid;
     let html = `
-    <div class="accordion-item>
+    <div class="accordion-item">
       <h4 class="accordion-header">
         <button id="wi-providers-panelbutton-${target}-${provider}" 
             wi-providers-panelbutton-provider="${provider}"
@@ -305,21 +305,40 @@ const wiView = {
     return `
       <div style="padding-left:8px">
         <p class="mb-3 mt-2">
-          You can select the dependabot updates that you want combine and merge in a single pull request for each repository. 
+          To set up your update manager repository <code>${config.data.updateManagerRepo}</code>
+          you have to add a workflow file <code>.github/workflows/manage-updates.yml</code>.<br/>
+          <a href="#" id="wi-update-workflow-file-show">Click here to get the required content and copy it to the workflow file</a>.<br/>
+          Since no token is ever transmitted out of the browser, you also have to create the secrets indicated below in each provider
+          (storing an api access token to each one).
         </p>
+        <div id="wi-update-workflow-file-div" style="display: none">
+          <a href="#" id="wi-update-workflow-file-hide">[Hide]</a>
+          <textarea class="form-control" id="wi-update-workflow-file-content" rows="10"></textarea>
+        </div>
+
+        <p class="mb-3 mt-2">
+          Click the checkboxes to select the dependabot updates that you want combine and merge in a single pull request for each repository. 
+          The update manager will do the work. 
+          <a href="https://github.com/javiertuya/dashgit-integration?tab=readme-ov-file#combined-dependabot-updates" target="_blank">[learn more]</a>
+        </p>
+
         <div class="col-auto mb-2">
           <button type="button" id="wi-btn-update-select-all" class="btn btn-success btn-sm">Select all</button>
           <button type="button" id="wi-btn-update-unselect-all" class="btn btn-success btn-sm">Unselect all</button>
           <button type="button" id="wi-btn-update-dispatch" class="btn btn-primary btn-sm">Combine and merge the selected dependency updates</button>
+          &nbsp;
+          <input class="form-check-input" type="checkbox" value="" id="wi-btn-update-dry-run">
+          <label class="form-check-label" for="wi-btn-update-dry-run">Dry Run</label>
         </div>
         <div class="col-auto m-3" id="wi-update-header-confirm"></div>
       </div>
       `;
   },
-  updateProvider2html: function (provider) {
+  updateProvider2html: function (providerId) {
     return `
-      <div class="mb-0">
-        <p>This first version only allows GitHub using the provider username and the GITHUB_TOKEN of the Manager Repository</p>
+      <div>
+        <p class="mb-0">The update manager will access this provider with the token stored in the secret:
+        <code>${config.getProviderByUid(providerId).updates.tokenSecret}</code></p>
       </div>
       `;
   },
@@ -353,9 +372,8 @@ const wiView = {
   },
   confirmUpdateEnd: function (logUrl, updateUrl) {
     $("#wi-update-header-confirm").html(`
-        <p class="text-success"><strong>${this.getUpdateCheckItems().length} dependencies are being updated. &nbsp;
+        <p class="text-success"><strong>${this.getUpdateCheckItems().length} dependencies are being updated... &nbsp;
         <a href="${logUrl}" target="_blank">[See the logs at GitHub Actions]</a> &nbsp; 
-        <a href="${updateUrl}" target="_blank">[See the update file]
         </strong><p>
       `);
     $("#tab-content").find(`.wi-update-check:checkbox:checked`).attr("disabled", true);

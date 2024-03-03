@@ -25,8 +25,13 @@ import lombok.extern.slf4j.Slf4j;
 public class DependencyUpdater {
 	private static final String COMBINED_BRANCH_PREFIX = "dashgit/combined/update";
 
-	// only for combined updates, create the combined PR but does not delete branches nor merge
-	private static final boolean WET_RUN = false;
+	// If true, creates the combined PR but does not delete branches nor merge
+	private boolean dryRun = false;
+	
+	public DependencyUpdater setDryRun(boolean value) {
+		this.dryRun = value;
+		return this;
+	}
 
 	/**
 	 * Creates a combined pull requests with all branches included in the indicated project
@@ -78,11 +83,13 @@ public class DependencyUpdater {
 		String combinedBranch = COMBINED_BRANCH_PREFIX + "-" + gitLocal.getTimestamp();
 		gitLocal.checkout(combinedBranch, true);
 		int successCount = 0;
+		int branchCount = 1;
 		// Adds each change (note that QABot used Cherry Pick, here we use merge with conflict resolver)
 		for (Branch branch : project.branches()) {
 			PullRequest pr = branch.pullRequest();
 			log.info("Combine pull request: {}", pr.title());
-			boolean success = gitLocal.merge(pr.sha(), pr.title(), new ConflictResolver());
+			String message = pr.title() + " [" + (branchCount++) + "/" + project.branches().size() + "]";
+			boolean success = gitLocal.merge(pr.sha(), message, new ConflictResolver());
 			pr.canBeMerged(success);
 			pr.cantBeMergedReason(success ? "" : "cannot be merged");
 			branch.buildSummary(); // propagates the status (needed in dashgit?)
@@ -111,13 +118,14 @@ public class DependencyUpdater {
 			}
 		}
 		String title = "Combined dependency updates (" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ")";
-		String description = "Includes these updates:" + successSb.toString();
+		String description = "Dependabot updates combined by [DashGit](https://javiertuya.github.io/dashgit). "
+				+ "Includes:" + successSb.toString();
 		if (failSb.length() > 0)
 			description += "\n\nDoes not include these updates because of merge conflicts:" + failSb.toString();
 
 		// New combined PR
 		return gitClient.createPullRequest(project.name(), combinedBranch, refPr.targetBranch(), title, description,
-				refPr.assignee(), labels, true, true, true);
+				refPr.assignee(), labels, true, true, !dryRun);
 	}
 
 	private void finishCombinedPullRequest(IGitClient gitClient, Formatter formatter, Project project,
@@ -128,11 +136,12 @@ public class DependencyUpdater {
 			if (Boolean.TRUE == pr.canBeMerged()) { // no deberia ser nulo al haberse determinado ya mergeabilty
 				gitClient.addPullRequestCommment(pr, "This has been included in the combined pull request "
 						+ formatter.url(newPr.title(), newPr.htmlUrl()));
-				log.info("Remove branch: {}, project: {}", newPr.sourceBranch(), newPr.repoName());
-				if (!WET_RUN)
+				log.info("Remove branch: {}, project: {}, dryRun: {}", newPr.sourceBranch(), newPr.repoName(), dryRun);
+				if (!dryRun)
 					gitClient.deleteBranch(pr.fullName(), pr.sourceBranch());
 			} else {
-				gitClient.addPullRequestCommment(pr, "This has not been included in the combined pull request "
+				gitClient.addPullRequestCommment(pr, "@" + gitClient.getUsername() 
+						+ " This has not been included in the combined pull request "
 						+ formatter.url(newPr.title(), newPr.htmlUrl()) + " because of potential merge conflicts");
 			}
 			Util.delay(rateLimitDelay); // separa acciones para evitar secondary rate limits en github

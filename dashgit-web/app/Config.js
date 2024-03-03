@@ -6,7 +6,10 @@ import { encryption } from "./Encryption.js"
 const config = {
 
   //App version number, do not modify, this is set during deploy
-  appVersion: "",
+  appVersion: "main",
+
+  //Feature flags, keeps boolean flags activated from the querystring ?ff=flag1,flag2...
+  ff: {},
 
   //Persistent data, kept only if page is not reloaded
   session: {
@@ -70,6 +73,8 @@ const config = {
     this.setDefault(data, "providers", []);
     for (const provider of data.providers)
       this.setProviderDefaults(provider);
+    //suggested name for update secrets that depends on the provider type and user
+    this.setProviderSecretDefaults(data);
     return data;
   },
   setProviderDefaults: function(element) {
@@ -97,11 +102,20 @@ const config = {
       this.setDefault(element.graphql, "maxBranches", 10);
       this.setDefault(element.graphql, "maxPipelines", 100);
     }
-    return element;
+    this.setDefault(element, "updates", {});
+    this.setDefault(element.updates, "tokenSecret", "");
+    this.setDefault(element.updates, "userEmail", "");
+  return element;
   },
   setDefault: function (parent, property, value) {
     if (parent[property] == undefined || parent[property] == null)
       parent[property] = value;
+  },
+  setProviderSecretDefaults: function(data) {
+    for (let provider of data.providers) {
+      if (provider.updates.tokenSecret == "" && provider.user != "") //only suggest if not set and user is defined
+        provider.updates.tokenSecret = `DASHGIT_${provider.provider.toUpperCase()}_${provider.user.toUpperCase()}_TOKEN`;
+    }
   },
   getProviderByUid: function (uid) {
     for (let provider of config.data.providers)
@@ -149,6 +163,17 @@ const config = {
       return text;
     } else
       return configToken;
+  },
+
+  // Manage feature flags
+  loadFeatureFlags: function() {
+    let ffstr = (new URL(document.location)).searchParams.get("ff");
+    if (ffstr!=undefined && ffstr!=null) {
+      let ffarr = ffstr.split(",");
+      for (let item of ffarr)
+        this.ff[item]=true;
+    }
+    console.log("Using feature flags: ", JSON.stringify(this.ff));
   },
 
 }
