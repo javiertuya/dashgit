@@ -242,8 +242,9 @@ const wiView = {
     }
     $(`${panel} .wi-notification-icon`).tooltip({ delay: 200 });
     //In addition to the notifications of each item, displays the total of notifications
-    $(`#wi-notifications-tab-badge`).text(totalCount);
-    $(`#wi-notifications-tab-count`).css("display", totalCount > 0 ? "inline" : "none");
+    //Disable, workaround of #1
+    //$(`#wi-notifications-tab-badge`).text(totalCount);
+    //$(`#wi-notifications-tab-count`).css("display", totalCount > 0 ? "inline" : "none");
   },
   updateSpinnerEnd: function (provider) {
     const target = this.selectActiveTarget();
