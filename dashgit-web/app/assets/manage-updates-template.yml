@@ -18,7 +18,7 @@ jobs:
       - name: Prepare the updater
         run: |
           echo "Updater version: $(ls .dashgit/manage-update)"
-          git clone --depth 1 -b "$(ls .dashgit/manage-update)" https://github.com/javiertuya/dashgit-integration all
+          git clone --depth 1 -b "$(ls .dashgit/manage-update)" https://github.com/javiertuya/dashgit all
           cp all/dashgit-updater/pom.xml ./ && cp -r all/dashgit-updater/src ./
           mvn clean package -q -DskipTests=true
       - name: Run the updater
