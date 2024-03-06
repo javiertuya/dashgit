@@ -114,7 +114,8 @@ const config = {
   setProviderSecretDefaults: function(data) {
     for (let provider of data.providers) {
       if (provider.updates.tokenSecret == "" && provider.user != "") //only suggest if not set and user is defined
-        provider.updates.tokenSecret = `DASHGIT_${provider.provider.toUpperCase()}_${provider.user.toUpperCase()}_TOKEN`;
+        // only alphanumeric and _ is allowed, for now, replacing dash characters
+        provider.updates.tokenSecret = `DASHGIT_${provider.provider.toUpperCase()}_${provider.user.toUpperCase().replaceAll("-", "_")}_TOKEN`;
     }
   },
   getProviderByUid: function (uid) {
