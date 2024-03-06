@@ -36,12 +36,14 @@ import lombok.extern.slf4j.Slf4j;
  *   - in Setup-branches: Create a branch protection rule for main, set Require status checks to pass before merging
  *     and indicate required status check is test (the job defined in github-ci.yml)
  *     
- * This is the GitHub test, GitLab test uses a subclass of this.
- * Configuration requires:
+ * To test GitLab there is a subclass of this. Configuration requires:
  *  - The same keys in it.properties, but with the prefix gitlab instead of github.
  *  - The workflow file can be found in src/test/resources/git-project/.gitlab-ci.yml
  *  - No special configuration is required to allow auto-merge
- * 
+ * To test GitLab on premises with jenkins:
+ *  - Do not put the .gitlab-ci.yml
+ *  - Instead, add the webhook to trigger the jenkins pipeline
+ *  
  */
 @Slf4j
 public class TestItGithubLiveUpdates extends Base {

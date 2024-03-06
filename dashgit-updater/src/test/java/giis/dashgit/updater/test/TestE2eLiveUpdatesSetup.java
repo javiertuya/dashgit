@@ -25,7 +25,16 @@ public class TestE2eLiveUpdatesSetup extends Base {
 	 * previous configuration of a test repository, see TestItGithubLiveUpdates.java
 	 * for instructions.
 	 * 
-	 * To execute the E2E test, go to the DashGit using and set a feature flag to
+	 * To execute the E2E test:
+	 * 
+	 * (1) Edit dashgit-web/app/Config.js and set the value of appVersion to match
+	 * your local environment with the name of the branch of the updater.
+	 * This will ensure that the update payload will be sent to the update manager
+	 * using this name (the branch), and then, the update manager will get the current version
+	 * of dashgit-update from this branch.
+	 * Don't forget put it back to main before merge the changes.
+	 * 
+	 * (2) Go to the DashGit UI and set a feature flag to
 	 * the querystring: ?ff=updtest. This will add the PRs created in the test
 	 * project to the dependabot tab. Select the work items and run the update.
 	 */
@@ -33,7 +42,7 @@ public class TestE2eLiveUpdatesSetup extends Base {
 	public void testLoadE2eTestData() throws IOException {
 		//loadE2eTestData("github", false);
 		//loadE2eTestData("github", true);
-		//loadE2eTestData("gitlab", false);
+		loadE2eTestData("gitlab", false);
 		//loadE2eTestData("gitlab", true);
 	}
 

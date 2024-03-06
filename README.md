@@ -91,17 +91,19 @@ As DashGit works entirely in the browser without a backend server, you have to s
 that we call *update manager*. 
 After you confirm the updates to be combined, DashGit pushes a json file with this information to the update manager
 (*update payload*).
-Then, the update manager creates the combined pull requests with automerge enabled in a GitHub Actions workflow.
-If the build is successfull then the combined PR will be merged.
+Then, the update manager runs a GitHub Actions workflow to create each combined pull request, resolve merge conflicts
+with adjacent lines and enable automerge.
+The combined PR will be merged if the build is successful.
 
 This requires a little configuration described below:
-- Create the update manager repository: It is recommended to keep private, since although no token is sent to it, 
-  the logs may contain sensitive information such as urls or usernames if private or on-premises repositories are used
+- Create the update manager repository in GitHub: It is recommended to keep private, since although no token is sent to it, 
+  the logs may contain sensitive information such as urls or usernames 
+  (when the repository that is being updated is private or on-premises).
 - Activate the combined updates feature: Go to the config tab and check the Enable combined dependency updates option.
-  Provide the name of the update manager repository and the token to be used to push it with the update payload.
+  Provide the name of the update manager repository (REPO/OWNER) and the token used to push the update payload.
 - Configure the workflow: Go to the Dependabot tab and follow the instructions to obtain the content of the
   `.github/workflows/manage-updates.yml`. Add this file to the update manager repository.
-- Set the api access tokens tokens: In each provider on the dependabot tab, you will see the name of a token. 
+- Set the api access tokens: In each provider on the dependabot tab, you will see the name of a token. 
   Create these tokens in the update manager. Their stored value has to be a token used to create the combined PRs
 
 Notes:
@@ -135,7 +137,8 @@ This table summarizes the test strategy (explained below):
    Run in CI, job `test`.
 2. Combined updates: JUnit tests in `dashgit-updater`: `TestIt*`. 
    Covers GitHub and GitLab, with and without merge conflicts.
-   Requires a previous configuration of a test repo, see `TestItGithubLiveUpdates.java` for instructions.
+   Requires a previous configuration of a test repo, see `TestItGithubLiveUpdates.java` for instructions
+   and the subclass `TestItGitlabLiveUpdates.java`.
    Not yet in CI.  
 3. Merge conflicts: JUnit tests in `dashgit-updater`: `TestUt*`. 
    Covers different situations related to the resolution of git merge conflicts.

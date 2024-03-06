@@ -5,7 +5,7 @@ import { encryption } from "./Encryption.js"
  */
 const config = {
 
-  //App version number, do not modify, this is set during deploy
+  //App version number, do not push any change of it, this is set during deploy
   appVersion: "main",
 
   //Feature flags, keeps boolean flags activated from the querystring ?ff=flag1,flag2...
@@ -114,7 +114,8 @@ const config = {
   setProviderSecretDefaults: function(data) {
     for (let provider of data.providers) {
       if (provider.updates.tokenSecret == "" && provider.user != "") //only suggest if not set and user is defined
-        provider.updates.tokenSecret = `DASHGIT_${provider.provider.toUpperCase()}_${provider.user.toUpperCase()}_TOKEN`;
+        // only alphanumeric and _ is allowed, for now, replacing dash characters
+        provider.updates.tokenSecret = `DASHGIT_${provider.provider.toUpperCase()}_${provider.user.toUpperCase().replaceAll("-", "_")}_TOKEN`;
     }
   },
   getProviderByUid: function (uid) {
