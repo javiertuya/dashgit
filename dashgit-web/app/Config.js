@@ -5,8 +5,8 @@ import { encryption } from "./Encryption.js"
  */
 const config = {
 
-  //App version number, do not modify, this is set during deploy
-  appVersion: "final-validation-for-v12",
+  //App version number, do not push any change of it, this is set during deploy
+  appVersion: "main",
 
   //Feature flags, keeps boolean flags activated from the querystring ?ff=flag1,flag2...
   ff: {},

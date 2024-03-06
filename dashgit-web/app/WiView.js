@@ -319,7 +319,7 @@ const wiView = {
         <p class="mb-3 mt-2">
           Click the checkboxes to select the dependabot updates that you want combine and merge in a single pull request for each repository. 
           The update manager will do the work. 
-          <a href="https://github.com/javiertuya/dashgit-integration?tab=readme-ov-file#combined-dependabot-updates" target="_blank">[learn more]</a>
+          <a href="https://github.com/javiertuya/dashgit?tab=readme-ov-file#combined-dependabot-updates" target="_blank">[learn more]</a>
         </p>
 
         <div class="col-auto mb-2">
@@ -328,7 +328,7 @@ const wiView = {
           <button type="button" id="wi-btn-update-dispatch" class="btn btn-primary btn-sm">Combine and merge the selected dependency updates</button>
           &nbsp;
           <input class="form-check-input" type="checkbox" value="" id="wi-btn-update-dry-run">
-          <label class="form-check-label" for="wi-btn-update-dry-run">Dry Run</label>
+          <label class="form-check-label" for="wi-btn-update-dry-run">Dry Run (only create combined PRs, no merge)</label>
         </div>
         <div class="col-auto m-3" id="wi-update-header-confirm"></div>
       </div>

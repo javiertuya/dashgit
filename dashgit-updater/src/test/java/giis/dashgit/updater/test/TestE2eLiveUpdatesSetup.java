@@ -27,13 +27,12 @@ public class TestE2eLiveUpdatesSetup extends Base {
 	 * 
 	 * To execute the E2E test:
 	 * 
-	 * (1) Edit dashgit-web/app/Config.js and set the value of appVersion to match the 
-	 * name of the  branch where you are executing DashGit in your local 
-	 * development environment.
+	 * (1) Edit dashgit-web/app/Config.js and set the value of appVersion to match
+	 * your local environment with the name of the branch of the updater.
 	 * This will ensure that the update payload will be sent to the update manager
 	 * using this name (the branch), and then, the update manager will get the current version
 	 * of dashgit-update from this branch.
-	 * Don't forget return it back to main before merge the changes.
+	 * Don't forget put it back to main before merge the changes.
 	 * 
 	 * (2) Go to the DashGit UI and set a feature flag to
 	 * the querystring: ?ff=updtest. This will add the PRs created in the test
@@ -41,9 +40,9 @@ public class TestE2eLiveUpdatesSetup extends Base {
 	 */
 	@Test
 	public void testLoadE2eTestData() throws IOException {
-		loadE2eTestData("github", false);
+		//loadE2eTestData("github", false);
 		//loadE2eTestData("github", true);
-		//loadE2eTestData("gitlab", false);
+		loadE2eTestData("gitlab", false);
 		//loadE2eTestData("gitlab", true);
 	}
 

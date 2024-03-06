@@ -68,7 +68,7 @@ const configView = {
         </div>
 
         <h6 class="card-subtitle mb-1 mt-1 text-body-secondary">Automatically create and merge combined dependency updates
-          <a href="https://github.com/javiertuya/dashgit-integration?tab=readme-ov-file#combined-dependabot-updates" target="_blank">[learn more]</a></h6>
+          <a href="https://github.com/javiertuya/dashgit?tab=readme-ov-file#combined-dependabot-updates" target="_blank">[learn more]</a></h6>
         <div class="row">
           ${this.input2html(`config-common-updateManagerRepo`, "text", "Update Manager Repo", data.updateManagerRepo, 'required', "200", "200",
             "The full name (OWNER/REPO) of a dedicated private GitHub repository where the combined updates will be pushed and merged")}
@@ -135,7 +135,7 @@ const configView = {
 
         <div class="config-provider-updates-div-container">
         <h6 class="card-subtitle mb-1 mt-1 text-body-secondary">Combined dependency updates, additional parameters:
-          <a href="https://github.com/javiertuya/dashgit-integration?tab=readme-ov-file#combined-dependabot-updates" target="_blank">[learn more]</a></h6>
+          <a href="https://github.com/javiertuya/dashgit?tab=readme-ov-file#combined-dependabot-updates" target="_blank">[learn more]</a></h6>
         <div class="row">
           ${this.input2html(`config-updates-tokenSecret-${key}`, "text", "Secret Name to store the token", 
             provider.updates.tokenSecret, provider.user == "" ? "disabled" : "", "250", "300",
