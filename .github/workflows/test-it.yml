@@ -18,11 +18,13 @@ on:
 jobs:
   test-it:
     runs-on: ubuntu-latest
+    #avoids duplicate execution of pr from local repo, but allows pr from forked repos and dependabot
+    if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/')))
     defaults:
       run:
         working-directory: ./dashgit-updater
     permissions:
-      contents: write # needed for mutex on test repos
+      contents: write # for mutex on test repos
       checks: write # for junit report
     strategy:
       matrix:
