@@ -19,7 +19,9 @@ jobs:
   test-it:
     runs-on: ubuntu-latest
     #avoids duplicate execution of pr from local repo, but allows pr from forked repos and dependabot
-    if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/')))
+    #if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/')))
+    # workaround #31, disables execution on external forks
+    if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'dependabot/')))
     defaults:
       run:
         working-directory: ./dashgit-updater
