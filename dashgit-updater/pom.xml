@@ -83,7 +83,7 @@
 		<dependency>
 			<groupId>org.kohsuke</groupId>
 			<artifactId>github-api</artifactId>
-			<version>1.318</version>
+			<version>1.319</version>
 		</dependency>
 		<dependency>
 			<groupId>org.gitlab4j</groupId>
@@ -93,7 +93,7 @@
 		<dependency>
 			<groupId>org.eclipse.jgit</groupId>
 			<artifactId>org.eclipse.jgit</artifactId>
-			<version>6.8.0.202311291450-r</version>
+			<version>6.9.0.202403050737-r</version>
 		</dependency>
 
 	</dependencies>
