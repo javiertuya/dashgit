@@ -210,7 +210,20 @@ const wiController = {
     let notifCount = 0; //to display the total of notifications of all providers
     for (let prop in cache.notifCache)
       notifCount += Object.keys(cache.notifCache[prop]).length;
-    wiView.updateNotifications(providerId, notifCount); //don't pass model as it is alredy in cache
+    const mentionCount = this.countAllMentions();
+    console.log(`********* mention count ${mentionCount}`);
+    wiView.updateNotifications(providerId, mentionCount); //don't pass model as it is alredy in cache
+  },
+  countAllMentions: function() {
+    // counts only mentions, but across all providers that have notifications in cache
+    let mentionCount = 0;
+    for (let prop in cache.notifCache)
+      for (let notifKey in cache.notifCache[prop]) {
+        let reason = cache.notifCache[prop][notifKey];
+        if (reason == "mention" || reason == "mentioned" || reason == "directly_addressed")
+          mentionCount++;
+      }
+    return mentionCount;
   },
 
   // To perform combined dependency updates, the dedicated update manager repository 

@@ -240,7 +240,7 @@ const wiView = {
       }
     }
   },
-  updateNotifications(providerId, totalCount) {
+  updateNotifications(providerId, mentionCount) {
     const target = this.selectActiveTarget();
     let panel = `#${this.getPanelId(target, providerId)}`;
     let viewItems = $(panel).find(`.wi-notifications-${this.getId(target, providerId, "all")}`);
@@ -250,10 +250,9 @@ const wiView = {
       $(viewItem).html(this.notification2html(providerId, itemId));
     }
     $(`${panel} .wi-notification-icon`).tooltip({ delay: 200 });
-    //In addition to the notifications of each item, displays the total of notifications
-    //Disable, workaround of #1
-    //$(`#wi-notifications-tab-badge`).text(totalCount);
-    //$(`#wi-notifications-tab-count`).css("display", totalCount > 0 ? "inline" : "none");
+    //In addition to the notifications of each item, updates the display of total notifications that are mentions
+    let notifHtml = mentionCount == 0 ? "" : ` <i class="${this.mentionIconClass}"></i><strong>${mentionCount}</strong>`;
+    $(`#wi-notifications-tab-badge`).html(notifHtml);
   },
   updateSpinnerEnd: function (provider) {
     const target = this.selectActiveTarget();
@@ -463,8 +462,14 @@ const wiView = {
     if (cache.notifCache[provider] == undefined)
       return "";
     let reason = cache.notifCache[provider][uid];
-    return reason == undefined ? "" : `<i class="wi-notification-icon fa-regular fa-circle-check" title="Unread notification, reason: ${reason}"></i>`;
+    if (reason == undefined)
+      return "";
+    let iconClass = reason == "mention" || reason == "mentioned" || reason == "directly_addressed" ? this.mentionIconClass : this.notificationIconClass;
+    return `<i class="wi-notification-icon ${iconClass}" title="Unread notification, reason: ${reason}"></i>`;
   },
+
+  notificationIconClass: `fa-regular fa-bell`,
+  mentionIconClass: `fa-solid fa-at`,
   headerbadge2html: function (color, count, message) {
     if (count == undefined || count == 0)
       return "";
@@ -526,6 +531,9 @@ const wiView = {
   unknownIcon: '<i class="wi-status-icon fa-regular fa-circle-question" style="color:#AAAAAA" title="The build status cannot be determined"></i>',
   spinnerIcon: `<span class="spinner-border spinner-border-sm text-secondary" style="opacity:50%" title="The build status is being determined"></span>`,
   spinnerClass: `spinner-border`,
+
+  notificationIconClass: `fa-regular fa-bell`,
+  mentionIconClass: `fa-solid fa-at`,
 }
 
 export { wiView };

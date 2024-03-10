@@ -145,11 +145,6 @@
 
     <!-- target tabs -->
     <ul role="listitem" class="nav nav-tabs" id="tab-headers" role="tablist" style="display:none">
-      <li class="nav-item" id="wi-notifications-tab-count" style="display:none">
-        <button class="nav-link">
-          <span id="wi-notifications-tab-badge" class="badge rounded-pill"
-            style="background-color:#F34F29; color:#ffffff;"></span></button>
-      </li>
       <li class="nav-item" role="presentation" data-toggle="tooltip"
         title="Open work items (issues/pull requests) where I'm the assignee or reviewer">
         <button class="nav-link active" id="assigned-tab" data-bs-toggle="tab" data-bs-target="#assigned" type="button"
@@ -158,7 +153,8 @@
       <li class="nav-item" role="presentation" data-toggle="tooltip" data-placement="bottom"
         title="Open work items (issues/pull requests) where I'm the author, assignee, mentioned or commenter">
         <button class="nav-link" id="involved-tab" data-bs-toggle="tab" data-bs-target="#involved" type="button"
-          role="tab" aria-controls="involved" aria-selected="false">Involved</button>
+          role="tab" aria-controls="involved" aria-selected="false">Involved<span id="wi-notifications-tab-badge" style="color:#F34F29"></span>
+        </button>
       </li>
       <li class="nav-item" role="presentation" data-toggle="tooltip"
         title="Open work items (issues/pull requests) where I'm the author">
