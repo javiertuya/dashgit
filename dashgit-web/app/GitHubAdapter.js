@@ -62,7 +62,7 @@ const gitHubAdapter = {
   },
 
   //Model transformations from the result of the graphql invocation to the provider independent format
-  statuses2model: function (provider, gqlresponse) { // NOSONAR TODO refactor complexity
+  statuses2model: function (provider, gqlresponse) {
     let m = new Model().setHeader(provider.provider, provider.uid, provider.user, "");
     if (gqlresponse.viewer == undefined)
       return m;
@@ -71,6 +71,12 @@ const gitHubAdapter = {
       const repoUrl = repo.url;
       m.header.repo_names.push(repoName);
       for (let ref of repo.refs.nodes) {
+        this.statusesNode2model(ref, repoName, repoUrl, m);
+      }
+    }
+    return m;
+  },
+  statusesNode2model: function(ref, repoName, repoUrl, targetModel) {
         const branch = ref.name;
         // Los siguientes datos son los de los commits de ramas y prs.
         // Ambos son arrays, solo utiliza el primer item.
@@ -106,7 +112,7 @@ const gitHubAdapter = {
           updatedAt = ref.target.associatedPullRequests.edges[0].node.updatedAt;
         }
         // Crea el modelo, de la rama (commit)
-        m.addItem({
+        targetModel.addItem({
           repo_name: repoName, type: type, iid: iid,
           branch_name: branch, status: status,
           title: title, actions: {},
@@ -114,9 +120,6 @@ const gitHubAdapter = {
           iidstr: iid != "" ? "#" + iid : "", url: url, branch_url: branchUrl, repo_url: repoUrl,
           labels: []
         });
-      }
-    }
-    return m;
   },
   transformStatus: function (status) {
     status = status.toUpperCase();

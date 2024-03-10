@@ -1,5 +1,6 @@
 package giis.dashgit.updater;
 
+import giis.qabot.ci.clients.ClientException;
 import giis.qabot.ci.clients.GitLocal;
 import giis.qabot.ci.clients.GithubGitClient;
 import giis.qabot.ci.clients.GitlabClient;
@@ -47,7 +48,7 @@ public class DependencyUpdaterFacade {
 		else if ("gitlab".equalsIgnoreCase(providerType))
 			return new GitlabClient(server, user, token, true);
 		else
-			throw new RuntimeException("Invalid provider type: " + providerType +", only github or gitlab");
+			throw new ClientException("Invalid provider type: " + providerType +", only github or gitlab");
 	}
 
 }
