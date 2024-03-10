@@ -14,8 +14,8 @@ on:
 jobs:
   test-ut:
     runs-on: ubuntu-latest
-    #avoids duplicate execution of pr from local repo, but allows pr from forked repos and dependabot
-    if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/')))
+    #avoids duplicate execution of pr from local repo, but allows pr from forked repos and dependabot/dashgit
+    if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/') || startsWith(github.head_ref, 'dashgit/combined/')))
     steps:
       - name: Checkout GitHub repo
         uses: actions/checkout@v4
