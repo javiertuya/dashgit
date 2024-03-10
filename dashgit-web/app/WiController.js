@@ -126,8 +126,7 @@ const wiController = {
   },
 
   dispatchPromises: async function (target, promises) {
-    let statuses = [];
-    const responses = await Promise.allSettled(promises).then(result => statuses = result);
+    const responses = await Promise.allSettled(promises);
     console.log("Responses from all promises:");
     console.log(responses);
 
