@@ -468,8 +468,6 @@ const wiView = {
     return `<i class="wi-notification-icon ${iconClass}" title="Unread notification, reason: ${reason}"></i>`;
   },
 
-  notificationIconClass: `fa-regular fa-bell`,
-  mentionIconClass: `fa-solid fa-at`,
   headerbadge2html: function (color, count, message) {
     if (count == undefined || count == 0)
       return "";
