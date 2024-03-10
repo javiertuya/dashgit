@@ -49,7 +49,7 @@ public class DependencyUpdater {
 		
 		// Creates the combined update branch (only with no conflictng branches)
 		// Note that the combined branch is created using main branch as the base
-		String combinedBranch = getCombinedBranch(gitClient, gitLocal, project);
+		String combinedBranch = getCombinedBranch(gitLocal, project);
 		if ("".equals(combinedBranch)) { // no hay actualizaciones que combinar
 			log.warn("There are no updates to merge (or all updates have merge conflicts)");
 			return null;
@@ -75,7 +75,7 @@ public class DependencyUpdater {
 	 * Creates a local repository branch with all non conflicting changes,
 	 * returning the branch name (empty if no branch has been included)
 	 */
-	private String getCombinedBranch(IGitClient gitClient, GitLocal gitLocal, Project project) {
+	private String getCombinedBranch(GitLocal gitLocal, Project project) {
 		log.info("*** Create Combined Branch");
 		String repoName = project.name();
 		gitLocal.cloneRepository(repoName);

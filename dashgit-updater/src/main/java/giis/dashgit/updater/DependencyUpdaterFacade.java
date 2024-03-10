@@ -28,7 +28,7 @@ public class DependencyUpdaterFacade {
 	}
 
 	private Project getProjectWithPullRequests(IGitClient gitClient, String projectName, long[] prIds) {
-		Project project = (Project) new Project();
+		Project project = new Project();
 		project.name(projectName);
 		for (long prId : prIds) {
 			PullRequest pr = gitClient.getPullRequest(projectName, prId);
@@ -42,9 +42,9 @@ public class DependencyUpdaterFacade {
 	 * Gets the appropriate Git client given the provider type string
 	 */
 	public IGitClient getGitClient(String providerType, String server, String user, String token) {
-		if ("github".equals(providerType.toLowerCase()))
+		if ("github".equalsIgnoreCase(providerType))
 			return new GithubGitClient(server, user, token, true);
-		else if ("gitlab".equals(providerType.toLowerCase()))
+		else if ("gitlab".equalsIgnoreCase(providerType))
 			return new GitlabClient(server, user, token, true);
 		else
 			throw new RuntimeException("Invalid provider type: " + providerType +", only github or gitlab");

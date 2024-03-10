@@ -74,7 +74,9 @@ public class UpdaterController {
 		return errorCount;
 	}
 
-	private String runSingleUpdate(String providerType, String urlValue, String userValue, String userEmail, String tokenSecret, String repo, String[] pullIds, boolean dryRun) {
+	private String runSingleUpdate(String providerType, String urlValue, // NOSONAR
+			String userValue, String userEmail, String tokenSecret, 
+			String repo, String[] pullIds, boolean dryRun) {
 		log.info("**** Run update: {} {} {} {}", urlValue, userValue, tokenSecret, repo);
 		long[] pulls = new long[pullIds.length];
 		for (int i = 0; i < pulls.length; i++)
