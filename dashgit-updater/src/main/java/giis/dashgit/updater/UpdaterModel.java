@@ -43,10 +43,10 @@ public class UpdaterModel {
 
 	public String toSummaryString() {
 		StringBuilder sb = new StringBuilder();
-		Updates updates = this.getUpdates();
-		sb.append("UpdateManagerRepo: ").append(updates.getUpdateManagerRepo()).append(", DryRun: ")
-				.append(updates.isDryRun());
-		for (Entry<String, Provider> provider : updates.getProviders().entrySet()) {
+		Updates upd = this.getUpdates();
+		sb.append("UpdateManagerRepo: ").append(upd.getUpdateManagerRepo()).append(", DryRun: ")
+				.append(upd.isDryRun());
+		for (Entry<String, Provider> provider : upd.getProviders().entrySet()) {
 			sb.append("\nProvider id: ").append(provider.getKey())
 					.append(", type: ").append(provider.getValue().getProviderType())
 					.append(", url: ").append(provider.getValue().getUrlValue());

@@ -19,6 +19,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class ConflictResolver implements IConflictResolver {
+	private static final String VERSION_PLACEHOLDER = "{version}";
+
 	private enum State {
 		OUTSIDE_CONFLICT, LEFT, RIGHT
 	}
@@ -26,10 +28,9 @@ public class ConflictResolver implements IConflictResolver {
 	private int unresolvedCount;
 	private State state;
 
-	private List<String> pristine; // before resolution
 	private List<String> resolved; // output after resolution
 
-	// data of a conflict;
+	// data of a conflict
 	private String leftMarker;
 	private List<String> leftLines;
 	private String middleMarker;
@@ -48,7 +49,7 @@ public class ConflictResolver implements IConflictResolver {
 		this.fileName = fileName;
 		unresolvedCount = 0;
 		state = State.OUTSIDE_CONFLICT;
-		pristine = FileUtil.fileReadLines(fileName);
+		List<String> pristine = FileUtil.fileReadLines(fileName);
 		resolved = new ArrayList<>();
 		reinitConflict();
 		
@@ -65,8 +66,8 @@ public class ConflictResolver implements IConflictResolver {
 
 	private void reinitConflict() {
 		leftMarker = null;
-		leftMarker = null;
-		leftMarker = null;
+		middleMarker = null;
+		rightMarker = null;
 		leftLines = new ArrayList<>();
 		rightLines = new ArrayList<>();
 	}
@@ -81,9 +82,9 @@ public class ConflictResolver implements IConflictResolver {
 		} else if (line.startsWith(">>>>>>")) {
 			rightMarker = line;
 			state = State.OUTSIDE_CONFLICT;
-			boolean resolved = handleConflict();
-			unresolvedCount += resolved ? 0 : 1;
-			log.info(resolved ? "Conflicting lines resolved" : "Conflicting lines NOT resolved");
+			boolean locallyResolved = handleConflict();
+			unresolvedCount += locallyResolved ? 0 : 1;
+			log.info(locallyResolved ? "Conflicting lines resolved" : "Conflicting lines NOT resolved");
 			reinitConflict();
 		} else {
 			processState(line);
@@ -122,7 +123,7 @@ public class ConflictResolver implements IConflictResolver {
 
 	//returns the resolved line or an empty string
 	public static String handleConflictingLine(int lineNumber, String left, String right) {
-		Pattern pattern = Pattern.compile("\\d+(\\.\\d+){2,}"); // 3 or more numbers
+		Pattern pattern = Pattern.compile("\\d+(\\.\\d+){2,}"); // NOSONAR is the version number of own dependency, allow 3 or more numbers
 		Matcher matcher = pattern.matcher(left);
 		String leftVersion = matcher.find() ? matcher.group(0) : "";
 		matcher = pattern.matcher(right);
@@ -143,8 +144,8 @@ public class ConflictResolver implements IConflictResolver {
 		}
 
 		// must be equal except the versions
-		String leftMask = left.replace(leftVersion, "{version}");
-		String rightMask = right.replace(rightVersion, "{version}");
+		String leftMask = left.replace(leftVersion, VERSION_PLACEHOLDER);
+		String rightMask = right.replace(rightVersion, VERSION_PLACEHOLDER);
 		if (!leftMask.equals(rightMask)) {
 			log.trace("Both sides difer on more than a version number");
 			return "";
@@ -152,7 +153,7 @@ public class ConflictResolver implements IConflictResolver {
 
 		// now can resolve to the latest version
 		String latestVersion = getLatestVersion(leftVersion, rightVersion);
-		String resolvedLine = leftMask.replace("{version}", latestVersion);
+		String resolvedLine = leftMask.replace(VERSION_PLACEHOLDER, latestVersion);
 		log.trace("Line {}. Resolved to: {}", lineNumber, resolvedLine);
 		return resolvedLine;
 	}

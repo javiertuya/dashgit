@@ -134,7 +134,6 @@ const gitHubApi = {
     }).catch(function (error) {
       console.error("GitHub GraphQL transformation failed");
       console.error(error)
-      //wiController.displayError("GitHub GraphQL transformation failed. Message: " + error);
       wiController.updateStatusesOnError("GitHub GraphQL transformation failed. Message: " + error, provider.uid);
     });
   },

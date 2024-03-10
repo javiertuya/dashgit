@@ -1,5 +1,3 @@
-import { config } from "./Config.js"
-
 /**
  * Generates the html content for the config view
  */
@@ -319,7 +317,7 @@ const configView = {
 
   // Display of common form input controls, enclosed in col-auto for fluid placement
 
-  input2html: function (id, type, label, value, validation, labelWidth, valueWidth, info) {
+  input2html: function (id, type, label, value, validation, labelWidth, valueWidth, info) { // NOSONAR
     let labelStyle = labelWidth == "" ? "" : `style="width:${labelWidth}px"`;
     let valueStyle = valueWidth == "" ? "" : `style="width:${valueWidth}px"`;
     return `
@@ -333,7 +331,7 @@ const configView = {
     `;
   },
 
-  array2html: function (id, type, label, value, validation, labelWidth, valueWidth, info) {
+  array2html: function (id, type, label, value, validation, labelWidth, valueWidth, info) { // NOSONAR
     let valueStr = value == undefined || value.length == 0 ? "" : value.join(" ");
     return this.input2html(id, type, label, valueStr, validation, labelWidth, valueWidth, info);
   },

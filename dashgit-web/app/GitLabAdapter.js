@@ -122,7 +122,7 @@ const gitLabAdapter = {
     for (let proj of this.safe(gqlresponse?.data?.projects?.nodes)) {
       const repoName = proj.fullPath;
       const repoUrl = proj.webUrl;
-      if (!proj.archived && proj.repository!=null && proj.repository.branchNames!=null) { //gitlab.com may give a null
+      if (!proj.archived && proj.repository?.branchNames!=null) { //gitlab.com may give a null
         m.header.repo_names.push(repoName);
         for (let repo of this.safe(proj?.repository?.branchNames)) {
           const branch = repo;

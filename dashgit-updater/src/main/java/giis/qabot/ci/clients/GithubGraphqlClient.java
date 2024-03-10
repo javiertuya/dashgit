@@ -46,7 +46,7 @@ public class GithubGraphqlClient {
 	 * Obtencion de todos los proyectos con un scope dado, con posibilidad de incluir datos de las ramas
 	 */
 	public String getProjectsQuery(boolean includeBranches) {
-	    return "query {\n"
+	    return "query {\n" // NOSONAR to be backport compatible
 	    		+ "  viewer {\n"
 	    		+ "    login, resourcePath, url, repositories(first: 40, " + this.scope + " orderBy: {field: UPDATED_AT, direction: DESC}) {\n"
 	    		+ "      nodes {\n"
@@ -58,8 +58,7 @@ public class GithubGraphqlClient {
 	 * Fragmento para obtener las ramas y sus detalles
 	 */
 	public String getBranchesFragment() {
-	    return ""
-	    		+ "        refs(refPrefix: \\\"refs/heads/\\\", first: 20) {\n"
+	    return "        refs(refPrefix: \\\"refs/heads/\\\", first: 20) {\n" // NOSONAR to be backport compatible
 	    		+ "          nodes {\n"
 	    		+ "            name\n"
 	    		+ "            target {\n"
@@ -72,7 +71,7 @@ public class GithubGraphqlClient {
 	 * Obtencion de todas las pull requests asignadas
 	 */
 	public String getPullRequestsQuery() {
-		return "{\n"
+		return "{\n" // NOSONAR to be backport compatible
 				+ "  viewer {\n"
 				+ "    login, resourcePath, url\n"
 				+ "    repositories(last: 40, " + this.scope + " orderBy: {field: UPDATED_AT, direction: DESC}) {\n"
@@ -84,19 +83,15 @@ public class GithubGraphqlClient {
 				+ "  }\n}\n}\n}\n}\n}";
 	}
 	private String getPullRequestItemsFragment() {
-		return    "            title, body, url, number, \n"
+		return    "            title, body, url, number, \n" // NOSONAR to be backport compatible
 				+ "            state, mergeable\n"
 				+ "            baseRefName, headRefName, headRefOid\n"
 				+ "            labels (first: 6) {\n"
-				+ "              edges {\n"
-				+ "                node {\n"
-				+ "                  name\n"
-				+ "                }\n}\n}\n"
+				+ "              edges { node { name } }\n"
+				+ "            }\n"
 				+ "            assignees (first:6) {\n"
-				+ "              edges {\n"
-				+ "                node {\n"
-				+ "                  login\n"
-				+ "                }\n}\n}\n";
+				+ "              edges { node { login } }"
+				+ "            \n}\n";
 	}
 
 	//Obtencion de objetos individuales
@@ -111,7 +106,7 @@ public class GithubGraphqlClient {
 	 * Obtencion de un proyecto dado por su id (owner/repo)
 	 */
 	public String getProjectQuery(String repoId, boolean includeBranches) {
-		return "{\n"
+		return "{\n" // NOSONAR to be backport compatible
 				+    getRepositoryQueryHeader(repoId) + " {\n"
 				+ "    name, nameWithOwner, url, updatedAt\n"
 	    		+ (includeBranches ? getBranchesFragment() : "")
@@ -123,7 +118,7 @@ public class GithubGraphqlClient {
 	 * Obtencion de una pull request dado el repo id (owner/repo) y el id de la pr
 	 */
 	public String getPullRequestQuery(String repoId, String prId) {
-		return "{\n"
+		return "{\n" // NOSONAR to be backport compatible
 				+    getRepositoryQueryHeader(repoId) + " {\n"
 				+ "    pullRequest(number: " + prId + ") {\n"
 				+        getPullRequestItemsFragment()
@@ -131,7 +126,7 @@ public class GithubGraphqlClient {
 	}
 	
 	public String getAutoMergeQuery (String nodeId, String commitHeadline, String commitBody) {
-		String query="mutation MyMutation {\n"
+		String query="mutation MyMutation {\n" // NOSONAR to be backport compatible
 				+ "  enablePullRequestAutoMerge(input: {"
 				+ "      pullRequestId: \\\"{nodeId}\\\", "
 				+ "      mergeMethod: SQUASH, "

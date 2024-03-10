@@ -62,7 +62,7 @@ const gitHubAdapter = {
   },
 
   //Model transformations from the result of the graphql invocation to the provider independent format
-  statuses2model: function (provider, gqlresponse) {
+  statuses2model: function (provider, gqlresponse) { // NOSONAR TODO refactor complexity
     let m = new Model().setHeader(provider.provider, provider.uid, provider.user, "");
     if (gqlresponse.viewer == undefined)
       return m;
