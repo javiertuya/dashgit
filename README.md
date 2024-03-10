@@ -1,4 +1,5 @@
 [![Status](https://github.com/javiertuya/dashgit/actions/workflows/test.yml/badge.svg)](https://github.com/javiertuya/dashgit/actions)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=my%3Adashgit&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=my%3Adashgit)
 [![Run DashGit](https://img.shields.io/badge/%20-Run_DashGit-orange)](https://javiertuya.github.io/dashgit)
 
 [Features and Configuration](#features-and-configuration)
