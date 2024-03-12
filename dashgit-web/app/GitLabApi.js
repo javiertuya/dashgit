@@ -85,7 +85,7 @@ const gitLabApi = {
     model.header.target = target;
     model.header.message = promises.length == 0 ? `Target ${target} not implemented for this provider` : ``;
     if (target == "involved")
-      model.header.message = "<em>On GitLab, this view displays issues/merge requests that you are author, assignee or mentioned, but no comenter.</em>";
+      model.header.message = "<em>On GitLab, this view displays open issues/merge requests that you are author, assignee or mentioned, but no comenter.</em>";
     return model;
   },
   wrapToDoListsCall: async function (api, query, action) {

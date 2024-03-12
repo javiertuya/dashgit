@@ -99,6 +99,8 @@ const wiView = {
     // adds the header for combined updates (if applicable)
     if (config.data.enableCombinedUpdates && target == "dependabot")
       html += this.updateProvider2html(provider);
+    if (target == "involved") // Additional comment to mentions in this target, PENDING: refactor this kind of headers
+      html += `<div id="wi-providers-target-header-${target}-${provider}"></div>`
     // adds every row
     html += `<table id="wi-items-${this.getId(target, header.uid, "all")}" class='table table-sm table-borderless m-0'>`;
     html += this.rowsmodel2html(target, header, items, grouping, sorting);
@@ -240,19 +242,29 @@ const wiView = {
       }
     }
   },
-  updateNotifications(providerId, mentionCount) {
+  updateNotifications(providerId, thisMentions, allMentions) {
     const target = this.selectActiveTarget();
     let panel = `#${this.getPanelId(target, providerId)}`;
     let viewItems = $(panel).find(`.wi-notifications-${this.getId(target, providerId, "all")}`);
+    let displayedMentions = 0;
     for (let viewItem of viewItems) {
       let viewId = $(viewItem).attr("id");
       let itemId = viewId.replace(`wi-notifications-${this.getIdPrefix(target, providerId)}`, "");
-      $(viewItem).html(this.notification2html(providerId, itemId));
+      let html = this.notification2html(providerId, itemId);
+      $(viewItem).html(html);
+      if (html.includes(this.mentionIconClass)) // only increment if html displays a mention
+        displayedMentions++;
     }
     $(`${panel} .wi-notification-icon`).tooltip({ delay: 200 });
     //In addition to the notifications of each item, updates the display of total notifications that are mentions
-    let notifHtml = mentionCount == 0 ? "" : ` <i class="${this.mentionIconClass}"></i><strong>${mentionCount}</strong>`;
+    //Note that although this display is shown in the involved tab, it is updated when displaying any other tab
+    let notifHtml = allMentions == 0 ? "" : ` <i class="${this.mentionIconClass}"></i><strong>${allMentions}</strong>`;
     $(`#wi-notifications-tab-badge`).html(notifHtml);
+    //If mentions that are displayed is lower than mentions in this provider, displays a message (only if displaying involved tab)
+    //PENDING: in a next iteration, include mentions of closed items in this view (need to refactor the merge of work items)
+    if (target == "involved" && thisMentions > displayedMentions)
+      $(`#wi-providers-target-header-${target}-${providerId}`)
+       .html(`<div class="mb-0" style="color:${this.gitColor}"><em>You have ${thisMentions-displayedMentions} mention(s) in closed work items not shown in this view.</em></div>`)
   },
   updateSpinnerEnd: function (provider) {
     const target = this.selectActiveTarget();
