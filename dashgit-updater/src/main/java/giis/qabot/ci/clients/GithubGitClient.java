@@ -238,6 +238,7 @@ public class GithubGitClient implements IGitClient {
 	private void setAutoMerge(String nodeId, String title, String description) throws InterruptedException {
 		log.info("Set automerge to this pull request");
 		for (int i = 0; i <= AUTOMERGE_RETRY_COUNT; i++) { // NOSONAR for clarity
+			Thread.sleep(AUTOMERGE_RETRY_WAIT);
 			String result = trySetAutoMerge(nodeId, title, description);
 			if ("success".equals(result)) {
 				log.info("Automerge is set");
@@ -251,7 +252,6 @@ public class GithubGitClient implements IGitClient {
 					break;
 				} else {
 					log.info("Retry set automerge");
-					Thread.sleep(AUTOMERGE_RETRY_WAIT);
 				}
 			}
 		}
