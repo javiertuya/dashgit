@@ -54,6 +54,9 @@ public class DependencyUpdater {
 			log.warn("There are no updates to merge (or all updates have merge conflicts)");
 			return null;
 		}
+		// Adds an empty commit to change the title of the run/pipeline (if not, takes the comment of last commit)
+		String title = "Combined dependency updates (" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ")";
+		gitLocal.commit(title); // git client allows empty commits by default
 		log.info("Combined branch created in local repo, name: {}", combinedBranch);
 		gitLocal.push(false);
 
@@ -61,7 +64,7 @@ public class DependencyUpdater {
 		// Note that target branch is taken from the first PR, and it should be the main branch
 		Formatter formatter = new Formatter();
 		PullRequest refPr = project.branches().get(0).pullRequest();
-		PullRequest pr = createCombinedPullRequest(gitClient, formatter, project, refPr, combinedBranch);
+		PullRequest pr = createCombinedPullRequest(gitClient, formatter, project, refPr, combinedBranch, title);
 		log.info("Combined pull request created: {}", pr.title());
 
 		// Cleanup (branches not included in the combined PR) and set comments
@@ -100,7 +103,7 @@ public class DependencyUpdater {
 	}
 
 	private PullRequest createCombinedPullRequest(IGitClient gitClient, Formatter formatter, Project project,
-			PullRequest refPr, String combinedBranch) {
+			PullRequest refPr, String combinedBranch, String title) {
 		log.info("*** Create Combined Pull Request");
 		// Sets the description to show the updates that have (and haven't) been merged
 		StringBuilder successSb = new StringBuilder();
@@ -117,7 +120,6 @@ public class DependencyUpdater {
 				failSb.append("\n- " + formatter.url(pr.title(), pr.htmlUrl()));
 			}
 		}
-		String title = "Combined dependency updates (" + new SimpleDateFormat("yyyy-MM-dd").format(new Date()) + ")";
 		String description = "Dependabot updates combined by [DashGit](https://javiertuya.github.io/dashgit). "
 				+ "Includes:" + successSb.toString();
 		if (failSb.length() > 0)
