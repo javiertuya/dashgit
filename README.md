@@ -135,15 +135,15 @@ This table summarizes the test strategy (explained below):
 
 1. View work items & configuration: Mocha tests in `dashgit-web/test-web/test`. 
    Transformations from api responses to the model displayed in the UI and funtions related to the configuration.
-   Run in CI, job `test`.
+   Run in CI, job `test-ut`.
 2. Combined updates: JUnit tests in `dashgit-updater`: `TestIt*`. 
    Covers GitHub and GitLab, with and without merge conflicts.
-   Requires a previous configuration of a test repo, see `TestItGithubLiveUpdates.java` for instructions
+   Requires a previous configuration of twp dedocated test repos, see `TestItGithubLiveUpdates.java` for instructions
    and the subclass `TestItGitlabLiveUpdates.java`.
-   Not yet in CI.  
+   Run in CI, matrix jobs `test-it *`.
 3. Merge conflicts: JUnit tests in `dashgit-updater`: `TestUt*`. 
    Covers different situations related to the resolution of git merge conflicts.
-   Not yet in CI. 
+   Run in CI as part of the the IT jobs. 
 4. Combined updates: Only automates the test data preparation using a JUnit test in `dashgit-updater`: `TestE2eLiveUpdatesSetup.java`.
    Follow the instructions in this test class.
 5. Manual tests: Not yet automated.

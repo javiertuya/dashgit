@@ -1,4 +1,4 @@
-name: test-ut
+name: test
 
 on:
   push:
@@ -14,9 +14,13 @@ on:
 jobs:
   test-ut:
     runs-on: ubuntu-latest
-    #avoids duplicate execution of pr from local repo, but allows pr from forked repos and dependabot/dashgit
-    if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/') || startsWith(github.head_ref, 'dashgit/combined/')))
+    #avoids duplicate execution of pr from local repo, but allows pr from forked repos and dependabot
+    if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/')))
     steps:
+      - run : |
+          echo "event name: ${{ github.event_name }}"
+          echo "fork: ${{ github.event.pull_request.head.repo.fork }}"
+          echo "head ref: ${{ github.head_ref }}"
       - name: Checkout GitHub repo
         uses: actions/checkout@v4
       - name: Use Node.js
@@ -40,11 +44,151 @@ jobs:
             dashgit-web/test/mochawesome-report
 
   sonarqube:
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    # As in test-ut, but excludes dependabot updates to remove duplicates on local prs
+    # if: ${{ false }}
+    if: github.actor != 'dependabot[bot]' && ( (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/'))) )
     runs-on: ubuntu-latest
     steps:
+      - if: github.event.pull_request.head.repo.fork
+        name: Failing job that is executed from forked repo
+        run: exit 1
       - uses: javiertuya/sonarqube-action@v1.3.1
         with: 
           github-token: ${{ secrets.GITHUB_TOKEN }}
           sonar-token: ${{ secrets.SONAR_TOKEN }}
           java-directory: dashgit-updater
+
+# Notes on IT tests:
+
+# Integration tests require access to two dedicated test repositories that should be accessed exclusively. Instead of using the native
+# concurrency control, we use a mutex action, that allows more than one job waiting for the test repositories.
+
+# Jobs are configured to remove duplicated PRs when run in local branches, and run on PRs from forks and dependabot,
+# However, as we do not use pull_request_target to trigger workflows, IT tests will fail from forks and dependabot 
+# due to the security configuration of Actions.
+# To test the pr #ID branch in local: git fetch origin pull/ID/head:PR-ID && git switch PR-ID
+
+# IT tests only run when some file on the dashgit-updater project changes. 
+# If this is controlled by specifying the pahts in the on events, a problem appears:
+# if no file changes in these paths, the IT checks appears as not run and then the branch protection rule is blocked. 
+# There are different dicussions about this, e.g.
+# https://github.com/orgs/community/discussions/26733 that uses the re-actors/alls-green action.
+# The approach used is here is the suggested in 
+# https://stackoverflow.com/questions/70708306/github-actions-run-step-job-in-a-workflow-if-changes-happen-in-specific-folde
+# using dorny/paths-filter in a first job that produces an output with a true value if some file in the paths has changed
+# and the test jobs that require the previous output to be true. If not, the job will be skipped, which does not block
+# the branch protection rule.
+
+# The last problem is with the matrix (GitHub and GitLab): their status can't be used in a branch protection rule when skipped. 
+# To overcome this, each matrix execution uploads an artifact with the status (true or false) and a final job
+# downloads and combines the artifacts, failing the job if any is not successful
+
+  test-it-trigger:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      output1: ${{ steps.filter.outputs.workflows }}
+    if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/')))
+    steps:
+    - uses: actions/checkout@v3
+    - run: echo "current branch ${{ github.ref_name }}"
+    - uses: dorny/paths-filter@v3.0.2
+      id: filter
+      with:
+        base: ${{ github.ref_name }}
+        filters: |
+          workflows:
+            - 'dashgit-updater/**'
+    - name: Trigger IT tests
+      if: steps.filter.outputs.workflows == 'true'
+      run: echo "Trigger IT tests"
+
+  test-it:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # for mutex on test repos
+      checks: write # for junit report
+    strategy:
+      matrix:
+        scope: [Github, Gitlab]
+      fail-fast: false
+    needs:  test-it-trigger
+    if: needs.test-it-trigger.outputs.output1 == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      # workaround #35, avoid infinite loop of ben-z/gh-action-mutex, issue #15
+      - if: github.event.pull_request.head.repo.fork
+        name: Failing job that is executed from forked repo
+        run: exit 1
+
+      - name: Set up & wait mutex - ${{ matrix.scope }}
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: ben-z/gh-action-mutex@v1.0.0-alpha.9
+        with:
+          branch: gh-mutex-${{ matrix.scope }}
+
+      - name: Create dashgit-updater/it.properties
+        run: |
+          echo "github.server=https://github.com"              > dashgit-updater/it.properties
+          echo "github.repo=${{ github.actor }}/dashgit-test" >> dashgit-updater/it.properties
+          echo "github.secret=DASHGIT_GITHUB_IT_TOKEN"        >> dashgit-updater/it.properties
+          echo "github.user=${{ github.actor }}"              >> dashgit-updater/it.properties
+          echo "github.email="                                >> dashgit-updater/it.properties
+          echo "gitlab.server=https://gitlab.com"             >> dashgit-updater/it.properties
+          echo "gitlab.repo=${{ github.actor }}/dashgit-test" >> dashgit-updater/it.properties
+          echo "gitlab.secret=DASHGIT_GITLAB_IT_TOKEN"        >> dashgit-updater/it.properties
+          echo "gitlab.user=${{ github.actor }}"              >> dashgit-updater/it.properties
+          echo "gitlab.email="                                >> dashgit-updater/it.properties
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Run IT tests - ${{ matrix.scope }}
+        env:
+          DASHGIT_GITHUB_IT_TOKEN: ${{ secrets.DASHGIT_GITHUB_IT_TOKEN}}
+          DASHGIT_GITLAB_IT_TOKEN: ${{ secrets.DASHGIT_GITLAB_IT_TOKEN}}
+        run: cd dashgit-updater && mvn test -Dtest=TestIt${{ matrix.scope }}*,TestUt* -Dmaven.test.failure.ignore=false -U --no-transfer-progress
+        #run: cd dashgit-updater && mvn test -Dtest=TestUt* -Dmaven.test.failure.ignore=false -U --no-transfer-progress
+
+      - name: Generate report checks - ${{ matrix.scope }}
+        if: success() || failure()
+        uses: mikepenz/action-junit-report@v4.2.1
+        with:
+          check_name: "test-it-result-${{ matrix.scope }}"
+          report_paths: "**/surefire-reports/TEST-*.xml"
+          fail_on_failure: 'true'
+
+      - if: failure()
+        run: echo "false" > test-it-status-${{ matrix.scope }}.txt
+      - if: success()
+        run: echo "true" > test-it-status-${{ matrix.scope }}.txt
+
+      - uses: actions/upload-artifact@v4.3.1
+        if: success() || failure()
+        with:
+          name: test-it-status-${{ matrix.scope }}
+          path: test-it-status-${{ matrix.scope }}.txt
+
+  test-it-status:
+    runs-on: ubuntu-latest
+    needs:  test-it
+    if: success() || failure()
+    steps:
+      - name: Download statuses from artifacts generated by matrix
+        uses: actions/download-artifact@v4.1.4
+        with:
+          merge-multiple: true
+          pattern: test-it-status-*
+      - name: Check statuses and fails if any is unsuccessful
+        run: |
+          ls -la
+          echo -n "$(cat test-it-status-Github.txt)" > test-it-status.txt
+          echo -n "$(cat test-it-status-Gitlab.txt)" >> test-it-status.txt
+          echo "Combined status is: $(cat test-it-status.txt)"
+          if [ "$(cat test-it-status.txt)" != "truetrue" ]; then exit 1; fi
