@@ -1,0 +1,19 @@
+[
+    {
+        "id": 14709,
+        "project": { "id": 117, "path_with_namespace": "org3/proj3", "created_at": "2023-02-01T01:01:01.000+01:00" },
+        "action_name": "directly_addressed",
+        "target_type": "MergeRequest",
+        "target": {
+            "id": 13018, "iid": 4, "project_id": 117, "title": "mr from todos",
+            "state": "opened", "created_at": "2023-02-02T01:01:01.000+01:00", "updated_at": "2023-02-02T02:01:01.000+01:00",
+            "labels": [ ], "assignees": [ ],
+            "reviewers": [ { "username": "user"}],
+            "author": { "username": "usr3" },
+            "assignee": null,
+            "web_url": "https://mygitlab.com/org3/proj3/-/merge_requests/4070"
+        },
+        "target_url": "https://mygitlab.com/org3/proj3/-/merge_requests/4070#note_43602",
+        "state": "pending", "created_at": "2023-02-03T01:01:01.000+01:00", "updated_at": "2023-02-03T02:01:01.000+01:00"
+    }
+]

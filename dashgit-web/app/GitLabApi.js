@@ -33,7 +33,9 @@ const gitLabApi = {
         api.Issues.all(assigned),
         //Review requests come from the notification generated when assigning the reviewer (this notification will disappear after the reviewer finish).
         //To allow the ui to mark this as a review request, the api call is wrapped to add a special attribute (called custom_actions) to the response
-        this.wrapToDoListsCall(api, { state: "pending", action: "review_requested", type: "MergeRequest" }, "review_request"),
+        //Issue #43: we must read all notifications, not only action:"review_requested" because if there is an unread notification when
+        //the review is requested, the review_request custom action badge is not shown
+        this.wrapToDoListsCall(api, { state: "pending", type: "MergeRequest" }, "review_request", provider.user),
       ];
     else if (target == "unassigned")
       promises = [
@@ -88,10 +90,10 @@ const gitLabApi = {
       model.header.message = "<em>On GitLab, this view displays open issues/merge requests that you are author, assignee or mentioned, but no comenter.</em>";
     return model;
   },
-  wrapToDoListsCall: async function (api, query, action) {
+  wrapToDoListsCall: async function (api, query, action, user) {
     return api.TodoLists.all(query)
       .then(async function (response) {
-        return gitLabAdapter.addActionToToDoResponse(response, action);
+        return gitLabAdapter.addActionToToDoResponse(response, action, user);
       })
   },
 

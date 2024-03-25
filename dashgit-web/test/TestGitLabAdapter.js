@@ -51,20 +51,6 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
         assert.deepEqual(expected, actual);
     });
 
-    //Rest API with actions: Same as before, but calling the method to add the actions and then the transformation
-    it("Transform Gitlab REST API results with actions", function () {
-        let labels = { "org2/proj2-BLOCKING": { "color": "#FF0000" } }
-        let input = JSON.parse(fs.readFileSync("./input/gitlab-rest-result2.json"));
-        gitLabAdapter.addActionToToDoResponse(input, "review_request");
-        gitLabAdapter.addActionToToDoResponse(input, "other_action");
-        let provider = { provider: "GitLab", uid: "0-gitlab", user: "usr1", url: 'https://mygitlab.com' };
-
-        let actual = gitLabAdapter.workitems2model(provider, input, labels);
-        fs.writeFileSync("./actual/gitlab-rest-model2-actions.json", JSON.stringify(actual, null, 2)); //to allow extenal diff
-        let expected = JSON.parse(fs.readFileSync("./expected/gitlab-rest-model2-actions.json"));
-        assert.deepEqual(expected, actual);
-    });
-
     it("Transform Gitlab GraphQL API labels", function () {
         let input = JSON.parse(fs.readFileSync("./input/gitlab-rest-labels.json"));
         let actual = gitLabAdapter.labels2model(input);
@@ -73,6 +59,74 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
         let expected = JSON.parse(fs.readFileSync("./expected/gitlab-rest-labels.json"));
         assert.deepEqual(expected, actual);
     });
+
+    // Rest API with custom actions in the model: Review request action.
+    // Approach: Uses a PR that is modified during the test to repesent the situations.
+    // MCDC of conditions that must be fulfilled to set a review request custom action in the model
+    // - The target custom action is any, test with review_request, mention, directly_addressed
+    // - Notification action_name is review_request
+    // - target type is Merge Request
+    // - Merge Request is open
+    // - Notification is pending
+    // - User in assigned reviewers list
+    it("Transform Gitlab REST API results with custom actions - review request", function () {
+        // Baseline
+        let request = getRequest();
+        let model = getModel(request, "review_request");
+        let expected = JSON.parse(fs.readFileSync("./expected/gitlab-rest-model3-actions.json"));
+        assert.deepEqual(expected, model);
+
+        // other notification types, should add custom action
+        request = getRequest();
+        request[0].action_name = "mention"; // change the notification type
+        model = getModel(request, "review_request");
+        assert.deepEqual({ review_request: true }, model.items[0].actions);
+
+        request = getRequest();
+        request[0].action_name = "directly_addressed";
+        model = getModel(request, "review_request");
+        assert.deepEqual({ review_request: true }, model.items[0].actions);
+
+        // should not add custom action
+        request = getRequest();
+        model = getModel(request, "not_implemented");
+        assert.deepEqual({}, model.items[0].actions);
+
+        request = getRequest();
+        request[0].target_type = "Issue";
+        model = getModel(request, "review_request");
+        assert.deepEqual({}, model.items[0].actions);
+
+        request = getRequest();
+        request[0].target.state = "merged";
+        model = getModel(request, "review_request");
+        assert.deepEqual([], model.items); //no items
+
+        request = getRequest();
+        request[0].state = "done";
+        model = getModel(request, "review_request");
+        assert.deepEqual({}, model.items[0].actions);
+
+        request = getRequest();
+        request[0].target.reviewers = [ {username:"other"} ];
+        model = getModel(request, "review_request");
+        assert.deepEqual({}, model.items[0].actions);
+
+        request = getRequest();
+        request[0].target.reviewers = null;
+        model = getModel(request, "review_request");
+        assert.deepEqual({}, model.items[0].actions);
+    });
+    function getRequest() {
+        return JSON.parse(fs.readFileSync("./input/gitlab-rest-result3-actions.json"));
+    };
+    function getModel(request, customAction) {
+        request = gitLabAdapter.addActionToToDoResponse(request, customAction, "user");
+        let provider = { provider: "GitLab", uid: "0-gitlab", user: "usr1", url: 'https://mygitlab.com' };
+        let model = gitLabAdapter.workitems2model(provider, request, {});
+        fs.writeFileSync("./actual/gitlab-rest-model3-actions.json", JSON.stringify(model, null, 2)); //to allow extenal diff
+        return model;
+    };
 
     //Retured model same schema as work items: a linear view of all branches
     // - archived(excluded)/no archived

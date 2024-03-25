@@ -70,14 +70,21 @@ const gitLabAdapter = {
     return item;
   },
 
-  addActionToToDoResponse: function (response, action) {
+  addActionToToDoResponse: function (response, action, user) {
     for (let item of this.safe(response)) {
+      // To mark action as review request the notification target must be a Merge Request
+      // whit the user in the list of assigned reviewers, if not, does not modify this item
+      if (action != "review_request" || item.target_type != "MergeRequest" || item.state != "pending"
+        || item.target.reviewers == undefined || item.target.reviewers.map(p => p.username).indexOf(user) < 0)
+          continue;
+      // Add the custom action to the request
       if (item.target.custom_actions == undefined) //create if does not exist
         item.target["custom_actions"] = {};
       item.target.custom_actions[action] = true;
     }
     return response;
   },
+  
   getLabelsForItem: function (repoName, item, allLabels, model) {
     for (let label of this.safe(item?.labels)) {
       let color = ""; //default if not found

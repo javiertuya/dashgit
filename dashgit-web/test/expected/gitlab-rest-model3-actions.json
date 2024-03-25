@@ -1,0 +1,31 @@
+{
+  "header": {
+    "provider": "GitLab",
+    "uid": "0-gitlab",
+    "user": "usr1",
+    "url": "https://mygitlab.com",
+    "repo_names": [],
+    "target": "",
+    "message": ""
+  },
+  "items": [
+    {
+      "repo_name": "org3/proj3",
+      "type": "pr",
+      "iid": 4,
+      "title": "mr from todos",
+      "actions": {
+        "review_request": true
+      },
+      "author": "usr3",
+      "assignees": "",
+      "created_at": "2023-02-02T01:01:01.000+01:00",
+      "updated_at": "2023-02-02T02:01:01.000+01:00",
+      "iidstr": "!4",
+      "url": "https://mygitlab.com/org3/proj3/-/merge_requests/4070",
+      "repo_url": "https://mygitlab.com/org3/proj3",
+      "labels": [],
+      "uid": "org3-proj3_pr_4"
+    }
+  ]
+}
