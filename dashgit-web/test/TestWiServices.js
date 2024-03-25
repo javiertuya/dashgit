@@ -82,6 +82,50 @@ describe("TestView - Main processing in the view module", function () {
         return mod.items;
     }
 
+    it("Merge duplicates item models baseline", function () {
+        //MCDC values of id sources (base choice repo, type, iid)
+        //Merge issues/prs/branches
+        //duplcate is adjacent/non adjacent
+        let mod = new Model().setHeader("GitHub", "0-github", "", "");
+        mod.addItem({ repo_name: "repo1", type: "issue", iid: "001", branch_name: "", title: "item11" });
+        mod.addItem({ repo_name: "repo1", type: "issue", iid: "001", branch_name: "", title: "item12-merged" });
+        mod.addItem({ repo_name: "repo1x", type: "pr", iid: "001", branch_name: "", title: "item13" });
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "001", branch_name: "", title: "item14" });
+        mod.addItem({ repo_name: "repo1", type: "issue", iid: "002", branch_name: "", title: "item15" });
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "001", branch_name: "", title: "item15-merged" });
+
+        mod.addItem({ repo_name: "repo2", type: "issue", iid: "001", branch_name: "", title: "item21" });
+        mod.addItem({ repo_name: "repo2", type: "pr", iid: "001", branch_name: "", title: "item22" });
+        mod.addItem({ repo_name: "repo2", type: "issue", iid: "001", branch_name: "", title: "item23-merged" });
+
+        mod.addItem({ repo_name: "repo3", type: "branch", iid: "", branch_name: "branch-one", title: "item31" });
+        mod.addItem({ repo_name: "repo3x", type: "branch", iid: "", branch_name: "branch-one", title: "item32" });
+        mod.addItem({ repo_name: "repo3", type: "issue", iid: "", branch_name: "branch-one", title: "item33" });
+        mod.addItem({ repo_name: "repo3", type: "branch", iid: "", branch_name: "branch-onex", title: "item34" });
+        mod.addItem({ repo_name: "repo3", type: "branch", iid: "", branch_name: "branch-one", title: "item35-merged" });
+
+        let items = wiServices.merge(mod.items);
+        assert.deepEqual(['item11', 'item13', 'item14', 'item15', 'item21', 'item22', 'item31', 'item32', 'item33', 'item34'], items.map(a => a.title));
+    });
+
+    it("Merge duplicates with action badges should aggregate all action values", function () {
+        // merged items first with action/second without, reverse, both with action
+        let mod = new Model().setHeader("GitHub", "0-github", "", "");
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "001", title: "item11" });
+        mod.addItem({ repo_name: "repo1", type: "issue", iid: "001", title: "item21", actions: { request_review2: true } });
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "002", title: "item31", actions: { request_review3: true } });
+
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "001", title: "item12", actions: { request_review1: true } });
+        mod.addItem({ repo_name: "repo1", type: "issue", iid: "001", title: "item22" });
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "002", title: "item32", actions: { request_review4: true } });
+
+        let items = wiServices.merge(mod.items);
+        assert.deepEqual(['item11', 'item21', 'item31'], items.map(a => a.title));
+        assert.deepEqual(items[0].actions, { request_review1: true });
+        assert.deepEqual(items[1].actions, { request_review2: true });
+        assert.deepEqual(items[2].actions, { request_review3: true, request_review4: true });
+    });
+
     it("Filter model items by contained label", function () {
         //filtered model fist/last, filtered label first/last, filtered label matches this/other provider,
         //no labels to filter, empty labels
@@ -120,44 +164,6 @@ describe("TestView - Main processing in the view module", function () {
         assert.deepEqual(['pr001', 'pr003'], items.map(a => a.title));
         items = wiServices.filterBy("assigned", new Date("2023-08-10"), 0, "", JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr002', 'pr003'], items.map(a => a.title));
-    });
-
-    it("Filter duplicates only if adjacent", function () {
-        //duplicate equal id(base choice repo+iid) adjacent(2/more)/non adjacent(no filter)
-        let mod = new Model().setHeader("GitHub", "0-github", "", "");
-        mod.addItem({ repo_name: "repo1", type: "branch", iid: "001", title: "pr001", author: "me" });
-        mod.addItem({ repo_name: "repo1", type: "pr", iid: "002", title: "pr002", author: "me" });
-        mod.addItem({ repo_name: "repo1", type: "pr", iid: "002", title: "pr003", author: "me" });
-        mod.addItem({ repo_name: "repo1", type: "pr", iid: "002", title: "pr004", author: "me" });
-        mod.addItem({ repo_name: "repo2", type: "pr", iid: "003", title: "pr005", author: "me" });
-        mod.addItem({ repo_name: "repo3", type: "pr", iid: "003", title: "pr006", author: "me" });
-        mod.addItem({ repo_name: "repo4", type: "pr", iid: "004", title: "pr007", author: "me" });
-        mod.addItem({ repo_name: "repo4", type: "pr", iid: "005", title: "pr008", author: "me" });
-        mod.addItem({ repo_name: "repo1", type: "pr", iid: "002", title: "pr009", author: "me" });
-        let modStr = JSON.stringify(mod);
-
-        let items = wiServices.filterBy("assigned", new Date(), 0, "", JSON.parse(modStr).items);
-        assert.deepEqual(['pr001', 'pr002', 'pr005', 'pr006', 'pr007', 'pr008', 'pr009'], items.map(a => a.title));
-    });
-
-    it("Filter duplicates with actions should aggregate all action values", function () {
-        // The issue here is that if two equal items are adjacent, but one has actions and other has not,
-        // the item that is kept could depend on the order. Actions must be aggregated (merged) in all cases
-        // - the only record with actions is the last, reverse
-        // - two records with actions (should merge)
-        let mod = new Model().setHeader("GitHub", "0-github", "", "");
-        mod.addItem({ repo_name: "repo1", type: "pr", iid: "001", title: "pr001", author: "me" });
-        mod.addItem({ repo_name: "repo1", type: "pr", iid: "001", title: "pr001", author: "me", actions: { request_review1: true } });
-        mod.addItem({ repo_name: "repo1", type: "pr", iid: "002", title: "pr002", author: "me", actions: { request_review2: true } });
-        mod.addItem({ repo_name: "repo1", type: "pr", iid: "002", title: "pr002", author: "me" });
-        mod.addItem({ repo_name: "repo1", type: "pr", iid: "003", title: "pr003", author: "me" });
-        mod.addItem({ repo_name: "repo1", type: "pr", iid: "003", title: "pr003", author: "me", actions: { request_review3: true } });
-        mod.addItem({ repo_name: "repo1", type: "pr", iid: "003", title: "pr003", author: "me", actions: { other_action: true } });
-        let modStr = JSON.stringify(mod);
-
-        let items = wiServices.filterBy("assigned", new Date(), 0, "", JSON.parse(modStr).items);
-        assert.deepEqual(['pr001', 'pr002', 'pr003'], items.map(a => a.title));
-        assert.deepEqual([{ request_review1: true }, { request_review2: true }, { request_review3: true, other_action: true }], items.map(a => a.actions));
     });
 
     it("Filter dependabot authored only at unassigned target", function () {

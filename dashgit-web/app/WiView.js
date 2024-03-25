@@ -58,6 +58,7 @@ const wiView = {
     for (let mod of models) {
       let header = mod.header;
       let items = mod.items;
+      items = wiServices.merge(items);
       items = wiServices.sort(sorting, items);
       items = wiServices.filter(target, mod.header.uid, items);
       items = wiServices.group(grouping, items);

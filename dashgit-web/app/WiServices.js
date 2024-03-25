@@ -61,19 +61,25 @@ const wiServices = {
           }
       }
     }
-    //in any case, remove duplicates of adjacent items (requires previous soting)
-    items = this.removeDuplicates(items);
     return items;
   },
-  removeDuplicates: function (items) {
-    for (let i = items.length - 1; i >= 1; i--) {
-      if (items[i].uid == items[i - 1].uid) {
-        // before removing item i, aggregate actions of i into i-1
-        items[i-1].actions = {...items[i].actions, ...items[i-1].actions};
-        items.splice(i, 1);
+
+  merge: function (items) {
+    let mergedItems = [];
+    let mergedIds = {}; //direct access to avoid nested iteration
+    for (let item of items) {
+      if (mergedIds[item.uid] == undefined) { // not yet in items, add
+        mergedItems.push(item);
+        mergedIds[item.uid] = item;
+      } else { // duplicate
+        this.mergeItem(item, mergedIds[item.uid]);
       }
     }
-    return items;
+    return mergedItems;
+  },
+  mergeItem: function (source, target) {
+    // add all actions from source to target (actions are always in the form name=true)
+    target.actions = { ...target.actions, ...source.actions };
   },
 
   // Creates the model required for combined updates:
