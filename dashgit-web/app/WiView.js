@@ -103,7 +103,7 @@ const wiView = {
     if (target == "involved") // Additional comment to mentions in this target, PENDING: refactor this kind of headers
       html += `<div id="wi-providers-target-header-${target}-${provider}"></div>`
     // adds every row
-    html += `<table id="wi-items-${this.getId(target, header.uid, "all")}" class='table table-sm table-borderless m-0'>`;
+    html += `<table id="wi-items-${this.getId(target, header.uid, "all")}" provider="${provider}" class='table table-sm table-borderless m-0'>`;
     html += this.rowsmodel2html(target, header, items, grouping, sorting);
     html += `</table>`;
     html += `</div></div></div>`;
@@ -133,11 +133,14 @@ const wiView = {
   rowmodel2html: function (target, header, item, grouping) {
     return `
     <tr id="wi-item-${this.getId(target, header.uid, item.uid)}" 
+        itemrepo="${item.repo_name}"
+        itemtype="${item.type}"
+        itemiid="${item.iid}"
         class="wi-status-class-any wi-status-class-${this.status2class(item.type, header.uid, item.uid)}">
-      <td style="width:24px;">${this.status2html(item.type, target, header.uid, item.uid)}</td>
-      <td style="width:24px;">${this.type2html(item.type)}</td>
+      <td style="width:24px;" class="wi-item-column-clickable">${this.status2html(item.type, target, header.uid, item.uid)}</td>
+      <td style="width:24px;" class="wi-item-column-clickable">${this.type2html(item.type)}</td>
       <td style="width:24px; color:${this.gitColor};" 
-        class="wi-notifications-${this.getId(target, header.uid, 'all')}" 
+        class="wi-item-column-clickable wi-notifications-${this.getId(target, header.uid, 'all')}" 
         id="wi-notifications-${this.getId(target, header.uid, item.uid)}">
         ${this.notification2html(header.uid, item.uid)}
       </td>
@@ -146,7 +149,7 @@ const wiView = {
         ${this.actions2html(item.actions)}
         ${grouping ? "" : this.repourl2html(item.repo_url, item.repo_name)}
         ${this.branch2html(item.branch_url, item.branch_name)}
-        <span class='${item.type == "branch" ? "fw-normal" : "fw-bold"}'>${this.url2html(item.url, item.title)}</span>
+        <span class='wi-item-title ${item.type == "branch" ? "fw-normal" : "fw-bold"}'>${this.url2html(item.url, item.title)}</span>
         <span class='text-secondary'>${item.iidstr}</span>
         <span class='text-primary'>${item.assignees}</span>
         <span class='text-secondary'>${wiServices.intervalToString(item.created_at, item.updated_at)}</span>
@@ -397,6 +400,65 @@ const wiView = {
       if (!$(item).attr("disabled")) //exclude previous updates (that have been disabled)
         updates.push({ provider: $(item).attr("provider"), repo: $(item).attr("repo"), iid: $(item).attr("iid") });
     return updates;
+  },
+
+  //Display at the follow-up form
+  followUpSetValues: function (params) {
+    $("#wi-follow-up-modal-server").text(params.server);
+    $("#wi-follow-up-modal-repo").text(params.repo);
+    $("#wi-follow-up-modal-type").text(params.type);
+    $("#wi-follow-up-modal-type-label").text(params.type == "issue" ? "Issue number:" : "Pull Request number:");
+    $("#wi-follow-up-modal-iid").text(params.iid);
+    $("#wi-follow-up-modal-title").text(params.title);
+    $("#wi-follow-up-modal-days").val(params.days);
+    // The own button stores the kind of operation to do on save
+    $("#wi-follow-up-btn-save").html(params.exists ? "Update" : "Create");
+    $("#wi-follow-up-modal-label").text(params.exists ? "Update a follow up" : "Create a follow up");
+    $("#wi-follow-up-btn-save").show();
+    if (params.exists)
+      $("#wi-follow-up-btn-delete").show();
+  },
+  followUpGetValues: function () {
+    return {
+      server: $("#wi-follow-up-modal-server").text(),
+      repo: $("#wi-follow-up-modal-repo").text(),
+      type: $("#wi-follow-up-modal-type").text(),
+      iid: $("#wi-follow-up-modal-iid").text(),
+      title: $("#wi-follow-up-modal-title").text(),
+      days: $("#wi-follow-up-modal-days").val(),
+    };
+  },
+  followUpProgress: function () {
+    $("#wi-follow-up-btn-delete").hide();
+    $("#wi-follow-up-btn-save").hide();
+    $("#wi-follow-up-btn-progress").show();
+    $("#wi-follow-up-btn-end").hide();
+    $("#wi-follow-up-btn-end").text("");
+    $("#wi-follow-up-btn-error").hide();
+    $("#wi-follow-up-btn-error").text("");
+  },
+  followUpEnd: function (success, error) {
+    $("#wi-follow-up-btn-progress").hide();
+    $("#wi-follow-up-btn-cancel").text("Close");
+    if (error == undefined || error == "") {
+      $("#wi-follow-up-btn-end").text(success);
+      $("#wi-follow-up-btn-end").show();
+    } else {
+      $("#wi-follow-up-btn-error").text(error);
+      $("#wi-follow-up-btn-error").show();
+    }
+  },
+  followUpClear: function () {
+    this.followUpSetValues({ server: "", repo: "", type: "", iid: "", title: "" });
+    $("#wi-follow-up-modal-label").text("Loading ...");
+    $("#wi-follow-up-btn-cancel").text("Cancel");
+    $("#wi-follow-up-btn-delete").hide();
+    $("#wi-follow-up-btn-save").hide();
+    $("#wi-follow-up-btn-progress").hide();
+    $("#wi-follow-up-btn-end").hide();
+    $("#wi-follow-up-btn-end").text("");
+    $("#wi-follow-up-btn-error").hide();
+    $("#wi-follow-up-btn-error").text("");
   },
 
   //Primitive functions related to the display of single elements

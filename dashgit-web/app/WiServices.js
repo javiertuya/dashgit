@@ -139,6 +139,21 @@ const wiServices = {
     return Math.floor(timeDiff / (1000));
   },
 
+  dateAfterDays: function(days) {
+    let today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let afterDays = today.getTime() + (1000 * 3600 * 24) * days;
+    return new Date(afterDays);
+  },
+
+  daysToDate: function(dateStr) {
+    let date = new Date(dateStr);
+    let today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let days = Math.round((date.getTime() - today.getTime()) / (1000 * 3600 * 24));
+    return days;
+  },
+
   getColorLuma: function (color) {
     //https://stackoverflow.com/questions/12043187/how-to-check-if-hex-color-is-too-black
     //The resulting luma value range is 0..255, where 0 is the darkest and 255 is the lightest. 

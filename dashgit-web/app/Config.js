@@ -11,6 +11,12 @@ const config = {
   //Feature flags, keeps boolean flags activated from the querystring ?ff=flag1,flag2...
   ff: {},
 
+  //Constant parameters
+  param: {
+    followUpBranch: "dashgit-follow-up",
+    followUpFolder: ".dashgit/follow-up"
+  },
+
   //Persistent data, kept only if page is not reloaded
   session: {
     panelCollapsed: {}, //panel with the id indicated by the key is collapsed

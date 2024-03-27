@@ -1,7 +1,8 @@
 import { config } from "./Config.js"
 import { wiView } from "./WiView.js"
 import { wiController } from "./WiController.js"
-import { wiControllerUpdate } from "./WiControllerUpdate.js" // to install jquery events
+import { wiControllerUpdate } from "./WiControllerUpdate.js" // NOSONAR to install jquery events
+import { wiControllerFollowUp } from "./WiControllerFollowUp.js" // NOSONAR to install jquery events
 import { configController } from "./ConfigController.js"
 
 /**

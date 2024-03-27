@@ -202,6 +202,46 @@ const gitHubApi = {
     console.log(response);
     return response.data.content.download_url;
   },
+  createBranch: async function(token, owner, repo, branch) {
+    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(token), });
+
+    const repoResponse = await octokit.request("GET /repos/{owner}/{repo}", { owner: owner, repo: repo });
+    console.log(repoResponse);
+
+    const masterResponse = await octokit.rest.git.getRef({ owner: owner, repo: repo, ref: "heads/" + repoResponse.data.default_branch });
+    console.log(masterResponse);
+
+    const branchResponse = await octokit.rest.git.createRef({
+      owner: owner, repo: repo, ref: "refs/heads/" + branch, sha: masterResponse.data.object.sha
+    });
+    console.log(branchResponse);
+    return branchResponse;
+  },
+  getBranch: async function(token, owner, repo, branch) {
+    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(token), });
+    const branchResponse = await octokit.rest.git.getRef({
+      owner: owner, repo: repo, ref: "heads/" + branch
+    });
+    console.log(branchResponse);
+    return branchResponse;
+  },
+  // Updates a file at the speciied branch, 
+  // requires the sha of the old content that must be obtained with getContent
+  updateContent: async function (token, owner, repo, branch, path, sha, content, message) { // NOSONAR
+    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(token), });
+    const response = await octokit.rest.repos.createOrUpdateFileContents({
+      owner: owner, repo: repo, branch: branch, path: path, sha: sha, content: content, message: message
+    });
+    console.log(response);
+  },
+  // Gets a file from the specified branch
+  getContent: async function (token, owner, repo, branch, path) {
+    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(token), });
+    const response = await octokit.rest.repos.getContent({
+      owner: owner, repo: repo, ref: branch, path: path
+    });
+    return response;
+  }
 
 }
 export { gitHubApi };

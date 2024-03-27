@@ -195,6 +195,41 @@
     <p>&nbsp;</p>
   </div>
 
+  <!-- Follow up edit modal -->
+  <div class="modal fade" id="wi-follow-up-modal" tabindex="-1" aria-labelledby="wi-follow-up-modal-label" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="wi-follow-up-modal-label">Loading ...</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <span id="wi-follow-up-modal-type" hidden></span>
+          <table> <!-- //NOSONAR -->
+            <tr><td class="text-nowrap">Git host URL:</td><td>&nbsp;</td><td id="wi-follow-up-modal-server"></td></tr>
+            <tr><td class="text-nowrap">Repository:</td><td>&nbsp;</td><td id="wi-follow-up-modal-repo"></td></tr>
+            <tr><td class="text-nowrap" id="wi-follow-up-modal-type-label"></td><td>&nbsp;</td><td id="wi-follow-up-modal-iid"></td></tr>
+            <tr><td class="text-nowrap">Title:</td><td>&nbsp;</td><td id="wi-follow-up-modal-title"></td></tr>
+            <tr><td class="text-nowrap">Days to follow up:</td><td>&nbsp;</td>
+              <td><input id="wi-follow-up-modal-days" type="number" class="form-control form-control-sm" min="0" required></input></td></tr>
+          </table>
+        </div>
+        <div class="modal-footer pt-0 pb-0">
+            <p id="wi-follow-up-btn-error" class="text-danger" style="display:none"></p>
+            <p id="wi-follow-up-btn-end" class="text-success" style="display:none"><strong>Done</strong> &nbsp; </p>
+        </div>
+        <div class="modal-footer border-0">
+          <div id="wi-follow-up-btn-progress" class="spinner-border text-primary" style="display:none" role="status">
+            <span class="visually-hidden">Doing...</span>
+          </div>
+          <button id="wi-follow-up-btn-cancel" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button id="wi-follow-up-btn-delete" type="button" class="btn btn-danger" style="display:none">Delete</button>
+          <button id="wi-follow-up-btn-save" type="button" class="btn btn-primary" style="display:none">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-container position-fixed bottom-0 end-0 p-3">
     <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
       <div class="toast-header">
