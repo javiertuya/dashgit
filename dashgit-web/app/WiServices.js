@@ -45,7 +45,7 @@ const wiServices = {
     for (let i = items.length - 1; i >= 0; i--) {
       let item = items[i];
       //filter by age
-      if (maxAge > 0 && this.daysBetweenDates(today, new Date(item.updated_at)) > maxAge) {
+      if (maxAge > 0 && this.daysBetweenDates(new Date(item.updated_at), today) > maxAge) {
         //console.log(`Filtering item by date: ${item.repo_name} ${item.title}`)
         items.splice(i, 1);
       } else if (target == "unassigned" && item.type == "pr" //do not repeat what is in dependabot target
@@ -101,10 +101,12 @@ const wiServices = {
   dateToString: function (sdate, today) {
     if (today == undefined)
       today = new Date();
-    let days = this.daysBetweenDates(today, new Date(sdate)).toString();
+    let days = this.daysBetweenDates(new Date(sdate), today).toString();
     if (days == 0) {
-      let seconds = this.secondsBetweenDates(today, new Date(sdate)).toString();
-      if (seconds < 60)
+      let seconds = this.secondsBetweenDates(new Date(sdate), today).toString();
+      if (seconds < 0)
+        return "today"; // future
+      else if (seconds < 60)
         return "now";
       else if (seconds < 3600)
         return Math.floor(seconds / 60).toString() + " min";
@@ -112,30 +114,49 @@ const wiServices = {
         return Math.floor(seconds / 3600).toString() + " hr";
     } else if (days == 1)
       return "yesterday";
-    else
+    else if (days == -1)
+      return "tomorrow";
+    else if (days > 1)
       return days + " days";
-  },
-
-  intervalPeriodAsString: function (d2, d1) {
-    let days = this.daysBetweenDates(d2, d1);
-    if (days < 1)
-      return "Today";
-    else if (days < 2)
-      return "Yesterday";
-    else if (days <= 7)
-      return "This week";
-    else if (days <= 30)
-      return "This month"
     else
-      return "Older";
+      return "in " + (-days) + " days";
   },
 
-  daysBetweenDates: function (d2, d1) {
-    let timeDiff = Math.abs(d2.getTime() - d1.getTime());
+  intervalPeriodAsString: function (d1, d2) {
+    let days = this.daysBetweenDates(d1, d2);
+    if (days == 0)
+      return "Today";
+    else if (days > 0) {
+      if (days <= 1)
+        return "Yesterday";
+      else if (days <= 7)
+        return "Last week";
+      else if (days <= 30)
+        return "Last month";
+      else
+        return "Older";
+    } else {
+      if (days >= -1) // NOSONAR false positive
+        return "Tomorrow";
+      else if (days >= -7)
+        return "Next week";
+      else if (days >= -30)
+        return "Next month";
+      else
+        return "More than a month";
+    }
+  },
+
+  daysBetweenDates: function (d1, d2) {
+    let d1int = new Date(d1);
+    let d2int = new Date(d2);
+    d1int.setHours(0, 0, 0, 0);
+    d2int.setHours(0, 0, 0, 0);
+    let timeDiff = (d2int.getTime() - d1int.getTime());
     return Math.floor(timeDiff / (1000 * 3600 * 24));
   },
-  secondsBetweenDates: function (d2, d1) {
-    let timeDiff = Math.abs(d2.getTime() - d1.getTime());
+  secondsBetweenDates: function (d1, d2) {
+    let timeDiff = (d2.getTime() - d1.getTime());
     return Math.floor(timeDiff / (1000));
   },
 

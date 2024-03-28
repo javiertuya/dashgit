@@ -7,7 +7,7 @@ import { wiServices } from "./WiServices.js"
  */
 const wiView = {
   //only api-related target. Note that statuses is named Branches in the UI tab
-  allTargets: ["assigned", "involved", "created", "unassigned", "dependabot", "statuses"],
+  allTargets: ["assigned", "involved", "created", "unassigned", "follow-up", "dependabot", "statuses"],
 
   setLoading(value) {
     setTimeout(function () {
@@ -176,9 +176,9 @@ const wiView = {
     if (grouping)
       value = item.repo_name;
     else if (sorting.endsWith("updated_at"))
-      value = wiServices.intervalPeriodAsString(new Date(), new Date(item.updated_at)).toString();
+      value = wiServices.intervalPeriodAsString(new Date(item.updated_at), new Date()).toString();
     else if (sorting.endsWith("created_at"))
-      value = wiServices.intervalPeriodAsString(new Date(), new Date(item.created_at)).toString();
+      value = wiServices.intervalPeriodAsString(new Date(item.created_at), new Date()).toString();
     return value;
   },
 

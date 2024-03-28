@@ -130,6 +130,12 @@ const config = {
         return provider;
     return undefined;
   },
+  getProviderFollowUpFileName: function(url) {
+    return this.param.followUpFolder + "/" + url.replace("https://", "").replaceAll("/", "_") + ".json";
+  },
+  getGitHubUserAgent: function() {
+    return `dashgit/${this.appVersion}`
+  },
 
   //Token encryption related
 

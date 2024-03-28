@@ -1,4 +1,5 @@
 import { Model } from "./Model.js"
+import { gitStoreAdapter } from "./GitStoreAdapter.js"
 
 /**
  * Transforms the REST and GraphQL GitLab responses to the provider-independent models
@@ -8,6 +9,12 @@ const gitLabAdapter = {
   workitems2model: function (provider, items, allLabels) {
     let model = new Model().setHeader(provider.provider, provider.uid, provider.user, provider.url);
     for (let issueMrOrTodo of this.safe(items)) {
+      // Special handling of each follow-up (items come from a json file)
+      if (issueMrOrTodo.remind != undefined) {
+        model.addItem(gitStoreAdapter.followUp2model(provider, issueMrOrTodo));
+        continue;
+      }
+
       // Items may come from a different data structures obtained from
       // issues and merge requests or to do lists
       // The common part is the repo name and url, and whether it is issue

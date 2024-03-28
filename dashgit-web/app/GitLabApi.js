@@ -1,5 +1,6 @@
 import { Gitlab } from 'gitbeaker/rest' //https://www.npmjs.com/package/@gitbeaker/rest
 import { gitLabAdapter } from "./GitLabAdapter.js"
+import { gitStoreApi } from "./GitStoreApi.js"
 import { wiController } from "./WiController.js"
 import { config } from "./Config.js"
 import { cache } from "./Cache.js"
@@ -17,7 +18,7 @@ const gitLabApi = {
       console.log(model);
   },
 
-  getWorkItems: async function (target, provider) {
+  getWorkItems: async function (target, provider) { // NOSONAR, pending refactor to leave promise construction out of this method
     const api = new Gitlab({ host: provider.url, token: config.decrypt(provider.token), });
     const assigned = { state: "opened", assignee_username: provider.user, scope: "all", perPage: 100, maxPages: 1 };
     const unassigned = { state: "opened", assignee_id: "None", scope: "all", perPage: 100, maxPages: 1 };
@@ -62,6 +63,10 @@ const gitLabApi = {
         api.TodoLists.all({ state: "done", action: "mentioned", perPage: 40, maxPages: 1 }),
         api.TodoLists.all({ state: "done", action: "directly_addressed", perPage: 40, maxPages: 1 }),
       ];
+    else if (target == "follow-up")
+      promises = [
+        gitStoreApi.followUpAll(provider.url)
+      ];
     else if (target == "dependabot") {
       promises = [
         api.MergeRequests.all(dependabot)
@@ -82,7 +87,10 @@ const gitLabApi = {
     //creates single result with all responses
     let allResponses = [];
     for (let response of responses)
-      allResponses.push(...response);
+      if (response.followUp != undefined) // follow-ups have different structure than other items
+        allResponses.push(...response.followUp);
+      else
+        allResponses.push(...response);
     let model = gitLabAdapter.workitems2model(provider, allResponses, cache.labelsCache[provider.uid]);
     model.header.target = target;
     model.header.message = promises.length == 0 ? `Target ${target} not implemented for this provider` : ``;

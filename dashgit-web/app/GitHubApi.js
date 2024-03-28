@@ -1,6 +1,7 @@
 import { Octokit } from "octokit/rest"
 import { graphql } from "octokit/graphql"
 import { gitHubAdapter } from "./GitHubAdapter.js"
+import { gitStoreApi } from "./GitStoreApi.js"
 import { wiController } from "./WiController.js"
 import { config } from "./Config.js"
 
@@ -17,7 +18,7 @@ const gitHubApi = {
       console.log(model);
   },
 
-  userAgent: `dashgit/${config.appVersion}`,
+  userAgent: config.getGitHubUserAgent(),
 
   getWorkItems: async function (target, provider) {
     const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(provider.token), });
@@ -47,6 +48,10 @@ const gitHubApi = {
       promises = [
         octokit.rest.search.issuesAndPullRequests({ q: involved, })
       ];
+    else if (target == "follow-up")
+      promises = [
+        gitStoreApi.followUpAll(provider.url)
+      ];
     else if (target == "dependabot") {
       promises = [
         octokit.rest.search.issuesAndPullRequests({ q: dependabot, per_page: 60 }),
@@ -60,7 +65,10 @@ const gitHubApi = {
     //creates single result with all responses
     let allResponses = [];
     for (let response of responses)
-      allResponses.push(...response.data.items);
+      if (response.followUp != undefined) // follow-ups have different structure than other items
+        allResponses.push(...response.followUp);
+      else
+        allResponses.push(...response.data.items);
     let model = gitHubAdapter.workitems2model(provider, allResponses);
     model.header.target = target;
     return model;
@@ -179,72 +187,6 @@ const gitHubApi = {
     }`
   },
 
-  // Creates the dedicated branch with a json file in the update repository manager to
-  // trigger the GitHub Actions that perform the required tasks.
-  createContent: async function (token, owner, repo, branch, path, content, message) {
-    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(token), });
-
-    console.log("Get default branch, sha, create branch, create update.json file")
-    const repoResponse = await octokit.request("GET /repos/{owner}/{repo}", { owner: owner, repo: repo });
-    console.log(repoResponse);
-
-    const masterResponse = await octokit.rest.git.getRef({ owner: owner, repo: repo, ref: "heads/" + repoResponse.data.default_branch });
-    console.log(masterResponse);
-
-    const branchResponse = await octokit.rest.git.createRef({
-      owner: owner, repo: repo, ref: "refs/heads/" + branch, sha: masterResponse.data.object.sha
-    });
-    console.log(branchResponse);
-
-    const response = await octokit.rest.repos.createOrUpdateFileContents({
-      owner: owner, repo: repo, branch: branch, path: path, content: content, sha: branchResponse.data.object.sha, message: message
-    });
-    console.log(response);
-    return response.data.content.download_url;
-  },
-  createBranch: async function(token, owner, repo, branch) {
-    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(token), });
-
-    const repoResponse = await octokit.request("GET /repos/{owner}/{repo}", { owner: owner, repo: repo });
-    console.log(repoResponse);
-
-    const masterResponse = await octokit.rest.git.getRef({ owner: owner, repo: repo, ref: "heads/" + repoResponse.data.default_branch });
-    console.log(masterResponse);
-
-    const branchResponse = await octokit.rest.git.createRef({
-      owner: owner, repo: repo, ref: "refs/heads/" + branch, sha: masterResponse.data.object.sha
-    });
-    console.log(branchResponse);
-    return branchResponse;
-  },
-  getBranch: async function(token, owner, repo, branch) {
-    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(token), });
-    const branchResponse = await octokit.rest.git.getRef({
-      owner: owner, repo: repo, ref: "heads/" + branch
-    });
-    console.log(branchResponse);
-    return branchResponse;
-  },
-  // Updates a file at the speciied branch, 
-  // requires the sha of the old content that must be obtained with getContent
-  updateContent: async function (token, owner, repo, branch, path, sha, content, message) { // NOSONAR
-    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(token), });
-    const response = await octokit.rest.repos.createOrUpdateFileContents({
-      owner: owner, repo: repo, branch: branch, path: path, sha: sha, content: content, message: message
-    });
-    console.log(response);
-  },
-  // Gets a file from the specified branch
-  getContent: async function (token, owner, repo, branch, path) {
-    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(token), });
-    const response = await octokit.rest.repos.getContent({
-      owner: owner, repo: repo, ref: branch, path: path
-    });
-    return response;
-  }
-
 }
+
 export { gitHubApi };
-
-
-

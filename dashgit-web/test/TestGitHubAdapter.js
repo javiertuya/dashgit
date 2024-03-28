@@ -40,6 +40,16 @@ describe("TestGitHubAdapter - Model transformations from GitHub API results", fu
         assert.deepEqual(expected, actual);
     });
 
+    //Data about follow ups is stored in the manager repository, but it is transformed to models as it if where from the GitHub api
+    it("Transform GitHub Follow up results from GitStoreApi", function () {
+        let input = JSON.parse(fs.readFileSync("./input/gitstore-follow-up-result.json"));
+        let provider = { provider: "GitHub", uid: "0-github", user: "usr1", url: 'https://github.com', api: 'https://api.github.com' };
+        let actual = gitHubAdapter.workitems2model(provider, input.followUp);
+        fs.writeFileSync("./actual/gitstore-follow-up-github-model.json", JSON.stringify(actual, null, 2)); //to allow extenal diff
+        let expected = JSON.parse(fs.readFileSync("./expected/gitstore-follow-up-github-model.json"));
+        assert.deepEqual(expected, actual);
+    });
+
     // GraphQL API, basic (use a first repo: testrepo)
     // - pr open, branch (does not have associatedPullRequests)
     // - status success, failure, pending, not available (does not have History)

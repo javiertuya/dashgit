@@ -144,6 +144,16 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
         assert.deepEqual(['gid://gitlab/Project/5', 'gid://gitlab/Project/6', 'gid://gitlab/Project/7'], gitLabAdapter.model4projectIds(actual));
     });
 
+    //Data about follow ups is stored in the manager repository, but it is transformed to models as it if where from the GitHub api
+    it("Transform GitLab Follow up results from GitStoreApi", function () {
+        let input = JSON.parse(fs.readFileSync("./input/gitstore-follow-up-result.json"));
+        let provider = { provider: "GitLab", uid: "0-gitlab", user: "usr1", url: 'https://gitlab.com', api: 'https://gitlab.com/api/v3' };
+        let actual = gitLabAdapter.workitems2model(provider, input.followUp);
+        fs.writeFileSync("./actual/gitstore-follow-up-gitlab-model.json", JSON.stringify(actual, null, 2)); //to allow extenal diff
+        let expected = JSON.parse(fs.readFileSync("./expected/gitstore-follow-up-gitlab-model.json"));
+        assert.deepEqual(expected, actual);
+    });
+
     // Statuses is a little bit more tricky. Can be viewed as a join of the result 2 queries: projects (with branches) 
     // and statuses (with pipelines and MRs). Pipelines include branches (multiple branches if multiple builds).
     // Only branches in projects are shown (even if no pipeline), as branches in pipelines without projects are deleted branches

@@ -1,0 +1,67 @@
+{
+  "header": {
+    "provider": "GitHub",
+    "uid": "0-github",
+    "user": "usr1",
+    "url": "",
+    "repo_names": [],
+    "target": "",
+    "message": ""
+  },
+  "items": [
+    {
+      "repo_name": "usr1/repo1",
+      "type": "issue",
+      "iid": "10",
+      "title": "issue repo1 10",
+      "actions": {
+        "followUp": true
+      },
+      "author": "",
+      "assignees": "",
+      "created_at": "2024-01-10T23:00:00.000Z",
+      "updated_at": "2024-01-10T23:00:00.000Z",
+      "iidstr": "#10",
+      "url": "https://github.com/usr1/repo1/issues/10",
+      "repo_url": "https://github.com/usr1/repo1",
+      "labels": [],
+      "uid": "usr1-repo1_issue_10"
+    },
+    {
+      "repo_name": "usr1/repo1",
+      "type": "pr",
+      "iid": "11",
+      "title": "pr repo1 11",
+      "actions": {
+        "followUp": true
+      },
+      "author": "",
+      "assignees": "",
+      "created_at": "2024-01-11T23:00:00.000Z",
+      "updated_at": "2024-01-11T23:00:00.000Z",
+      "iidstr": "#11",
+      "url": "https://github.com/usr1/repo1/pull/11",
+      "repo_url": "https://github.com/usr1/repo1",
+      "labels": [],
+      "uid": "usr1-repo1_pr_11"
+    },
+    {
+      "repo_name": "usr1/repo2",
+      "type": "issue",
+      "iid": "10",
+      "title": "issue repo2 10",
+      "actions": {
+        "followUp": true
+      },
+      "author": "",
+      "assignees": "",
+      "created_at": "2024-01-10T23:00:00.000Z",
+      "updated_at": "2024-01-10T23:00:00.000Z",
+      "iidstr": "#10",
+      "url": "https://github.com/usr1/repo2/issues/10",
+      "repo_url": "https://github.com/usr1/repo2",
+      "labels": [],
+      "uid": "usr1-repo2_issue_10"
+    }
+  ]
+}

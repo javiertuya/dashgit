@@ -11,31 +11,54 @@ describe("TestView - Main processing in the view module", function () {
     it("Number of days between dates", function () {
         assert.equal("abc", "abc");
         assert.equal("0", wiServices.daysBetweenDates(new Date("2023-01-02"), new Date("2023-01-02")));
-        assert.equal("1", wiServices.daysBetweenDates(new Date("2023-01-02"), new Date("2023-01-01")));
-        assert.equal("5", wiServices.daysBetweenDates(new Date("2023-01-06"), new Date("2023-01-01")));
+        assert.equal("1", wiServices.daysBetweenDates(new Date("2023-01-01"), new Date("2023-01-02")));
+        assert.equal("5", wiServices.daysBetweenDates(new Date("2023-01-01"), new Date("2023-01-06")));
 
         //floor hours
-        assert.equal("0", wiServices.daysBetweenDates(new Date("2023-01-01T20:00:00"), new Date("2023-01-01T10:00:00")));
-        assert.equal("1", wiServices.daysBetweenDates(new Date("2023-01-02T20:00:00"), new Date("2023-01-01T10:00:00")));
+        assert.equal("0", wiServices.daysBetweenDates(new Date("2023-01-01T10:00:00"), new Date("2023-01-01T20:00:00")));
+        assert.equal("1", wiServices.daysBetweenDates(new Date("2023-01-01T10:00:00"), new Date("2023-01-02T01:00:00")));
+        assert.equal("1", wiServices.daysBetweenDates(new Date("2023-01-01T10:00:00"), new Date("2023-01-02T20:00:00")));
 
         //boundaries
-        assert.equal("0", wiServices.daysBetweenDates(new Date("2023-01-02T09:59:59"), new Date("2023-01-01T10:00:00")));
-        assert.equal("1", wiServices.daysBetweenDates(new Date("2023-01-02T10:00:01"), new Date("2023-01-01T10:00:00")));
+        assert.equal("0", wiServices.daysBetweenDates(new Date("2023-01-01T00:00:00"), new Date("2023-01-01T23:59:59")));
+        assert.equal("1", wiServices.daysBetweenDates(new Date("2023-01-01T23:59:59"), new Date("2023-01-02T00:00:00")));
 
-        //inverted args
-        assert.equal("2", wiServices.daysBetweenDates(new Date("2023-01-01"), new Date("2023-01-03")));
+        //inverted args (negative number, future date)
+        assert.equal("-2", wiServices.daysBetweenDates(new Date("2023-01-03"), new Date("2023-01-01")));
+    });
+
+    it("Date value as string", function () {
+        //past dates
+        assert.equal("now", wiServices.dateToString("2023-08-01T15:00:00", new Date("2023-08-01T15:00:01")));
+        assert.equal("1 min", wiServices.dateToString("2023-08-01T15:00:00", new Date("2023-08-01T15:01:01")));
+        assert.equal("59 min", wiServices.dateToString("2023-08-01T15:00:00", new Date("2023-08-01T15:59:59")));
+        assert.equal("1 hr", wiServices.dateToString("2023-08-01T15:00:00", new Date("2023-08-01T16:00:00")));
+        assert.equal("8 hr", wiServices.dateToString("2023-08-01T15:00:00", new Date("2023-08-01T23:59:59")));
+        assert.equal("yesterday", wiServices.dateToString("2023-08-01T15:00:00", new Date("2023-08-02T00:00:00")));
+        assert.equal("2 days", wiServices.dateToString("2023-08-01T15:00:00", new Date("2023-08-03T00:00:00")));
+        assert.equal("7 days", wiServices.dateToString("2023-08-01T15:00:00", new Date("2023-08-08T00:00:00")));
+        assert.equal("8 days", wiServices.dateToString("2023-08-01T15:00:00", new Date("2023-08-09T00:00:00")));
+        assert.equal("39 days", wiServices.dateToString("2023-08-01T15:00:00", new Date("2023-09-09T00:00:00")));
+
+        //future (entire days)
+        assert.equal("today", wiServices.dateToString("2023-08-01T15:00:01", new Date("2023-08-01T15:00:00")));
+        assert.equal("today", wiServices.dateToString("2023-08-01T16:00:06", new Date("2023-08-01T15:00:00")));
+        assert.equal("today", wiServices.dateToString("2023-08-01T23:59:59", new Date("2023-08-01T15:00:00")));
+        assert.equal("tomorrow", wiServices.dateToString("2023-08-02T00:00:00", new Date("2023-08-01T15:00:00")));
+        assert.equal("in 2 days", wiServices.dateToString("2023-08-03T00:00:00", new Date("2023-08-01T15:00:00")));
+        assert.equal("in 39 days", wiServices.dateToString("2023-09-09T00:00:00", new Date("2023-08-01T15:00:00")));
     });
 
     it("Date interval as string", function () {
-        assert.equal("[yesterday - now]", wiServices.intervalToString("2023-08-02", "2023-08-01", new Date("2023-08-01")));
-        assert.equal("[2 days - now]", wiServices.intervalToString("2023-08-03", "2023-08-01", new Date("2023-08-01")));
-        assert.equal("[4 days - 2 days]", wiServices.intervalToString("2023-08-05", "2023-08-03", new Date("2023-08-01")));
+        assert.equal("[yesterday - now]", wiServices.intervalToString("2023-08-01", "2023-08-02", new Date("2023-08-02")));
+        assert.equal("[2 days - now]", wiServices.intervalToString("2023-08-01", "2023-08-03", new Date("2023-08-03")));
+        assert.equal("[4 days - 2 days]", wiServices.intervalToString("2023-08-01", "2023-08-03", new Date("2023-08-05")));
         //Equal dates
         assert.equal("[now]", wiServices.intervalToString("2023-08-01", "2023-08-01", new Date("2023-08-01")));
-        assert.equal("[2 days]", wiServices.intervalToString("2023-08-03", "2023-08-03", new Date("2023-08-01")));
+        assert.equal("[2 days]", wiServices.intervalToString("2023-08-01", "2023-08-01", new Date("2023-08-03")));
         //Undefined dates
-        assert.equal("[yesterday]", wiServices.intervalToString("2023-08-02", undefined, new Date("2023-08-01")));
-        assert.equal("[yesterday]", wiServices.intervalToString(undefined, "2023-08-02", new Date("2023-08-01")));
+        assert.equal("[yesterday]", wiServices.intervalToString("2023-08-01", undefined, new Date("2023-08-02")));
+        assert.equal("[yesterday]", wiServices.intervalToString(undefined, "2023-08-01", new Date("2023-08-02")));
         assert.equal("[n/a]", wiServices.intervalToString(undefined, undefined, new Date("2023-08-01")));
     });
 

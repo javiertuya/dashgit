@@ -1,4 +1,5 @@
 import { Model } from "./Model.js"
+import { gitStoreAdapter } from "./GitStoreAdapter.js"
 
 /**
  * Transforms the REST and GraphQL GitHub responses to the provider-independent models
@@ -8,6 +9,12 @@ const gitHubAdapter = {
   workitems2model: function (provider, items) {
     let m = new Model().setHeader(provider.provider, provider.uid, provider.user, "");
     for (let item of items) {
+      // Special handling of each follow-up (items come from a json file)
+      if (item.remind != undefined) {
+        m.addItem(gitStoreAdapter.followUp2model(provider, item));
+        continue;
+      }
+
       let type = "issue";
       if (item.pull_request !== undefined) //issues do not have a PR attribute
         type = "pr";

@@ -1,0 +1,25 @@
+{
+    "followUp": [
+      {
+        "repo": "usr1/repo1",
+        "type": "issue",
+        "iid": "10",
+        "title": "issue repo1 10",
+        "remind": "2024-01-10T23:00:00.000Z"
+      },
+      {
+        "repo": "usr1/repo1",
+        "type": "pr",
+        "iid": "11",
+        "title": "pr repo1 11",
+        "remind": "2024-01-11T23:00:00.000Z"
+      },
+      {
+        "repo": "usr1/repo2",
+        "type": "issue",
+        "iid": "10",
+        "title": "issue repo2 10",
+        "remind": "2024-01-10T23:00:00.000Z"
+      }
+    ]
+  }
