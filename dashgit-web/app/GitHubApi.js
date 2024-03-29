@@ -35,6 +35,8 @@ const gitHubApi = {
         octokit.rest.search.issuesAndPullRequests({ q: assigned, }),
         //To allow the ui to mark this as a review request, the api call is wrapped to add a special attribute (called custom_actions) to the response
         this.wrapIssuesAndPullRequestsCall(octokit, { q: reviewer, }, "review_request"),
+        //Also show work items that need follow-up
+        gitStoreApi.followUpAll(provider.url, true),
       ];
     else if (target == "unassigned")
       promises = [
@@ -50,7 +52,7 @@ const gitHubApi = {
       ];
     else if (target == "follow-up")
       promises = [
-        gitStoreApi.followUpAll(provider.url)
+        gitStoreApi.followUpAll(provider.url, false)
       ];
     else if (target == "dependabot") {
       promises = [

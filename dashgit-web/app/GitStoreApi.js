@@ -13,17 +13,27 @@ const gitStoreApi = {
   emptyFollowUpContent: { followUp: [] },
 
   // Gets all follow-ups stored in a given server url
-  followUpAll: async function (url) {
+  followUpAll: async function (url, onlyExpired) {
     const fileName = config.getProviderFollowUpFileName(url);
     const ownerRepo = config.data.updateManagerRepo.split("/");
     console.log(`Read follow up json file: ${fileName}`)
     return this.getContent(config.data.updateManagerToken, ownerRepo[0], ownerRepo[1], config.param.followUpBranch, fileName)
       .then(async function (response) {
-        return JSON.parse(atob(response.data.content));
+        let content = JSON.parse(atob(response.data.content));
+        return onlyExpired ? gitStoreApi.filterExpiredFollowUps(content) : content;
       }).catch(function (error) {
         console.log(`No follow-up set for ${url}, status ${error.status}, message: ${error.toString()}`);
         return gitStoreApi.emptyFollowUpContent;
       });
+  },
+  filterExpiredFollowUps: function(content) {
+    let items = [];
+    for (let item of content.followUp) {
+      if (new Date(item.remind) < new Date()) // keeps only expired
+        items.push(item);
+    }
+    content.followUp = items;
+    return content;
   },
 
   // Creates a new branch and a new file specified by path

@@ -37,6 +37,8 @@ const gitLabApi = {
         //Issue #43: we must read all notifications, not only action:"review_requested" because if there is an unread notification when
         //the review is requested, the review_request custom action badge is not shown
         this.wrapToDoListsCall(api, { state: "pending", type: "MergeRequest" }, "review_request", provider.user),
+        //Also show work items that need follow-up
+        gitStoreApi.followUpAll(provider.url, true),
       ];
     else if (target == "unassigned")
       promises = [
@@ -65,7 +67,7 @@ const gitLabApi = {
       ];
     else if (target == "follow-up")
       promises = [
-        gitStoreApi.followUpAll(provider.url)
+        gitStoreApi.followUpAll(provider.url, false)
       ];
     else if (target == "dependabot") {
       promises = [

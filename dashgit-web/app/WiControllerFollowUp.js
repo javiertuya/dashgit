@@ -86,7 +86,7 @@ const wiControllerFollowUp = {
     }
     console.log("Saved follow ups:")
     console.log(followUps);
-    const message = `${isDelete ? "Delete" : "Save"} follow up ${followUp.type} ${followUp.iid} - ${followUp.title}`;
+    const message = `${isDelete ? "Delete" : "Save"} follow up ${followUp.type} ${followUp.iid} - ${decodeURIComponent(followUp.title)}`;
     await this.update(fileName, sha, { followUp: followUps }, message, "Done: " + message);
   },
   match: function (stored, ui) {

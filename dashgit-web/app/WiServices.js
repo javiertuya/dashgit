@@ -78,6 +78,20 @@ const wiServices = {
     return mergedItems;
   },
   mergeItem: function (source, target) {
+    // Most of the time source and target come from the REST api and have equal values, it is enough to merge only the actions in the target.
+    // But if an item is a follow-up, it has less values and the merge must preserve the values of the other item
+    // except the dates, that are taken from the follow-up to make the item appear as recent in the list
+    if (target.actions.follow_up || source.actions.follow_up) {
+      if (source.actions.follow_up) { // source is follow-up, overwrite dates
+        target.created_at = source.created_at;
+        target.updated_at = source.updated_at;
+      } else { // source is regular item, overwrite the other of attributes
+        target.title = source.title;
+        target.author = source.author;
+        target.assignees = source.assignees;
+        target.labels = source.labels;
+      }
+    }
     // add all actions from source to target (actions are always in the form name=true)
     target.actions = { ...target.actions, ...source.actions };
   },

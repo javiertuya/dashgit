@@ -166,7 +166,9 @@ const wiView = {
       return "";
     let html = "";
     if (actions["review_request"])
-      html += `<span class="badge text-dark bg-warning wi-action-badge" title="Review requested">review</span> `;
+      html += `<span class="badge text-dark bg-warning wi-action-badge" title="A review on this PR has been requested">review</span> `;
+    if (actions["follow_up"])
+      html += `<span class="badge text-dark bg-warning wi-action-badge" title="This work item has been marked to follow up">follow up</span> `;
     return html;
   },
 
@@ -409,7 +411,7 @@ const wiView = {
     $("#wi-follow-up-modal-type").text(params.type);
     $("#wi-follow-up-modal-type-label").text(params.type == "issue" ? "Issue number:" : "Pull Request number:");
     $("#wi-follow-up-modal-iid").text(params.iid);
-    $("#wi-follow-up-modal-title").text(params.title);
+    $("#wi-follow-up-modal-title").text(decodeURIComponent(params.title));
     $("#wi-follow-up-modal-days").val(params.days);
     // The own button stores the kind of operation to do on save
     $("#wi-follow-up-btn-save").html(params.exists ? "Update" : "Create");
@@ -424,7 +426,8 @@ const wiView = {
       repo: $("#wi-follow-up-modal-repo").text(),
       type: $("#wi-follow-up-modal-type").text(),
       iid: $("#wi-follow-up-modal-iid").text(),
-      title: $("#wi-follow-up-modal-title").text(),
+      // Always encode title to allow non ascii characters be transformed into base64 to use the content rest api
+      title: encodeURIComponent($("#wi-follow-up-modal-title").text()).replaceAll("%20", " "),
       days: $("#wi-follow-up-modal-days").val(),
     };
   },
