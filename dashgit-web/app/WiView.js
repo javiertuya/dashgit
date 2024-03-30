@@ -407,6 +407,7 @@ const wiView = {
   //Display at the follow-up form
   followUpSetValues: function (params) {
     $("#wi-follow-up-modal-server").text(params.server);
+    $("#wi-follow-up-modal-user").text(params.user);
     $("#wi-follow-up-modal-repo").text(params.repo);
     $("#wi-follow-up-modal-type").text(params.type);
     $("#wi-follow-up-modal-type-label").text(params.type == "issue" ? "Issue number:" : "Pull Request number:");
@@ -423,6 +424,7 @@ const wiView = {
   followUpGetValues: function () {
     return {
       server: $("#wi-follow-up-modal-server").text(),
+      user: $("#wi-follow-up-modal-user").text(),
       repo: $("#wi-follow-up-modal-repo").text(),
       type: $("#wi-follow-up-modal-type").text(),
       iid: $("#wi-follow-up-modal-iid").text(),

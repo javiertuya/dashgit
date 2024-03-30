@@ -13,6 +13,7 @@ $(document).on('click', '.wi-item-column-clickable', async function (e) {
   const provider = config.getProviderByUid($(this).closest("table").attr("provider"));
   let params = {
     server: provider.url,
+    user: provider.user,
     repo: $(this).closest(".wi-status-class-any").attr("itemrepo"),
     type: $(this).closest(".wi-status-class-any").attr("itemtype"),
     iid: $(this).closest(".wi-status-class-any").attr("itemiid"),
@@ -49,6 +50,7 @@ const wiControllerFollowUp = {
     if (followUp != undefined) { // existing item, mark as existing and updates title (the stored title may be obsolete)
       followUp.title = params.title;
       followUp.server = params.server; // server is not stored, uses the ui value
+      followUp.user = params.user;
       followUp["exists"] = true;
       followUp["days"] = wiServices.daysToDate(followUp.remind)
     } else { // was not found, uses the data from the ui and set defaults for a new follow up
@@ -61,7 +63,7 @@ const wiControllerFollowUp = {
 
   // Updates the follow ups to the server (change existing, add new, or delete) 
   save: async function (params, isDelete) {
-    const fileName = config.getProviderFollowUpFileName(params.server)
+    const fileName = config.getProviderFollowUpFileName(params.server, params.user)
     console.log("Save follow up:")
     console.log(params);
     // Read from server and determine if we must update or add the follow up
@@ -99,7 +101,7 @@ const wiControllerFollowUp = {
   // Gets the json file with the follow ups of a provider, 
   // if not found creates a dedicated branch and a default file with an empty object
   read: async function (params) {
-    const fileName = config.getProviderFollowUpFileName(params.server);
+    const fileName = config.getProviderFollowUpFileName(params.server, params.user);
     const ownerRepo = config.data.updateManagerRepo.split("/");
     try {
       console.log(`Read follow up json file: ${fileName}`)

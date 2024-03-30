@@ -18,7 +18,7 @@ const gitLabApi = {
       console.log(model);
   },
 
-  getWorkItems: async function (target, provider) { // NOSONAR, pending refactor to leave promise construction out of this method
+  getWorkItems: async function (target, provider) {
     const api = new Gitlab({ host: provider.url, token: config.decrypt(provider.token), });
     const assigned = { state: "opened", assignee_username: provider.user, scope: "all", perPage: 100, maxPages: 1 };
     const unassigned = { state: "opened", assignee_id: "None", scope: "all", perPage: 100, maxPages: 1 };
@@ -38,13 +38,15 @@ const gitLabApi = {
         //the review is requested, the review_request custom action badge is not shown
         this.wrapToDoListsCall(api, { state: "pending", type: "MergeRequest" }, "review_request", provider.user),
         //Also show work items that need follow-up
-        gitStoreApi.followUpAll(provider.url, true),
+        gitStoreApi.followUpAll(provider, true),
       ];
-    else if (target == "unassigned")
+    else if (target == "unassigned" && provider.url != "https://gitlab.com")
       promises = [
         api.MergeRequests.all(unassigned),
         api.Issues.all(unassigned)
       ];
+    else if (target == "unassigned" && provider.url == "https://gitlab.com")
+      return this.emptyModel(provider, "On gitlab.com, this view is disabled because api call timeouts.");
     else if (target == "created")
       promises = [
         api.MergeRequests.all(created),
@@ -67,7 +69,7 @@ const gitLabApi = {
       ];
     else if (target == "follow-up")
       promises = [
-        gitStoreApi.followUpAll(provider.url, false)
+        gitStoreApi.followUpAll(provider, false)
       ];
     else if (target == "dependabot") {
       promises = [
@@ -78,12 +80,9 @@ const gitLabApi = {
     } else
       return;
 
-    if (target == "unassigned" && provider.url == "https://gitlab.com") {
-      let emptyModel = gitLabAdapter.workitems2model(provider, [], cache.labelsCache[provider.uid]);
-      emptyModel.header.message = "On gitlab.com, this view is disabled because api call timeouts.";
-      return emptyModel;
-    }
-
+    return await this.dispatchPromisesAndGetModel(target, provider, promises);
+  },
+  dispatchPromisesAndGetModel: async function(target, provider, promises) {
     let responses = await Promise.all(promises);
     this.log(provider.uid, "Data received from the api:", responses);
     //creates single result with all responses
@@ -105,6 +104,11 @@ const gitLabApi = {
       .then(async function (response) {
         return gitLabAdapter.addActionToToDoResponse(response, action, user);
       })
+  },
+  emptyModel: function(provider, message) {
+    let model = gitLabAdapter.workitems2model(provider, [], cache.labelsCache[provider.uid]);
+    model.header.message = message;
+    return model;
   },
 
   updateNotificationsAsync: async function (target, provider) {

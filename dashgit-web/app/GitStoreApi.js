@@ -13,8 +13,8 @@ const gitStoreApi = {
   emptyFollowUpContent: { followUp: [] },
 
   // Gets all follow-ups stored in a given server url
-  followUpAll: async function (url, onlyExpired) {
-    const fileName = config.getProviderFollowUpFileName(url);
+  followUpAll: async function (provider, onlyExpired) {
+    const fileName = config.getProviderFollowUpFileName(provider.url, provider.user);
     const ownerRepo = config.data.updateManagerRepo.split("/");
     console.log(`Read follow up json file: ${fileName}`)
     return this.getContent(config.data.updateManagerToken, ownerRepo[0], ownerRepo[1], config.param.followUpBranch, fileName)
@@ -22,7 +22,7 @@ const gitStoreApi = {
         let content = JSON.parse(atob(response.data.content));
         return onlyExpired ? gitStoreApi.filterExpiredFollowUps(content) : content;
       }).catch(function (error) {
-        console.log(`No follow-up set for ${url}, status ${error.status}, message: ${error.toString()}`);
+        console.log(`No follow-up set for ${provider.url}, user ${provider.user}, status ${error.status}, message: ${error.toString()}`);
         return gitStoreApi.emptyFollowUpContent;
       });
   },

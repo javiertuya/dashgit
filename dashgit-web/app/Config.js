@@ -13,7 +13,7 @@ const config = {
 
   //Constant parameters
   param: {
-    followUpBranch: "dashgit-follow-up",
+    followUpBranch: "dashgit/follow-up",
     followUpFolder: ".dashgit/follow-up"
   },
 
@@ -130,8 +130,8 @@ const config = {
         return provider;
     return undefined;
   },
-  getProviderFollowUpFileName: function(url) {
-    return this.param.followUpFolder + "/" + url.replace("https://", "").replaceAll("/", "_") + ".json";
+  getProviderFollowUpFileName: function(url, user) {
+    return this.param.followUpFolder + "/" + url.replace("https://", "").replaceAll("/", "_") + "-" + user + ".json";
   },
   getGitHubUserAgent: function() {
     return `dashgit/${this.appVersion}`

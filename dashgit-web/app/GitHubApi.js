@@ -36,7 +36,7 @@ const gitHubApi = {
         //To allow the ui to mark this as a review request, the api call is wrapped to add a special attribute (called custom_actions) to the response
         this.wrapIssuesAndPullRequestsCall(octokit, { q: reviewer, }, "review_request"),
         //Also show work items that need follow-up
-        gitStoreApi.followUpAll(provider.url, true),
+        gitStoreApi.followUpAll(provider, true),
       ];
     else if (target == "unassigned")
       promises = [
@@ -52,7 +52,7 @@ const gitHubApi = {
       ];
     else if (target == "follow-up")
       promises = [
-        gitStoreApi.followUpAll(provider.url, false)
+        gitStoreApi.followUpAll(provider, false)
       ];
     else if (target == "dependabot") {
       promises = [
@@ -62,6 +62,10 @@ const gitHubApi = {
         promises.push(octokit.rest.search.issuesAndPullRequests({ q: dependabotTest, per_page: 60 }));
     } else
       return;
+
+    return await this.dispatchPromisesAndGetModel(target, provider, promises);
+  },
+  dispatchPromisesAndGetModel: async function(target, provider, promises) {
     const responses = await Promise.all(promises);
     this.log(provider.uid, "Data received from the api:", responses);
     //creates single result with all responses
