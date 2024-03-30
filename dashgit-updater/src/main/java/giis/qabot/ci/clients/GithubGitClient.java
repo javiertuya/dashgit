@@ -224,7 +224,7 @@ public class GithubGitClient implements IGitClient {
 			GHUser ghuser = api.getUser(assignee);
 			ghpr.assignTo(ghuser);
 		}
-		// setLabels does not work when running from the update manager action, why?, changed to addLabels
+		// setLabels does not work when running from the manager repository action, why?, changed to addLabels
 		ghpr.addLabels(labels.toArray(new String[0]));
 		ghpr.refresh();
 

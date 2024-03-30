@@ -33,7 +33,7 @@ $(document).on('click', '#wi-update-workflow-file-hide', async function (e) {
 });
 
 const wiControllerUpdate = {
-  // To perform combined dependency updates, the dedicated update manager repository 
+  // To perform combined dependency updates, the dedicated manager repository 
   // has a workflow that runs the updates. This methods gets the appropriate content
   // according to the providers configuration
   fillWorkflowTemplate: function() {
@@ -53,10 +53,10 @@ const wiControllerUpdate = {
   },
 
   // To perform combined dependency updates, a json file with the updates selected is sent
-  // to the dedicated update manager repository in a new branch for this set of combined updates.
-  // The name of the file is the version number taken from the UI so that the update manager
+  // to the dedicated manager repository in a new branch for this set of combined updates.
+  // The name of the file is the version number taken from the UI so that the manager repository
   // can get this name and select the appropriate version of the updater (written in java)
-  // The GitHub Actions configured in the update manager will perform all required tasks.
+  // The GitHub Actions configured in the manager repository will perform all required tasks.
   // Note that the workflow file must execute on push when changes are made in the path .dashgit/manage-update/**
   // If it would set on push to branches, an additonal execution would be triggered for the branch creation
   sendCombinedUpdates: async function(dryRun) {

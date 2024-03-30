@@ -8,6 +8,8 @@ import { config } from "./Config.js"
  */
 
 $(document).on('click', '.wi-item-column-clickable', async function (e) {
+  if (!config.data.enableCombinedUpdates)
+    return;
   // Show the modal, filled with the values obtained from the clicked work items
   $('#wi-follow-up-modal').modal('show');
   const provider = config.getProviderByUid($(this).closest("table").attr("provider"));

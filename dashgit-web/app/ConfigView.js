@@ -1,3 +1,5 @@
+import { config } from "./Config.js"
+
 /**
  * Generates the html content for the config view
  */
@@ -65,15 +67,17 @@ const configView = {
             "Specifies a much longer period (in seconds) than Status Cache Update Time. When this time expires, the cache is fully refreshed")}
         </div>
 
-        <h6 class="card-subtitle mb-1 mt-1 text-body-secondary">Automatically create and merge combined dependency updates
-          <a href="https://github.com/javiertuya/dashgit?tab=readme-ov-file#combined-dependabot-updates" target="_blank">[learn more]</a></h6>
+        <div class="card-subtitle h6 mb-1 mt-1 text-body-secondary">
+          ${this.check2html(`config-common-enableCombinedUpdates`, 
+            `Enable a Manager Repository for advanced functions <a href="${config.param.readmeManagerRepo}" target="_blank">[learn more]</a>`, 
+            data.enableCombinedUpdates,
+            "Manager repository set up is requred to automatically create and merge combined dependency updates and for follow-up management")}
+        </div>
         <div class="row">
-          ${this.input2html(`config-common-updateManagerRepo`, "text", "Update Manager Repo", data.updateManagerRepo, 'required', "200", "200",
-            "The full name (OWNER/REPO) of a dedicated private GitHub repository where the combined updates will be pushed and merged")}
+          ${this.input2html(`config-common-updateManagerRepo`, "text", "Manager Repository", data.updateManagerRepo, 'required', "200", "200",
+            "The full name (OWNER/REPO) of a dedicated private GitHub repository where the combined updates will be pushed and merged and where work item follow-ups are stored")}
           ${this.input2html(`config-common-updateManagerToken`, "password", "Access token", data.updateManagerToken, '', "150", "225",
-            "An API access token with write permission to the Update Manager Repo that combines and merges the updates")}
-          ${this.check2html(`config-common-enableCombinedUpdates`, "Enable combined dependency updates", data.enableCombinedUpdates,
-            "Enables the ability to automatically create and merge combined dependency updates for each repository")}
+            "An API access token with write permission to the Manager Repository")}
         </div>
 
         <div class="row">
@@ -115,7 +119,7 @@ const configView = {
           ${this.check2html(`config-providers-enableNotifications-${key}`, "Show notifications", provider.enableNotifications)}
         </div>
 
-        <h6 class="card-subtitle mb-1 mt-1 text-body-secondary">GraphQL API parameters:</h6>
+        <div class="card-subtitle h6 mb-1 mt-1 text-body-secondary">GraphQL API parameters:</div>
         <div class="row">
           ${this.input2html(`config-graphql-maxProjects-${key}`, "number", "Max projects", provider.graphql.maxProjects, 'required min="2" max="100"', "150", "100",
             "Maximum number of repositories/projects that are retrieved to get the branches and statuses")}
@@ -132,12 +136,12 @@ const configView = {
         </div>
 
         <div class="config-provider-updates-div-container">
-        <h6 class="card-subtitle mb-1 mt-1 text-body-secondary">Combined dependency updates, additional parameters:
-          <a href="https://github.com/javiertuya/dashgit?tab=readme-ov-file#combined-dependabot-updates" target="_blank">[learn more]</a></h6>
+        <div class="card-subtitle h6 mb-1 mt-1 text-body-secondary">Combined dependency updates, additional parameters:
+          <a href="${config.param.readmeDependencyUpdates}" target="_blank">[learn more]</a></div>
         <div class="row">
           ${this.input2html(`config-updates-tokenSecret-${key}`, "text", "Secret Name to store the token", 
             provider.updates.tokenSecret, provider.user == "" ? "disabled" : "", "250", "300",
-            "The name of a GitHub secret to store the API access token used to access each repository from the update manager")}
+            "The name of a GitHub secret to store the API access token used to access from the manager repository to other repositories")}
           ${this.input2html(`config-updates-userEmail-${key}`, "email", "User identified by this email", provider.updates.userEmail, '', "250", "300",
             "Optional email used to identify who creates the combined pull request and commits (if not set, some commits may not be identified as done by you)")}
         </div>

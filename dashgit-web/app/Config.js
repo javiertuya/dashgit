@@ -8,13 +8,19 @@ const config = {
   //App version number, do not push any change of it, this is set during deploy
   appVersion: "main",
 
+  //Configuration data version number, to keep track of changes of data structure and migrations
+  dataVersion: 1,
+
   //Feature flags, keeps boolean flags activated from the querystring ?ff=flag1,flag2...
   ff: {},
 
   //Constant parameters
   param: {
     followUpBranch: "dashgit/follow-up",
-    followUpFolder: ".dashgit/follow-up"
+    followUpFolder: ".dashgit/follow-up",
+    readmeManagerRepo: "https://github.com/javiertuya/dashgit?tab=readme-ov-file#advanced-features",
+    readmeDependencyUpdates: "https://github.com/javiertuya/dashgit?tab=readme-ov-file#combined-dependabot-updates",
+    readmeFollowUp: "https://github.com/javiertuya/dashgit?tab=readme-ov-file#follow-up",
   },
 
   //Persistent data, kept only if page is not reloaded
@@ -30,6 +36,8 @@ const config = {
   load: function () {
     let configStr = localStorage.getItem("dashgit-config");
     config.data = this.parseAndSanitizeData(configStr);
+    // save to storage (data could be changed by santization or migration)
+    config.save();
   },
   save: function () {
     localStorage.setItem("dashgit-config", JSON.stringify(config.data));
@@ -55,20 +63,21 @@ const config = {
 
   // Process a string with configuration and converts to an object.
   // Sets the default values of each property to ensure a complete set of data that can be used elsewhere
-  currentVersion: 1,
   parseAndSanitizeData: function (value) {
     if (value == undefined || value == null || value.trim() == "")
       value = "{}";
     let data = JSON.parse(value);
-    if (data.version != undefined && data.version != this.currentVersion) {
+    if (data.version != undefined && data.version != this.dataVersion) {
       // Here migrations will be included when necessary by checking data.version
-      console.log(`Migrating from version ${data.version} to ${this.currentVersion}`);
+      console.log(`Migrating from version ${data.version} to ${this.dataVersion}`);
+      if (data.version == 1)
+        this.migrateV1toV2(data);
     }
     data = this.setAllDefaults(data);
     return data;
   },
   setAllDefaults: function (data) {
-    this.setDefault(data, "version", 1);
+    this.setDefault(data, "version", this.dataVersion);
     this.setDefault(data, "encrypted", false);
     this.setDefault(data, "statusCacheUpdateTime", 30);
     this.setDefault(data, "statusCacheRefreshTime", 3600);
@@ -117,6 +126,18 @@ const config = {
     if (parent[property] == undefined || parent[property] == null)
       parent[property] = value;
   },
+  
+  migrateV1toV2: function(configData) {
+    this.renameProperty(configData, "xxx", configData, "yyy");
+    configData.version = 2;
+  },
+  renameProperty: function(fromParent, fromName, toParent, toName) {
+    if (fromParent[fromName] != undefined) {
+      toParent[toName] = fromParent[fromName];
+    }
+    delete fromParent[fromName];
+  },
+
   setProviderSecretDefaults: function(data) {
     for (let provider of data.providers) {
       if (provider.updates.tokenSecret == "" && provider.user != "") //only suggest if not set and user is defined

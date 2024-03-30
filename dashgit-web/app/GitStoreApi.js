@@ -14,6 +14,8 @@ const gitStoreApi = {
 
   // Gets all follow-ups stored in a given server url
   followUpAll: async function (provider, onlyExpired) {
+    if (!config.data.enableCombinedUpdates)
+      return this.emptyFollowUpContent;
     const fileName = config.getProviderFollowUpFileName(provider.url, provider.user);
     const ownerRepo = config.data.updateManagerRepo.split("/");
     console.log(`Read follow up json file: ${fileName}`)

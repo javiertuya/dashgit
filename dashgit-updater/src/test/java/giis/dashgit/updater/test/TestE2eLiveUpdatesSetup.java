@@ -29,8 +29,8 @@ public class TestE2eLiveUpdatesSetup extends Base {
 	 * 
 	 * (1) Edit dashgit-web/app/Config.js and set the value of appVersion to match
 	 * your local environment with the name of the branch of the updater.
-	 * This will ensure that the update payload will be sent to the update manager
-	 * using this name (the branch), and then, the update manager will get the current version
+	 * This will ensure that the update payload will be sent to the manager repository
+	 * using this name (the branch), and then, the manager repository will get the current version
 	 * of dashgit-update from this branch.
 	 * Don't forget put it back to main before merge the changes.
 	 * 

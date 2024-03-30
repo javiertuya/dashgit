@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * When the user sends dependabot updates to combine and merge, it creates a
- * branch in the update manager repository and pushes a file at
+ * branch in the manager repository and pushes a file at
  * .dashgit/manage/update.json that indicates the updates.
  * 
  * A GitHub Action starts executing and runs the main entry point of this

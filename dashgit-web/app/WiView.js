@@ -53,8 +53,10 @@ const wiView = {
     let grouping = $("#checkGroup").is(':checked');
     console.log(`Render Work Items, sort order: ${sorting}, grouping: ${grouping}`);
     let html = `<div class="accordion" id="wi-providers-panel">`;
-    if (config.data.enableCombinedUpdates && target == "dependabot")
+    if (target == "dependabot")
       html = html + this.updateHeader2html();
+    if (target == "follow-up")
+      html = html + this.followUpHeader2html();
     for (let mod of models) {
       let header = mod.header;
       let items = mod.items;
@@ -166,9 +168,9 @@ const wiView = {
       return "";
     let html = "";
     if (actions["review_request"])
-      html += `<span class="badge text-dark bg-warning wi-action-badge" title="A review on this PR has been requested">review</span> `;
+      html += `<span class="wi-item-column-clickable badge text-dark bg-warning wi-action-badge" title="A review on this PR has been requested"><i class="fa-solid fa-magnifying-glass"></i> review</span> `;
     if (actions["follow_up"])
-      html += `<span class="badge text-dark bg-warning wi-action-badge" title="This work item has been marked to follow up">follow up</span> `;
+      html += `<span class="wi-item-column-clickable badge text-dark bg-warning wi-action-badge" title="This work item has been flagged for follow up"><i class="fa-regular fa-flag"></i> follow up</span> `;
     return html;
   },
 
@@ -319,10 +321,26 @@ const wiView = {
   // Content of UI related with dependabot updates
 
   updateHeader2html: function () {
-    return `
+    if (!config.data.enableCombinedUpdates)
+      return `
       <div style="padding-left:8px">
         <p class="mb-3 mt-2">
-          To set up your update manager repository <code>${config.data.updateManagerRepo}</code>
+          This view displayw all pull requests created by Dependabot.
+          From this view, you can combine all updates into a sigle PR per repository and merge them automatically with just a few clicks.
+        </p>
+        <p class="mb-3 mt-2 text-danger">
+          To enable this feature, you have to check the configuration option <em>Enable a Manager Repository for advanced functions</em>,
+          create the manager repository as indicated
+          <a href="${config.param.readmeManagerRepo}" target="_blank">[here]</a>
+          and follow instructions in this tab.
+        </p>
+      </div>
+      `;
+    else
+      return `
+      <div style="padding-left:8px">
+        <p class="mb-3 mt-2">
+          To set up your manager repository <code>${config.data.updateManagerRepo}</code>
           you have to add a workflow file <code>.github/workflows/manage-updates.yml</code>.<br/>
           <a href="#" id="wi-update-workflow-file-show">Click here to get the required content and copy it to the workflow file</a>.<br/>
           Since no token is ever transmitted out of the browser, you also have to create the secrets indicated below in each provider
@@ -335,8 +353,8 @@ const wiView = {
 
         <p class="mb-3 mt-2">
           Click the checkboxes to select the dependabot updates that you want combine and merge in a single pull request for each repository. 
-          The update manager will do the work. 
-          <a href="https://github.com/javiertuya/dashgit?tab=readme-ov-file#combined-dependabot-updates" target="_blank">[learn more]</a>
+          The manager repository will do the work. 
+          <a href="${config.param.readmeDependencyUpdates}" target="_blank">[learn more]</a>
         </p>
 
         <div class="col-auto mb-2">
@@ -354,7 +372,7 @@ const wiView = {
   updateProvider2html: function (providerId) {
     return `
       <div>
-        <p class="mb-0">The update manager will access this provider with the token stored in the secret:
+        <p class="mb-0">The manager repository will access this provider with the token stored in the secret:
         <code>${config.getProviderByUid(providerId).updates.tokenSecret}</code></p>
       </div>
       `;
@@ -405,6 +423,29 @@ const wiView = {
   },
 
   //Display at the follow-up form
+  followUpHeader2html: function () {
+     let html = `
+      <div style="padding-left:8px">
+        <p class="mb-3 mt-2">
+          This view displays all work items that you have flagged for follow up.
+          You can flag any work item from any view by clicking the left icon(s)
+          and entering the date when you want to see a reminder (in days since today).
+          Work items where the reminder date has arrived appear in the <em>Assigned</em> tab even if you are not assignee or reviewer.
+        </p>
+      </div>
+      `;
+    if (!config.data.enableCombinedUpdates)
+      html += `
+      <div style="padding-left:8px">
+        <p class="mb-3 mt-2 text-danger">
+          To enable follow-ups, you have to check the configuration option <em>Enable a Manager Repository for advanced functions</em>
+          and create the manager repository as indicated
+          <a href="${config.param.readmeManagerRepo}" target="_blank">[here]</a>.</div>
+        </p>
+      </div>
+    `;
+    return html;
+  },
   followUpSetValues: function (params) {
     $("#wi-follow-up-modal-server").text(params.server);
     $("#wi-follow-up-modal-user").text(params.user);
@@ -416,7 +457,7 @@ const wiView = {
     $("#wi-follow-up-modal-days").val(params.days);
     // The own button stores the kind of operation to do on save
     $("#wi-follow-up-btn-save").html(params.exists ? "Update" : "Create");
-    $("#wi-follow-up-modal-label").text(params.exists ? "Update a follow up" : "Create a follow up");
+    $("#wi-follow-up-modal-label").html(`<i class="fa-regular fa-flag"></i> ${params.exists ? "Update a follow up" : "Create a follow up"}`);
     $("#wi-follow-up-btn-save").show();
     if (params.exists)
       $("#wi-follow-up-btn-delete").show();
