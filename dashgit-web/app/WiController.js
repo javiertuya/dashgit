@@ -177,7 +177,9 @@ const wiController = {
     //console.log(`${providerId}: ASYNC update notifications to view:`);
     //console.log(notifModel);
     //save to cache to allow access from synchronous calls that display workitems
-    cache.saveNotifications(providerId, notifModel);
+    //(note that github poll interval control must call this method during the poll interval with a null model)
+    if (notifModel != undefined && notifModel != null)
+      cache.saveNotifications(providerId, notifModel);
     let allMentions = 0; //to display the total of notifications of all providers
     let thisMentions = 0; //only of this provier
     for (let prop in cache.notifCache) {

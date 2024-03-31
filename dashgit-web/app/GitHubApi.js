@@ -90,13 +90,29 @@ const gitHubApi = {
       })
   },
 
+  // Tracks the poll interval as indicated by the api doc https://docs.github.com/en/rest/activity/notifications?apiVersion=2022-11-28
+  // to call at most once during the poll interval. These variable are used by all GitHub providers
+  notifLastModified: undefined,
+  notifPollInterval: undefined,
   updateNotificationsAsync: function (target, provider) {
     if (provider.token == "") //skip if no token provider to avoid api call errors
       return;
+    // Poll interval control, if inside the interval, do not call the api, but update notifications
+    let currentTime = Math.floor(new Date().getTime()/1000);
+    if (this.notifLastModified != undefined && currentTime - this.notifLastModified < this.notifPollInterval) {
+      this.log(provider.uid, `ASYNC Get Notifications using cached notifications, seconds to next api call: ${currentTime - this.notifLastModified}, poll interval: ${this.notifPollInterval}`);
+      wiController.updateNotifications(provider.uid, null); // don't pass model to use the cached notifications
+      return;
+    }
     this.log(provider.uid, "ASYNC Get Notifications from the REST api");
     const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(provider.token), });
-    octokit.rest.activity.listNotificationsForAuthenticatedUser({ participating: true }).then(function (response) {
+    // Issue #44: According the api doc a call using Last-Modified header should be done. 
+    // This works well when a notification appears, But when the notification is read, the browser still gets not modified (when using cache).
+    // Therefore, this approach can't be used and overrides the cache using If-None-Match header.
+    octokit.rest.activity.listNotificationsForAuthenticatedUser({ participating: true, headers: { 'If-None-Match': '' } }).then(function (response) {
       gitHubApi.log(provider.uid, "ASYNC Notifications response:", response);
+      gitHubApi.notifLastModified = Math.floor(new Date().getTime()/1000);
+      gitHubApi.notifPollInterval = response.headers["x-poll-interval"];
       let model = gitHubAdapter.notifications2model(response);
       wiController.updateNotifications(provider.uid, model); //direct call instead of using a callback
     });
