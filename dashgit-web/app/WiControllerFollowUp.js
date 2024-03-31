@@ -8,7 +8,7 @@ import { config } from "./Config.js"
  */
 
 $(document).on('click', '.wi-item-column-clickable', async function (e) {
-  if (!config.data.enableCombinedUpdates)
+  if (!config.data.enableManagerRepo)
     return;
   // Show the modal, filled with the values obtained from the clicked work items
   $('#wi-follow-up-modal').modal('show');
@@ -104,10 +104,10 @@ const wiControllerFollowUp = {
   // if not found creates a dedicated branch and a default file with an empty object
   read: async function (params) {
     const fileName = config.getProviderFollowUpFileName(params.server, params.user);
-    const ownerRepo = config.data.updateManagerRepo.split("/");
+    const ownerRepo = config.data.managerRepoName.split("/");
     try {
       console.log(`Read follow up json file: ${fileName}`)
-      const response = await gitStoreApi.getContent(config.data.updateManagerToken, ownerRepo[0], ownerRepo[1], config.param.followUpBranch, fileName);
+      const response = await gitStoreApi.getContent(config.data.managerRepoToken, ownerRepo[0], ownerRepo[1], config.param.followUpBranch, fileName);
       return { sha: response.data.sha, content: JSON.parse(atob(response.data.content)) };
     } catch (error) {
       console.log(`Can't get follow up json file, returned status ${error.status}`);
@@ -115,7 +115,7 @@ const wiControllerFollowUp = {
         console.log(`Branch or json file was not initialized. Try to create branch`);
         try {
           // create the branch to store the follow up json files, ignore failure if already exists
-          await gitStoreApi.createBranch(config.data.updateManagerToken, ownerRepo[0], ownerRepo[1], config.param.followUpBranch);
+          await gitStoreApi.createBranch(config.data.managerRepoToken, ownerRepo[0], ownerRepo[1], config.param.followUpBranch);
         } catch (error2) {
           console.log(`Can't create branch, returned status ${error.status}`);
           if (error2.status == 422) {
@@ -137,12 +137,12 @@ const wiControllerFollowUp = {
   },
 
   update: async function (fileName, sha, content, commitMessage, uiMessage) {
-    const ownerRepo = config.data.updateManagerRepo.split("/");
+    const ownerRepo = config.data.managerRepoName.split("/");
     // Updating is tricky, as works well when dev tools are open and cache disabled, but with dev tools closed and cache enabled
     // returns 409 error with some frequency. This has been reported elsewhere, eg. https://github.com/mavoweb/mavo/issues/215
     // Method gitStoreApi.setContent now removes the cache in all cases
     try {
-      let response = await gitStoreApi.setContent(config.data.updateManagerToken, ownerRepo[0], ownerRepo[1],
+      let response = await gitStoreApi.setContent(config.data.managerRepoToken, ownerRepo[0], ownerRepo[1],
         config.param.followUpBranch, fileName,
         sha, btoa(JSON.stringify(content, null, 2)), commitMessage);
         console.log(response)

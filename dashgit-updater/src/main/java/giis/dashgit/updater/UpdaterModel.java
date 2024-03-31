@@ -24,7 +24,7 @@ public class UpdaterModel {
 	@Getter
 	@Setter
 	public static class Updates {
-		String updateManagerRepo = "";
+		String managerRepoName = "";
 		String updateManagerBranch = "";
 		boolean dryRun = false;
 		Map<String, Provider> providers = new HashMap<>();
@@ -44,7 +44,7 @@ public class UpdaterModel {
 	public String toSummaryString() {
 		StringBuilder sb = new StringBuilder();
 		Updates upd = this.getUpdates();
-		sb.append("UpdateManagerRepo: ").append(upd.getUpdateManagerRepo()).append(", DryRun: ")
+		sb.append("ManagerRepoName: ").append(upd.getManagerRepoName()).append(", DryRun: ")
 				.append(upd.isDryRun());
 		for (Entry<String, Provider> provider : upd.getProviders().entrySet()) {
 			sb.append("\nProvider id: ").append(provider.getKey())

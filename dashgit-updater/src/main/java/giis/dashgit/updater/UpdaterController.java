@@ -35,7 +35,7 @@ public class UpdaterController {
 		int errorCount = runAllUpdates(model);
 		// Removes the branch where the UI pushed the model to update, all debug traces
 		// are in the Actions log
-		removeUpdateModelBranch(model.getUpdates().getUpdateManagerRepo(), model.getUpdates().getUpdateManagerBranch());
+		removeUpdateModelBranch(model.getUpdates().getManagerRepoName(), model.getUpdates().getUpdateManagerBranch());
 		// Fails the job if any udpate failed
 		if (errorCount > 0)
 			System.exit(1);

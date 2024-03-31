@@ -65,15 +65,15 @@ const wiControllerUpdate = {
     const branch = "dashgit/manage/update-" + currentDate.toISOString().replaceAll("-", "").replaceAll("T", "-").replaceAll(":", "").replaceAll(".", "-");
     const message = `DashGit combined updates for ${itemsToUpdate.length} dependencies at ${currentDate.toString()}`;
     const path = `.dashgit/manage-update/${config.appVersion}`;
-    const ownerRepo = config.data.updateManagerRepo.split("/");
-    const model = this.getModel(itemsToUpdate, config.data.updateManagerRepo, branch, dryRun);
+    const ownerRepo = config.data.managerRepoName.split("/");
+    const model = this.getModel(itemsToUpdate, config.data.managerRepoName, branch, dryRun);
     const content = JSON.stringify(model, null, 2);
     console.log("Push combined updates, model: " + JSON.stringify(model, null, 2));
     // Creates the dedicated branch and json file in the update repository manager,
     // this will trigger the GitHub Actions that perform the required tasks
-    gitStoreApi.createBranchAndContent(config.data.updateManagerToken, ownerRepo[0], ownerRepo[1], branch, path, btoa(content), message)
+    gitStoreApi.createBranchAndContent(config.data.managerRepoToken, ownerRepo[0], ownerRepo[1], branch, path, btoa(content), message)
     .then(async function(responseUrl) {
-      wiView.confirmUpdateEnd(`https://github.com/${config.data.updateManagerRepo}/actions`, responseUrl);
+      wiView.confirmUpdateEnd(`https://github.com/${config.data.managerRepoName}/actions`, responseUrl);
     }).catch(async function(error) {
       wiView.confirmUpdateClear();
       wiView.renderAlert("danger", error);
@@ -83,7 +83,7 @@ const wiControllerUpdate = {
   // Creates the model required for combined updates:
   // takes the list of selected items and produces a hierarchical structure by providers and repositories.
   // Keep in sync with the model creation from javascript in dashgit-updater: UpdaterModel.js
-  getModel: function (items, updateManagerRepo, updateManagerBranch, dryRun) {
+  getModel: function (items, managerRepoName, updateManagerBranch, dryRun) {
     // items [{ provider, repo, iid}]
     console.log("Generate update model");
     console.log(items);
@@ -104,7 +104,7 @@ const wiControllerUpdate = {
         updates[item.provider]["repositories"][item.repo] = [];
       updates[item.provider]["repositories"][item.repo].push(item.iid);
     }
-    return { updates: { updateManagerRepo: updateManagerRepo, updateManagerBranch: updateManagerBranch, dryRun: dryRun, providers: updates } };
+    return { updates: { managerRepoName: managerRepoName, updateManagerBranch: updateManagerBranch, dryRun: dryRun, providers: updates } };
   },
 
 }

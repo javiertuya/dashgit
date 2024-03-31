@@ -100,7 +100,7 @@ const wiView = {
         <div class="accordion-body">
 `;
     // adds the header for combined updates (if applicable)
-    if (config.data.enableCombinedUpdates && target == "dependabot")
+    if (config.data.enableManagerRepo && target == "dependabot")
       html += this.updateProvider2html(provider);
     if (target == "involved") // Additional comment to mentions in this target, PENDING: refactor this kind of headers
       html += `<div id="wi-providers-target-header-${target}-${provider}"></div>`
@@ -321,7 +321,7 @@ const wiView = {
   // Content of UI related with dependabot updates
 
   updateHeader2html: function () {
-    if (!config.data.enableCombinedUpdates)
+    if (!config.data.enableManagerRepo)
       return `
       <div style="padding-left:8px">
         <p class="mb-3 mt-2">
@@ -340,7 +340,7 @@ const wiView = {
       return `
       <div style="padding-left:8px">
         <p class="mb-3 mt-2">
-          To set up your manager repository <code>${config.data.updateManagerRepo}</code>
+          To set up your manager repository <code>${config.data.managerRepoName}</code>
           you have to add a workflow file <code>.github/workflows/manage-updates.yml</code>.<br/>
           <a href="#" id="wi-update-workflow-file-show">Click here to get the required content and copy it to the workflow file</a>.<br/>
           Since no token is ever transmitted out of the browser, you also have to create the secrets indicated below in each provider
@@ -378,7 +378,7 @@ const wiView = {
       `;
   },
   updateCheck2html: function (target, providerId, repoName, iid) {
-    if (config.data.enableCombinedUpdates && target == "dependabot") {
+    if (config.data.enableManagerRepo && target == "dependabot") {
       console.log(`${providerId} ${repoName} ${iid}`)
       return `<input class="form-check-input wi-update-check" type="checkbox" value="" aria-label="..."
           provider="${providerId}" repo="${repoName}" iid="${iid}"></input>&nbsp;`;
@@ -434,7 +434,7 @@ const wiView = {
         </p>
       </div>
       `;
-    if (!config.data.enableCombinedUpdates)
+    if (!config.data.enableManagerRepo)
       html += `
       <div style="padding-left:8px">
         <p class="mb-3 mt-2 text-danger">

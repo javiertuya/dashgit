@@ -9,7 +9,7 @@ const config = {
   appVersion: "main",
 
   //Configuration data version number, to keep track of changes of data structure and migrations
-  dataVersion: 1,
+  dataVersion: 2,
 
   //Feature flags, keeps boolean flags activated from the querystring ?ff=flag1,flag2...
   ff: {},
@@ -43,7 +43,7 @@ const config = {
     localStorage.setItem("dashgit-config", JSON.stringify(config.data));
   },
   encryptTokens: function () {
-    config.data.updateManagerToken=this.encrypt(config.data.updateManagerToken, config.xtoken);
+    config.data.managerRepoToken=this.encrypt(config.data.managerRepoToken, config.xtoken);
     for (let provider of config.data.providers)
       provider.token = this.encrypt(provider.token, config.xtoken);
   },
@@ -82,9 +82,9 @@ const config = {
     this.setDefault(data, "statusCacheUpdateTime", 30);
     this.setDefault(data, "statusCacheRefreshTime", 3600);
     this.setDefault(data, "maxAge", 0);
-    this.setDefault(data, "enableCombinedUpdates", false)
-    this.setDefault(data, "updateManagerRepo", "")
-    this.setDefault(data, "updateManagerToken", "")
+    this.setDefault(data, "enableManagerRepo", false)
+    this.setDefault(data, "managerRepoName", "")
+    this.setDefault(data, "managerRepoToken", "")
     this.setDefault(data, "providers", []);
     for (const provider of data.providers)
       this.setProviderDefaults(provider);
@@ -128,7 +128,9 @@ const config = {
   },
   
   migrateV1toV2: function(configData) {
-    this.renameProperty(configData, "xxx", configData, "yyy");
+    this.renameProperty(configData, "enableCombinedUpdates", configData, "enableManagerRepo");
+    this.renameProperty(configData, "updateManagerRepo", configData, "managerRepoName");
+    this.renameProperty(configData, "updateManagerToken", configData, "managerRepoToken");
     configData.version = 2;
   },
   renameProperty: function(fromParent, fromName, toParent, toName) {

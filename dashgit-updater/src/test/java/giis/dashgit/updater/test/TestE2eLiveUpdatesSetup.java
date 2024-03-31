@@ -68,7 +68,7 @@ public class TestE2eLiveUpdatesSetup extends Base {
 		return """
 				{
 				  'updates': {
-				    'dryRun' : false, 'updateManagerRepo': 'user/dashgit-manager',
+				    'dryRun' : false, 'managerRepoName': 'user/dashgit-manager',
 				    'providers': {
 				      '0-github': {
 				        'urlValue': 'https://github.com', 'userValue': 'user1', 'tokenSecret': 'GITHUB_TOKEN',

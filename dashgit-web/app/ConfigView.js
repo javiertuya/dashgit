@@ -68,15 +68,15 @@ const configView = {
         </div>
 
         <div class="card-subtitle h6 mb-1 mt-1 text-body-secondary">
-          ${this.check2html(`config-common-enableCombinedUpdates`, 
+          ${this.check2html(`config-common-enableManagerRepo`, 
             `Enable a Manager Repository for advanced functions <a href="${config.param.readmeManagerRepo}" target="_blank">[learn more]</a>`, 
-            data.enableCombinedUpdates,
+            data.enableManagerRepo,
             "Manager repository set up is requred to automatically create and merge combined dependency updates and for follow-up management")}
         </div>
         <div class="row">
-          ${this.input2html(`config-common-updateManagerRepo`, "text", "Manager Repository", data.updateManagerRepo, 'required', "200", "200",
+          ${this.input2html(`config-common-managerRepoName`, "text", "Manager Repository", data.managerRepoName, 'required', "200", "200",
             "The full name (OWNER/REPO) of a dedicated private GitHub repository where the combined updates will be pushed and merged and where work item follow-ups are stored")}
-          ${this.input2html(`config-common-updateManagerToken`, "password", "Access token", data.updateManagerToken, '', "150", "225",
+          ${this.input2html(`config-common-managerRepoToken`, "password", "Access token", data.managerRepoToken, '', "150", "225",
             "An API access token with write permission to the Manager Repository")}
         </div>
 
@@ -179,9 +179,9 @@ const configView = {
     data.maxAge = age == "" ? 0 : age;
     data.statusCacheUpdateTime = $("#config-common-statusCacheUpdateTime").val().trim();
     data.statusCacheRefreshTime = $("#config-common-statusCacheRefreshTime").val().trim();
-    data.enableCombinedUpdates = $("#config-common-enableCombinedUpdates").is(':checked');
-    data.updateManagerRepo = $("#config-common-updateManagerRepo").val().trim();
-    data.updateManagerToken = $("#config-common-updateManagerToken").val().trim();
+    data.enableManagerRepo = $("#config-common-enableManagerRepo").is(':checked');
+    data.managerRepoName = $("#config-common-managerRepoName").val().trim();
+    data.managerRepoToken = $("#config-common-managerRepoToken").val().trim();
     return data;
   },
 
@@ -223,17 +223,17 @@ const configView = {
 
   //Sets the appropriate view state for toggles that have dependent inputs that must be hidden or shown
   setToggleDependencies: function() {
-    if ($(`#config-common-enableCombinedUpdates`).is(':checked')) {
-      $(`#config-common-updateManagerRepo-div-container`).show();
-      $(`#config-common-updateManagerRepo`).attr('required', 'required');
-      $(`#config-common-updateManagerToken-div-container`).show();
-      $(`#config-common-updateManagerToken`).attr('required', 'required');
+    if ($(`#config-common-enableManagerRepo`).is(':checked')) {
+      $(`#config-common-managerRepoName-div-container`).show();
+      $(`#config-common-managerRepoName`).attr('required', 'required');
+      $(`#config-common-managerRepoToken-div-container`).show();
+      $(`#config-common-managerRepoToken`).attr('required', 'required');
       $(`.config-provider-updates-div-container`).show();
     } else {
-      $(`#config-common-updateManagerRepo-div-container`).hide();
-      $(`#config-common-updateManagerRepo`).removeAttr('required');
-      $(`#config-common-updateManagerToken-div-container`).hide();
-      $(`#config-common-updateManagerToken`).removeAttr('required');
+      $(`#config-common-managerRepoName-div-container`).hide();
+      $(`#config-common-managerRepoName`).removeAttr('required');
+      $(`#config-common-managerRepoToken-div-container`).hide();
+      $(`#config-common-managerRepoToken`).removeAttr('required');
       $(`.config-provider-updates-div-container`).hide();
     }
   },
