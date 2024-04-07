@@ -188,17 +188,16 @@ const wiView = {
 
   //Callbacks called from asynchronous calls after the work items are rendered
 
-  updateStatuses: function (statusesModel, allLabels) {
+  updateStatuses: function (statusesModel, providerId, allLabels) {
     for (let item of statusesModel.items) {
       if (item.type == "pr" || item.type == "branch")
-        this.upateStatusIcon(item.status, statusesModel.header.uid, item.uid);
-      this.upateStatusClass(item.status, statusesModel.header.uid, item.uid)
+        this.upateStatusIcon(item.status, providerId, item.uid);
+      this.upateStatusClass(item.status, providerId, item.uid)
     }
-    let providerId = statusesModel.header.uid;
     this.updateSpinnerEnd(providerId);
     this.updateBadges(providerId, false);
     this.updateStatusVisibility();
-    $(`#${this.getPanelId(this.selectActiveTarget(), statusesModel.header.uid)} .wi-status-icon`).tooltip({ delay: 200 });
+    $(`#${this.getPanelId(this.selectActiveTarget(), providerId)} .wi-status-icon`).tooltip({ delay: 200 });
   },
   upateStatusIcon: function (status, providerId, itemId) {
     const target = this.selectActiveTarget();

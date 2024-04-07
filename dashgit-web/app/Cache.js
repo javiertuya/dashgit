@@ -40,6 +40,11 @@ const cache = {
     }
   },
   getModel: function (provider) {
+    if (this.hasStatusSurrogate(provider)) {
+      let surrogate = this.getStatusSurrogate(provider);
+      console.log(`${provider} CACHE: Get statuses model from surrogate provider ${surrogate}`);
+      return this.modelCache[surrogate].model;
+    }
     console.log(`${provider} CACHE: Get statuses model.`);
     return this.modelCache[provider].model;
   },
@@ -106,6 +111,7 @@ const cache = {
       this.statusCache = {};
       this.labelsCache = {};
     }
+    this.resetStatusSurrogates(config.data.providers);
   },
   // If call to graphql api fails to get statuses this method is invoked to override last refresh time to make 
   // the next refresh to be exactlly after statusCacheUpdateTime seconds
@@ -135,6 +141,7 @@ const cache = {
 
   ////////////////////////////////////////////////////////////////////////////////////////
   // Status cache: Stores the status of each branch, needed to update the items in the view
+  // Only contains the string with the value of the status, indexed by work item id
   ////////////////////////////////////////////////////////////////////////////////////////
 
   statusCache: {},
@@ -142,6 +149,8 @@ const cache = {
     return `${provider}_${uid}`;
   },
   getStatus: function (provider, uid) {
+    if (this.hasStatusSurrogate(provider))
+      provider = this.getStatusSurrogate(provider);
     return cache.statusCache[this.getUid(provider, uid)];
   },
   // Usar cuando cambie algun atributo del modelo que esta en los que definen la clave
@@ -151,6 +160,34 @@ const cache = {
     cache.statusCache[this.getUid(provider, newUid)] = status;
   },
 
+  ////////////////////////////////////////////////////////////////////////////////////////
+  // Status surrogates: To handle a particular scenario where two proviers have the same host url,
+  // and, althought using different users, they will produce the same GraphQL api call.
+  // The configuration may define a surrogate for one of the providers, so that getting statuses
+  // for this provider will use the statuses of the surrogate
+  ////////////////////////////////////////////////////////////////////////////////////////
+
+  statusSurrogates: {},
+
+  // to be called on cache reset (at startup and config changes)
+  resetStatusSurrogates: function (providers) {
+    // changes this default empty configuration if any surrogate has been defined
+    // temporal fixed config for test
+    this.statusSurrogates["1-github"] = "0-github";
+  },
+  hasStatusSurrogate: function (providerId) {
+    return this.statusSurrogates[providerId] != undefined;
+  },
+  getStatusSurrogate: function (providerId) {
+    return this.statusSurrogates[providerId];
+  },
+  getStatusSurrogatedIds: function (surrogateId) {
+    let ret = [];
+    for (let key of Object.keys(this.statusSurrogates))
+      if (this.statusSurrogates[key] == surrogateId)
+        ret.push(key);
+    return ret;
+  },
 
   ////////////////////////////////////////////////////////////////////////////////////////
   // Notification cache: Notifications are obtained asynchronously and stored here to be displayed by the UI

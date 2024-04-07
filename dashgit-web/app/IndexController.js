@@ -71,6 +71,7 @@ const indexController = {
     if (config.data.encrypted) {
       indexController.loginMode();
     } else {
+      wiController.reset(true);
       indexController.workMode();
       indexController.render();
     }

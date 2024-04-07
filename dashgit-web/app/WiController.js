@@ -1,6 +1,7 @@
 import { gitHubApi } from "./GitHubApi.js"
 import { gitLabApi } from "./GitLabApi.js"
 import { wiView } from "./WiView.js"
+import { Model } from "./Model.js"
 import { cache } from "./Cache.js"
 import { config } from "./Config.js"
 
@@ -75,6 +76,9 @@ const wiController = {
   //Gets a model of all projects, branches and pull requests, including the status
   //Used to fill the target "statuses". Uses cached data if not invalidated
   getStatusesOrCached: async function (provider, type) {
+    if (cache.hasStatusSurrogate(provider.uid))
+      return this.emptyModel(provider, "Branch statuses are shown in the surrogate provider defined in the configuration");
+
     await cache.ensureCacheIsInitialized(provider.uid);
 
     if (cache.hit(provider.uid)) { // use data from cache
@@ -94,6 +98,12 @@ const wiController = {
     //save refreshed or updated model to allow a hit in further calls
     cache.setModel(provider.uid, model, updateSince);
     return cache.getModel(provider.uid);
+  },
+  emptyModel: function(provider, message) {
+    console.log(`${provider.uid}: ${message}`);
+    let model = new Model().setHeader(provider.provider, provider.uid, provider.user, "");
+    model.header.message = message;
+    return model;
   },
 
   dispatchPromises: async function (target, promises) {
@@ -135,16 +145,30 @@ const wiController = {
     if (target != "statuses") //this target already does the reading of statuses if necessary
       for (let provider of config.data.providers)
         if (provider.enabled) {
+          this.dispatchProviderStatuses(provider);
+        }
+  },
+  dispatchProviderStatuses: function(provider) {
+          if (cache.hasStatusSurrogate(provider.uid)) {
+            console.log(`${provider.uid}: Get statuses from surrogate provider ${cache.getStatusSurrogate(provider.uid)} (later)`);
+            return;
+          }        
           if (cache.hit(provider.uid)) { // use data from cache and avoid call the api
             console.log(`${provider.uid}: Update Statuses to view from CACHE`);
-            let model = cache.getModel(provider.uid);
-            wiView.updateStatuses(model, cache.labelsCache[provider.uid]); //labels cache only for GitLab, may be undefined
+            this.displayProviderStatuses(provider.uid);
           } else if (provider.provider.toLowerCase() == "github") {
             gitHubApi.updateStatusesAsync(provider, cache.updateSince(provider.uid));
           } else if (provider.provider.toLowerCase() == "gitlab") {
             gitLabApi.updateStatusesAsync(provider, cache.updateSince(provider.uid));
           }
-        }
+  },
+  displayProviderStatuses: function(providerId) {
+    let model = cache.getModel(providerId);
+    wiView.updateStatuses(model, providerId, cache.labelsCache[providerId]); //labels cache only for GitLab, may be undefined
+    //if (providerId=="0-github")
+    //  wiView.updateStatuses(cache.getModel("1-github"), "1-github", cache.labelsCache["1-github"]);
+    for (let surrogated of cache.getStatusSurrogatedIds(providerId))
+      wiView.updateStatuses(cache.getModel(surrogated), surrogated, cache.labelsCache[surrogated]);
   },
   displayError: function (message) {
     wiView.renderAlert("danger", message);
@@ -157,7 +181,7 @@ const wiController = {
     console.log(statusesModel);
     cache.setModel(providerId, statusesModel, updateSince); //save to allow a hit in further calls
     if (cache.initialized(providerId))
-      wiView.updateStatuses(statusesModel, cache.labelsCache[providerId]);
+      this.displayProviderStatuses(providerId)
   },
 
   updateStatusesOnError: function (message, providerId) {
