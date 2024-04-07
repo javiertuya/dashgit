@@ -171,9 +171,22 @@ const cache = {
 
   // to be called on cache reset (at startup and config changes)
   resetStatusSurrogates: function (providers) {
-    // changes this default empty configuration if any surrogate has been defined
-    // temporal fixed config for test
-    this.statusSurrogates["1-github"] = "0-github";
+    this.statusSurrogates = this.getEnabledSurrogates(providers);
+  },
+  getEnabledSurrogates: function (providers) {
+    let surrogates = {};
+    for (let provider of providers) { // ensure that surrogated and surrogate are linked and enabled
+      if (provider.enabled && provider.statusSurrogateUser != "") {
+        for (let surrogate of providers) { // surrogate is the first enabled that match url and user
+          if (provider.uid != surrogate.uid && surrogate.enabled
+            && provider.provider == surrogate.provider && provider.url == surrogate.url && provider.statusSurrogateUser == surrogate.user) {
+            surrogates[provider.uid] = surrogate.uid;
+            break;
+          }
+        }
+      }
+    }
+    return surrogates;
   },
   hasStatusSurrogate: function (providerId) {
     return this.statusSurrogates[providerId] != undefined;

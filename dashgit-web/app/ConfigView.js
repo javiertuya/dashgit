@@ -39,6 +39,8 @@ const configView = {
     $("#config-form").html(html);
     this.setMoveStatus();
     this.setToggleDependencies(); // eg. visibility of elements that depends on a checkbox
+    for (let i = 0; i < data.providers.length; i++) // toggle between surrogate user and graphql parameters
+      this.setToggleProviderSurrogate($(`#config-providers-statusSurrogateUser-${i}`), data.providers[i].statusSurrogateUser!="");
     // activate tooltips at the input labels
     $(`.info-icon`).tooltip({ delay: 200 });
   },
@@ -119,8 +121,11 @@ const configView = {
           ${this.check2html(`config-providers-enableNotifications-${key}`, "Show notifications", provider.enableNotifications)}
         </div>
 
-        <div class="card-subtitle h6 mb-1 mt-1 text-body-secondary">GraphQL API parameters:</div>
         <div class="row">
+          <div class="col-auto card-subtitle h6 mb-1 mt-1 text-body-secondary">GraphQL API parameters:</div>
+          ${this.check2html(`config-providers-surrogate-enabled-${key}`, "Use a status surrogate", provider.statusSurrogateUser != "")}
+        </div>
+        <div class="row config-providers-graphql-settings">
           ${this.input2html(`config-graphql-maxProjects-${key}`, "number", "Max projects", provider.graphql.maxProjects, 'required min="2" max="100"', "150", "100",
             "Maximum number of repositories/projects that are retrieved to get the branches and statuses")}
           ${this.input2html(`config-graphql-maxBranches-${key}`, "number", "Max branches", provider.graphql.maxBranches, 'required min="2" max="100"', "150", "100",
@@ -133,6 +138,10 @@ const configView = {
               + this.check2html(`config-graphql-scope-organization-${key}`, "Organization member", provider.graphql.ownerAffiliations.includes("ORGANIZATION_MEMBER"))
               + this.check2html(`config-graphql-scope-collaborator-${key}`, "Collaborator", provider.graphql.ownerAffiliations.includes("COLLABORATOR")))
           }
+        </div>
+        <div class="row config-providers-surrogate-settings">
+          ${this.input2html(`config-providers-statusSurrogateUser-${key}`, "text", "Username of the status surrogate provider", provider.statusSurrogateUser, '', "350", "150",
+            "The provider with this username and same repository url will be used to get the statuses, instead of calling the GraphQL API")}
         </div>
 
         <div class="config-provider-updates-div-container">
@@ -196,6 +205,7 @@ const configView = {
     provider.unassignedAdditionalOwner = $(`#config-providers-unassignedAdditionalOwner-${id}`).val().trim().split(" ");
     provider.dependabotAdditionalOwner = $(`#config-providers-dependabotAdditionalOwner-${id}`).val().trim().split(" ");
     provider.enableNotifications = $(`#config-providers-enableNotifications-${id}`).is(':checked');
+    provider.statusSurrogateUser = $(`#config-providers-statusSurrogateUser-${id}`).val().trim();
 
     provider.graphql.maxProjects = $(`#config-graphql-maxProjects-${id}`).val().trim();
     provider.graphql.maxBranches = $(`#config-graphql-maxBranches-${id}`).val().trim();
@@ -235,6 +245,18 @@ const configView = {
       $(`#config-common-managerRepoToken-div-container`).hide();
       $(`#config-common-managerRepoToken`).removeAttr('required');
       $(`.config-provider-updates-div-container`).hide();
+    }
+  },
+  setToggleProviderSurrogate: function(check, checked) {
+    let providerRoot=$(check).closest(".config-provider-card");
+    if (checked) {
+      $(providerRoot).find(".config-providers-graphql-settings").hide();
+      $(providerRoot).find(".config-providers-surrogate-settings").show();
+    } else {
+      // if unchecked, also cleans the surrogate user field
+      $(providerRoot).find('input[id^="config-providers-statusSurrogateUser-"]').val("");
+      $(providerRoot).find(".config-providers-graphql-settings").show();
+      $(providerRoot).find(".config-providers-surrogate-settings").hide();
     }
   },
 

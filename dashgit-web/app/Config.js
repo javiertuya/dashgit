@@ -100,6 +100,7 @@ const config = {
     this.setDefault(element, "enabled", true);
     this.setDefault(element, "enableNotifications", true);
     this.setDefault(element, "filterIfLabel", "");
+    this.setDefault(element, "statusSurrogateUser", "");
     if (element.provider == "GitHub") {
       this.setDefault(element, "url", "https://github.com");
       this.setDefault(element, "api", "https://api.github.com");

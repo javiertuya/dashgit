@@ -42,6 +42,9 @@ $(document).on('click', '.config-btn-provider-up', function (e) {
 $(document).on('change', '#config-common-enableManagerRepo', function (e) {
   configView.setToggleDependencies();
 });
+$(document).on('change', '[id^="config-providers-surrogate-enabled-"]', function (e) {
+  configView.setToggleProviderSurrogate(this, $(this).is(':checked'));
+});
 
 // Data update events
 
@@ -49,6 +52,7 @@ $(document).on('click', '.config-btn-provider-submit', function (e) {
   if ($(".config-form")[0].checkValidity()) {
     console.log("Saving config data");
     configController.saveData();
+    configController.afterSaveData();
     e.preventDefault();
   } else
     console.log("Can't save config data due to validation issues");
@@ -84,11 +88,7 @@ $(document).on('click', '#buttonConfigSave', function (e) {
   console.log("Save config json");
   try {
     config.updateFromString($("#configJson").val());
-    configController.updateMainTarget();
-    //to have a refresh effect when changing later to another tab
-    wiController.reset(true);
-    wiView.reset();
-    configController.displayToast("Configuration saved");
+    configController.afterSaveData();
   } catch (error) {
     wiView.renderAlert("danger", error);
   }
@@ -118,8 +118,13 @@ const configController = {
 
     // Replace the global config data with the local config data value, it is assumed that all data was validated at the ui
     config.updateFromString(JSON.stringify(data));
+  },
+  afterSaveData: function () {
     configController.updateMainTarget();
-    this.displayToast("Configuration saved");
+    configController.displayToast("Configuration saved");
+    //to force a refresh when changing later to another tab
+    wiController.reset(true);
+    wiView.reset();
   },
 
   displayToast: function (message) {
