@@ -37,10 +37,7 @@ const configView = {
       html += "\n" + this.provider2html(data.providers[i], i);
     html += "</div>"
     $("#config-form").html(html);
-    this.setMoveStatus();
-    this.setToggleDependencies(); // eg. visibility of elements that depends on a checkbox
-    for (let i = 0; i < data.providers.length; i++) // toggle between surrogate user and graphql parameters
-      this.setToggleProviderSurrogate($(`#config-providers-statusSurrogateUser-${i}`), data.providers[i].statusSurrogateUser!="");
+    this.refreshAll();
     // activate tooltips at the input labels
     $(`.info-icon`).tooltip({ delay: 200 });
   },
@@ -107,9 +104,7 @@ const configView = {
             "The reference user for which the work items are displayed (assigned to, created by, etc.)")}
           ${this.input2html(`config-providers-token-${key}`, "password", "Access token", provider.token, '', "150", "225",
             "An API access token with read permission to the repository, used to authenticate the repository API requests of this provider")}
-          ${provider.provider == "GitLab"
-            ? this.input2html(`config-providers-url-${key}`, "url", "Repository url", provider.url, 'required', "150", "225", "The url of the repository server")
-            : ""}
+          ${this.input2html(`config-providers-url-${key}`, "url", "Repository url", provider.url, 'required', "150", "225", "The url of the repository server")}
         </div>
         <div class="row">  
           ${this.input2html(`config-providers-filterIfLabel-${key}`, "text", "Filter if label", provider.filterIfLabel, '', "150", "150",
@@ -202,8 +197,8 @@ const configView = {
       provider.url = $(`#config-providers-url-${id}`).val().trim();
 
     provider.filterIfLabel = $(`#config-providers-filterIfLabel-${id}`).val().trim();
-    provider.unassignedAdditionalOwner = $(`#config-providers-unassignedAdditionalOwner-${id}`).val().trim().split(" ");
-    provider.dependabotAdditionalOwner = $(`#config-providers-dependabotAdditionalOwner-${id}`).val().trim().split(" ");
+    provider.unassignedAdditionalOwner = this.str2array($(`#config-providers-unassignedAdditionalOwner-${id}`).val());
+    provider.dependabotAdditionalOwner = this.str2array($(`#config-providers-dependabotAdditionalOwner-${id}`).val());
     provider.enableNotifications = $(`#config-providers-enableNotifications-${id}`).is(':checked');
     provider.statusSurrogateUser = $(`#config-providers-statusSurrogateUser-${id}`).val().trim();
 
@@ -229,10 +224,17 @@ const configView = {
     return provider;
   },
 
-  // View mannipulation 
+  // View refresh on changes
 
-  //Sets the appropriate view state for toggles that have dependent inputs that must be hidden or shown
-  setToggleDependencies: function() {
+  //Sets the appropriate view state for elements that have dependent inputs that must be hidden or shown
+  refreshAll: function () {
+    this.refreshUpdateManagerRepo();
+    this.refreshProviderDefaults();
+    this.refreshProviderSurrogates();
+    this.refreshMoveStatus();
+  },
+  // refresh for changes on the enabled states of the manager repository
+  refreshUpdateManagerRepo: function () {
     if ($(`#config-common-enableManagerRepo`).is(':checked')) {
       $(`#config-common-managerRepoName-div-container`).show();
       $(`#config-common-managerRepoName`).attr('required', 'required');
@@ -247,8 +249,35 @@ const configView = {
       $(`.config-provider-updates-div-container`).hide();
     }
   },
-  setToggleProviderSurrogate: function(check, checked) {
-    let providerRoot=$(check).closest(".config-provider-card");
+  // hide GitHub urls
+  refreshProviderDefaults: function () {
+    let urls = $('input[id^="config-providers-url-"]');
+    for (let url of urls) {
+      if ($(url).val() == "https://github.com")
+        $(url).closest(".col-auto").hide();
+    }
+  },
+  // Toggle between visibility of graphql parameters and surrogate user.
+  // This depends on a check that is on when the surrogate user is empty.
+  // Hides the toggle when there is no posibility to have surrogates (e.g. only one provider)
+  refreshProviderSurrogates: function () {
+    let surrogateUsers = $('input[id^="config-providers-statusSurrogateUser-"]');
+    for (let surrogate of surrogateUsers) {
+      let check = $(surrogate).closest(".config-provider-card").find('input[id^="config-providers-surrogate-enabled-"]');
+      let checked = $(surrogate).val() != "";
+      this.refreshProviderSurrogate(check, checked);
+    }
+  },
+  refreshProviderSurrogate: function (check, checked) {
+    let providerRoot = $(check).closest(".config-provider-card");
+    // Hide the checkbox and disables surrogates if there are less than 2 providers with the same url
+    if (this.countUrls(providerRoot) <= 1) {
+      $(providerRoot).find('input[id^="config-providers-surrogate-enabled-"]').closest(".col-auto").hide();
+      checked = false; //to clear surrogate, e.g. if the second provider was removed
+    } else {
+      $(providerRoot).find('input[id^="config-providers-surrogate-enabled-"]').closest(".col-auto").show();
+    }
+    // Toogle input values depending on the checked state
     if (checked) {
       $(providerRoot).find(".config-providers-graphql-settings").hide();
       $(providerRoot).find(".config-providers-surrogate-settings").show();
@@ -259,6 +288,29 @@ const configView = {
       $(providerRoot).find(".config-providers-surrogate-settings").hide();
     }
   },
+  countUrls: function (providerRoot) { // how many urls match the providerRoot url
+    let count = 0;
+    let urlValue = $(providerRoot).find('input[id^="config-providers-url-"]').val()
+    let urls = $('input[id^="config-providers-url-"]');
+    for (let url of urls) {
+      let user = $(url).closest(".config-provider-card").find('input[id^="config-providers-user-"]').val();
+      if (urlValue == $(url).val() && urlValue != "" && user != "") // if user empty it is provisional, does not count
+        count++;
+    }
+    return count;
+  },
+  // toggle visibility of move provider buttons
+  refreshMoveStatus: function () {
+    $(".config-btn-provider-down").prop("disabled", false);
+    $(".config-btn-provider-up").prop("disabled", false);
+    const items = $("#config-providers-all").find(`.config-provider-panel`);
+    if (items.length > 0) {
+      $($(items[0]).find(".config-btn-provider-up")[0]).prop("disabled", true);
+      $($(items[items.length - 1]).find(".config-btn-provider-down")[0]).prop("disabled", true);
+    }
+  },
+
+  // View manipulation
 
   addProvider: function (provider) {
     //get latest id to increase it in the new provider
@@ -272,11 +324,11 @@ const configView = {
     last++;
     const html = this.provider2html(provider, last);
     $("#config-providers-all").append(html);
-    this.setMoveStatus();
+    this.refreshAll();
   },
   removeProvider: function (location) {
     $(location).closest(".config-provider-card").remove();
-    this.setMoveStatus();
+    this.refreshAll();
   },
   moveProvider: function (location, where) {
     const element = $(location).closest(".config-provider-card");
@@ -284,16 +336,7 @@ const configView = {
       $(element).insertAfter($(element).next());
     else if (where < 0)
       $(element).insertBefore($(element).prev());
-    this.setMoveStatus();
-  },
-  setMoveStatus: function () {
-    $(".config-btn-provider-down").prop("disabled", false);
-    $(".config-btn-provider-up").prop("disabled", false);
-    const items = $("#config-providers-all").find(`.config-provider-panel`);
-    if (items.length > 0) {
-      $($(items[0]).find(".config-btn-provider-up")[0]).prop("disabled", true);
-      $($(items[items.length - 1]).find(".config-btn-provider-down")[0]).prop("disabled", true);
-    }
+    this.refreshAll();
   },
 
   // Other rendering actions
@@ -415,6 +458,10 @@ const configView = {
     else if (providerType == "GitLab")
       return `<i class="fa-brands fa-square-gitlab"></i>`;
     return "";
+  },
+
+  str2array: function (value) {
+    return value.trim() == "" ? [] : value.trim().split(" ");
   },
 
 }

@@ -40,10 +40,10 @@ $(document).on('click', '.config-btn-provider-up', function (e) {
 
 //Events that are particular to some items in the configuration
 $(document).on('change', '#config-common-enableManagerRepo', function (e) {
-  configView.setToggleDependencies();
+  configView.refreshAll();
 });
 $(document).on('change', '[id^="config-providers-surrogate-enabled-"]', function (e) {
-  configView.setToggleProviderSurrogate(this, $(this).is(':checked'));
+  configView.refreshProviderSurrogate(this, $(this).is(':checked'));
 });
 
 // Data update events
