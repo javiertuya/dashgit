@@ -107,6 +107,7 @@ const wiController = {
   },
 
   dispatchPromises: async function (target, promises) {
+    const currentDate = new Date();
     const responses = await Promise.allSettled(promises);
     console.log("Responses from all promises:");
     console.log(responses);
@@ -122,7 +123,7 @@ const wiController = {
         models.push(response.value);
 
     if (models.length > 0)
-      wiView.renderWorkItems(target, models);
+      this.displayWorkItems(target, models, currentDate);
 
     // Subsequent async calls (when finish, they will invoque the update* methods)
     this.dispatchNotifications(target);
@@ -132,6 +133,13 @@ const wiController = {
     wiView.updateStatusVisibility();
     wiView.setLoading(false);
   },
+  
+  displayWorkItems: function(target, models, currentDate) {
+    wiView.renderWorkItems(target, models, config.getLastVisitedDate(target));
+    if (target == "assigned" || target == "unassigned") // only highlight items for these targets
+      config.saveLastVisitedDate(target, currentDate);
+  },
+
   dispatchNotifications: function (target) {
     for (let provider of config.data.providers)
       if (provider.enabled && provider.enableNotifications) {

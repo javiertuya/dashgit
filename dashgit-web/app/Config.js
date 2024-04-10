@@ -161,6 +161,36 @@ const config = {
     return `dashgit/${this.appVersion}`
   },
 
+  // Control of the moment where each tab is visited, used to highlight items
+  // that are new since the previous visit to a tab.
+  // Note that this is informative only, and not 100% exact because it is based
+  // on the dates received from the api compared whit the access dates to the tabs.
+  // To prevent and item not to be highlighted when it should,
+  // gives a few secons of tolerance (visit time is always a little smaller than the real)
+  // this means that some item may be highlighted twice if updated during this period
+  // A completely precise should check the items that were displayed previously
+  // and compare them against the actual items
+
+  getLastVisitedDate: function(target) {
+    let visited = this.getVisitedDates();
+    return new Date(visited[target]);
+  },
+  saveLastVisitedDate: function(target, currentDate) {
+    let visited = this.getVisitedDates();
+    currentDate.setMilliseconds(0);
+    // Gives a few secons of tolerance,
+    // this means that some item may be highlighted twice if updated during this period
+    // but avoids and item not to be highlighted when it should
+    visited[target] = new Date(currentDate-4000);
+    localStorage.setItem("dashgit-config-visited", JSON.stringify(visited));
+  },
+  getVisitedDates: function() {
+    let value = localStorage.getItem("dashgit-config-visited");
+    if (value == undefined || value == null)
+      value = "{}";
+    return JSON.parse(value);
+  },
+
   //Token encryption related
 
   //To decript token if necessary

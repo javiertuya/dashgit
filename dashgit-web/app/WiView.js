@@ -48,7 +48,7 @@ const wiView = {
     return $(".tab-pane.active").attr("id");
   },
 
-  renderWorkItems: function (target, models) {
+  renderWorkItems: function (target, models, highlightSince) {
     let sorting = $("#inputSort").val();
     let grouping = $("#checkGroup").is(':checked');
     console.log(`Render Work Items, sort order: ${sorting}, grouping: ${grouping}`);
@@ -64,7 +64,7 @@ const wiView = {
       items = wiServices.sort(sorting, items);
       items = wiServices.filter(target, mod.header.uid, items);
       items = wiServices.group(grouping, items);
-      html += this.model2html(target, header, items, grouping, sorting);
+      html += this.model2html(target, header, items, grouping, sorting, highlightSince);
     }
     html += `</div>`;
     $(`#${target}`).html(html);
@@ -75,7 +75,7 @@ const wiView = {
     }
   },
 
-  model2html: function (target, header, items, grouping, sorting) {
+  model2html: function (target, header, items, grouping, sorting, highlightSince) {
     let provider = header.uid;
     let html = `
     <div class="accordion-item">
@@ -106,13 +106,13 @@ const wiView = {
       html += `<div id="wi-providers-target-header-${target}-${provider}"></div>`
     // adds every row
     html += `<table id="wi-items-${this.getId(target, header.uid, "all")}" provider="${provider}" class='table table-sm table-borderless m-0'>`;
-    html += this.rowsmodel2html(target, header, items, grouping, sorting);
+    html += this.rowsmodel2html(target, header, items, grouping, sorting, highlightSince);
     html += `</table>`;
     html += `</div></div></div>`;
     return html;
   },
 
-  rowsmodel2html: function (target, header, items, grouping, sorting) {
+  rowsmodel2html: function (target, header, items, grouping, sorting, highlightSince) {
     let html = "";
     if (items.length == 0)
       html += `<tr><td>No work items in this view. ${header.message}</td></tr>`;
@@ -127,12 +127,12 @@ const wiView = {
               ? this.repourl2html(item.repo_url, item.repo_name)
               : "<span class='text-secondary fw-bold'>" + this.groupValue(item, grouping, sorting) + "</span>"}
           <td><tr>`;
-        html += this.rowmodel2html(target, header, item, grouping);
+        html += this.rowmodel2html(target, header, item, grouping, highlightSince);
       }
     }
     return html;
   },
-  rowmodel2html: function (target, header, item, grouping) {
+  rowmodel2html: function (target, header, item, grouping, highlightSince) {
     return `
     <tr id="wi-item-${this.getId(target, header.uid, item.uid)}" 
         itemrepo="${item.repo_name}"
@@ -140,7 +140,7 @@ const wiView = {
         itemiid="${item.iid}"
         class="wi-status-class-any wi-status-class-${this.status2class(item.type, header.uid, item.uid)}">
       <td style="width:24px;" class="wi-item-column-clickable">${this.status2html(item.type, target, header.uid, item.uid)}</td>
-      <td style="width:24px;" class="wi-item-column-clickable">${this.type2html(item.type)}</td>
+      <td style="width:24px;" class="wi-item-column-clickable">${this.type2html(item.type, new Date(item.updated_at) > highlightSince)}</td>
       <td style="width:24px; color:${this.gitColor};" 
         class="wi-item-column-clickable wi-notifications-${this.getId(target, header.uid, 'all')}" 
         id="wi-notifications-${this.getId(target, header.uid, item.uid)}">
@@ -568,13 +568,14 @@ const wiView = {
     else
       return `${this.spinnerIcon}`;
   },
-  type2html: function (type) {
+  type2html: function (type, highlight) {
+    let titleSuffix = highlight ? " (new since last visit to this view)" : "";
     if (type == "issue")
-      return `${this.issueIcon}`;
+      return `<i class="${this.issueIconClass}" style="color:${highlight ? this.gitColor : "MediumSeaGreen"}" title="Issue${titleSuffix}"></i>`;
     else if (type == "pr")
-      return `${this.prIcon}`;
+      return `<i class="${this.prIconClass}" style="color:${highlight ? this.gitColor : "MediumSeaGreen"}" title="Pull Request${titleSuffix}"></i>`;
     else if (type == "branch")
-      return `${this.branchIcon}`;
+      return `<i class="${this.branchIconClass}" style="color:${highlight ? this.gitColor : "DodgerBlue"}" title="Branch${titleSuffix}"></i>`;
     else
       return '';
   },
@@ -639,9 +640,9 @@ const wiView = {
   gitLabIcon: '<i class="fa-brands fa-square-gitlab"></i>',
   gitColor: '#F34F29',
 
-  prIcon: '<i class="fa-solid fa-code-pull-request" style="color:MediumSeaGreen" title="Pull Request"></i>',
-  issueIcon: '<i class="fa-regular fa-circle-dot" style="color:MediumSeaGreen" title="Issue"></i>',
-  branchIcon: '<i class="fa-solid fa-code-branch" style="color:DodgerBlue" title="Branch"></i>',
+  prIconClass: 'fa-solid fa-code-pull-request',
+  issueIconClass: 'fa-regular fa-circle-dot',
+  branchIconClass: 'fa-solid fa-code-branch',
 
   successIcon: '<i class="wi-status-icon fa-solid fa-check" style="color:MediumSeaGreen" title="The build has completed succesfully"></i>',
   failureIcon: '<i class="wi-status-icon fa-solid fa-x" style="color:Red" title="The build has ended with failure"></i>',
