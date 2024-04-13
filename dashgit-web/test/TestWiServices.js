@@ -149,9 +149,11 @@ describe("TestView - Main processing in the view module", function () {
         assert.deepEqual(items[2].actions, { request_review3: true, request_review4: true });
     });
 
-    it("Merge duplicates with follow-up action badges should preseve all values except dates", function () {
-        // regular item before/after the follow-up, with this order
-        // item1 follow-up2 follow-up1 item2
+    // Test merge regular items and follow-ups, prepare a model with:
+    // regular item before/after the follow-up, with this order
+    // item1 follow-up2 follow-up1 item2
+    // follow up updated date is more recent than the work item updated date
+    function getModelMergeFollowUps() {
         let mod = new Model().setHeader("GitHub", "0-github", "", "");
         mod.addItem({ //item1
             repo_name: "repo1", type: "pr", iid: "001", title: "regular item 1", author: "me1", assignees: "you1",
@@ -160,32 +162,49 @@ describe("TestView - Main processing in the view module", function () {
         mod.addLastItemLabel("lbl1", "111111");
         mod.addItem({ //follow-up2
             repo_name: "repo2", type: "pr", iid: "002", title: "follow-up title 2", author: "", assignees: "",
-            created_at: "2023-07-02", updated_at: "2023-07-02", actions: { follow_up: true }
+            created_at: "2023-07-02", updated_at: "2023-08-02", actions: { follow_up: true }
         });
         mod.addItem({ //follow-up1
             repo_name: "repo1", type: "pr", iid: "001", title: "follow-up title 1", author: "", assignees: "",
-            created_at: "2023-07-01", updated_at: "2023-07-01", actions: { follow_up: true }
+            created_at: "2023-07-01", updated_at: "2023-08-01", actions: { follow_up: true }
         });
         mod.addItem({ //item2
             repo_name: "repo2", type: "pr", iid: "002", title: "regular item 2", author: "me2", assignees: "you2",
             created_at: "2023-06-02", updated_at: "2023-06-20"
         });
         mod.addLastItemLabel("lbl2", "222222");
-        let items = wiServices.merge(mod.items);
-
-        // expected change dates and add an action, independently of the order of merged items
-        let expected1 = {
-            uid: "repo1_pr_001",
-            repo_name: "repo1", type: "pr", iid: "001", title: "regular item 1", author: "me1", assignees: "you1", labels: [{ name: "lbl1", color: "111111" }],
-            created_at: "2023-07-01", updated_at: "2023-07-01", actions: { follow_up: true },
-        };
-        let expected2 = {
-            uid: "repo2_pr_002",
-            repo_name: "repo2", type: "pr", iid: "002", title: "regular item 2", author: "me2", assignees: "you2", labels: [{ name: "lbl2", color: "222222" }],
-            created_at: "2023-07-02", updated_at: "2023-07-02", actions: { follow_up: true },
-        };
-        assert.deepEqual(expected1, mod.items[0]);
-        assert.deepEqual(expected2, mod.items[1]);
+        return mod;
+    };
+    function getExpectedMergeFollowUps() {
+        return [ { // expected value preserves the issue values and adds an action, independently of the order of merged items
+                uid: "repo1_pr_001",
+                repo_name: "repo1", type: "pr", iid: "001", title: "regular item 1", author: "me1", assignees: "you1", labels: [{ name: "lbl1", color: "111111" }],
+                created_at: "2023-06-01", updated_at: "2023-08-01", actions: { follow_up: true },
+            }, {
+                uid: "repo2_pr_002",
+                repo_name: "repo2", type: "pr", iid: "002", title: "regular item 2", author: "me2", assignees: "you2", labels: [{ name: "lbl2", color: "222222" }],
+                created_at: "2023-06-02", updated_at: "2023-08-02", actions: { follow_up: true },
+            } ];
+    };
+    it("Merge duplicates with follow-up action badges should preseve all values", function () {
+        // follow-up updated date is more recent than the work item updated data
+        let mod = getModelMergeFollowUps();
+        let expected = getExpectedMergeFollowUps();
+        wiServices.merge(mod.items);
+        assert.deepEqual(expected[0], mod.items[0]);
+        assert.deepEqual(expected[1], mod.items[1]);
+    });
+    it("Merge duplicates with follow-up action badges should use maximum updated date", function () {
+        // follow-up update date is older than work item updated data, should take the work item date
+        let mod = getModelMergeFollowUps();
+        mod.items[0].updated_at = "2023-08-10";
+        mod.items[3].updated_at = "2023-08-20";
+        let expected = getExpectedMergeFollowUps();
+        expected[0].updated_at = "2023-08-10";
+        expected[1].updated_at = "2023-08-20";
+        wiServices.merge(mod.items);
+        assert.deepEqual(expected[0], mod.items[0]);
+        assert.deepEqual(expected[1], mod.items[1]);
     });
 
     it("Filter model items by contained label", function () {

@@ -51,7 +51,6 @@ const wiView = {
   renderWorkItems: function (target, models, highlightSince) {
     let sorting = $("#inputSort").val();
     let grouping = $("#checkGroup").is(':checked');
-    console.log(`Render Work Items, sort order: ${sorting}, grouping: ${grouping}`);
     let html = `<div class="accordion" id="wi-providers-panel">`;
     if (target == "dependabot")
       html = html + this.updateHeader2html();
