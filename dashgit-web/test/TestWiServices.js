@@ -210,7 +210,7 @@ describe("TestView - Main processing in the view module", function () {
     it("Filter model items by contained label", function () {
         //filtered model fist/last, filtered label first/last, filtered label matches this/other provider,
         //no labels to filter, empty labels
-        let mod = new Model().setHeader("GitHub", "0-github", "", "");
+        let mod = new Model().setHeader("GitHub", "0-github", "usr", "");
         mod.addItem({ repo_name: "repo1", type: "pr", iid: "001", title: "pr001-filtered" }); //first filtered & label
         mod.addLastItemLabel("lbl0", "000000");
         mod.addLastItemLabel("lbl1", "ffffff");
@@ -224,7 +224,7 @@ describe("TestView - Main processing in the view module", function () {
         mod.addItem({ repo_name: "repo2", type: "pr", iid: "006", title: "pr006-filtered" }); //last filtered & label
         mod.addLastItemLabel("lbl1", "ffffff");
         mod.addLastItemLabel("lbl0", "000000");
-        let items = wiServices.filterBy("assigned", new Date(), 0, "lbl0", mod.items); //TODO use filter (requires config)
+        let items = wiServices.filterBy("assigned", "usr", new Date(), 0, "lbl0", undefined, mod.items); //TODO use filter (requires config)
         let actual = items.map(a => a.title);
         assert.deepEqual(['pr002-nofilter', 'pr004-nofilter', 'pr005-nofilter'], actual);
     });
@@ -233,23 +233,40 @@ describe("TestView - Main processing in the view module", function () {
         //age not set/updated<=age/upadted>age/created>age(no filter)
         //duplicate equal id, others different/different id, others equal (not filtered)
         //author: dependabot/dependa[bot]/other pr/issue
-        let mod = new Model().setHeader("GitHub", "0-github", "", "");
+        let mod = new Model().setHeader("GitHub", "0-github", "usr", "");
         mod.addItem({ repo_name: "repo1", type: "pr", iid: "001", title: "pr001", updated_at: "2023-08-10", created_at: "2023-08-10" });
         mod.addItem({ repo_name: "repo1", type: "pr", iid: "002", title: "pr002", updated_at: "2023-08-02", created_at: "2023-08-10" });
         mod.addItem({ repo_name: "repo1", type: "pr", iid: "003", title: "pr003", updated_at: "2023-08-10", created_at: "2023-08-02" });
         let modStr = JSON.stringify(mod);
 
-        let items = wiServices.filterBy("assigned", new Date("2023-08-10"), 8, "", JSON.parse(modStr).items);
+        let items = wiServices.filterBy("assigned", "usr", new Date("2023-08-10"), 8, "", undefined, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr002', 'pr003'], items.map(a => a.title));
-        items = wiServices.filterBy("assigned", new Date("2023-08-10"), 7, "", JSON.parse(modStr).items);
+        items = wiServices.filterBy("assigned", "usr", new Date("2023-08-10"), 7, "", undefined, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr003'], items.map(a => a.title));
-        items = wiServices.filterBy("assigned", new Date("2023-08-10"), 0, "", JSON.parse(modStr).items);
+        items = wiServices.filterBy("assigned", "usr", new Date("2023-08-10"), 0, "", undefined, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr002', 'pr003'], items.map(a => a.title));
+    });
+
+    it("Filter model items by who authored", function () {
+        //author: dependabot/dependa[bot]/other, pr/issue(no filter), target=unassigned/other(no filter)
+        let mod = new Model().setHeader("GitHub", "0-github", "usr", "");
+        mod.addItem({ repo_name: "repo1", type: "branch", iid: "001", title: "pr001", author: "usr" });
+        mod.addItem({ repo_name: "repo2", type: "pr", iid: "002", title: "pr002", author: "otheruser" });
+        let modStr = JSON.stringify(mod);
+
+        let items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", { authorMe: true, authorOthers: true}, JSON.parse(modStr).items);
+        assert.deepEqual(['pr001', 'pr002'], items.map(a => a.title));
+        items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", { authorMe: true, authorOthers: false}, JSON.parse(modStr).items);
+        assert.deepEqual(['pr001'], items.map(a => a.title));
+        items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", { authorMe: false, authorOthers: true}, JSON.parse(modStr).items);
+        assert.deepEqual(['pr002'], items.map(a => a.title));
+        items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", { authorMe: false, authorOthers: false}, JSON.parse(modStr).items);
+        assert.deepEqual([ ], items.map(a => a.title));
     });
 
     it("Filter dependabot authored only at unassigned target", function () {
         //author: dependabot/dependa[bot]/other, pr/issue(no filter), target=unassigned/other(no filter)
-        let mod = new Model().setHeader("GitHub", "0-github", "", "");
+        let mod = new Model().setHeader("GitHub", "0-github", "usr", "");
         mod.addItem({ repo_name: "repo1", type: "branch", iid: "001", title: "pr001", author: "me" });
         mod.addItem({ repo_name: "repo1", type: "pr", iid: "002", title: "pr002", author: "dependabot[bot]" });
         mod.addItem({ repo_name: "repo2", type: "pr", iid: "003", title: "pr003", author: "me" });
@@ -257,12 +274,12 @@ describe("TestView - Main processing in the view module", function () {
         mod.addItem({ repo_name: "repo3", type: "issue", iid: "005", title: "is005", author: "Dependabot" });
         let modStr = JSON.stringify(mod);
 
-        let items = wiServices.filterBy("unassigned", new Date(), 0, "", JSON.parse(modStr).items);
+        let items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", undefined, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr003', 'is005'], items.map(a => a.title));
 
-        items = wiServices.filterBy("assigned", new Date(), 0, "", JSON.parse(modStr).items);
+        items = wiServices.filterBy("assigned", "usr", new Date(), 0, "", undefined, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr002', 'pr003', 'pr004', 'is005'], items.map(a => a.title));
-        items = wiServices.filterBy("statuses", new Date(), 0, "", JSON.parse(modStr).items);
+        items = wiServices.filterBy("statuses", "usr", new Date(), 0, "", undefined, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr002', 'pr003', 'pr004', 'is005'], items.map(a => a.title));
     });
 

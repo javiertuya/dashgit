@@ -18,6 +18,7 @@ This dashboard provides:
 - A consolidated view of multiple GitHub and GitLab repositories.
 - Different views of your work items 
   (open issues, pull requests, review requests), 
+  triage (unassigned),
   branches and dependabot updates.
 - Build statuses of all branches and notifications
 - Automatically combine dependabot updates into one pull request per repository

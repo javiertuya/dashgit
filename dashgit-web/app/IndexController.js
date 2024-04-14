@@ -60,6 +60,16 @@ $(document).on('change', '#inputStatus', async function () {
 $(document).on('click', '.accordion-button', function () {
   wiView.saveStatePanel($(this).attr('id'), $(this).attr('aria-expanded'))
 });
+// Generic view header to perform additional filtering, 
+// included here instead of wiController because behaviour is common for several views and causes rendering
+$(document).on('change', '.wi-view-filter-clickable', async function () {
+  let target = $(".nav-link.active").attr("aria-controls");
+  config.session.viewFilter[target] = { 
+    authorMe: $(`#wi-view-filter-${target}-authorMe`).is(':checked'),
+    authorOthers: $(`#wi-view-filter-${target}-authorOthers`).is(':checked'),
+  }
+  indexController.render();
+});
 
 const indexController = {
 

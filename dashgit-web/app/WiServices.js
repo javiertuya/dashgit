@@ -37,31 +37,37 @@ const wiServices = {
     return newItems;
   },
 
-  filter: function (target, providerUid, items) {
+  filter: function (target, providerUid, user, items) {
     let label = config.getProviderByUid(providerUid).filterIfLabel
-    return this.filterBy(target, new Date(), config.data.maxAge, label, items)
+    return this.filterBy(target, user, new Date(), config.data.maxAge, label, config.session.viewFilter[target], items)
   },
-  filterBy: function (target, today, maxAge, labelToFilter, items) {
+  filterBy: function (target, user, today, maxAge, labelToFilter, viewFilter, items) {
     for (let i = items.length - 1; i >= 0; i--) {
       let item = items[i];
-      //filter by age
-      if (maxAge > 0 && this.daysBetweenDates(new Date(item.updated_at), today) > maxAge) {
-        //console.log(`Filtering item by date: ${item.repo_name} ${item.title}`)
+      if (this.filterItem(target, user, today, maxAge, labelToFilter, viewFilter, item))
         items.splice(i, 1);
+    }
+    return items;
+  },
+  filterItem: function (target, user, today, maxAge, labelToFilter, viewFilter, item) {
+      if (maxAge > 0 && this.daysBetweenDates(new Date(item.updated_at), today) > maxAge) { //filter by age
+        //console.log(`Filtering item by date: ${item.repo_name} ${item.title}`)
+        return true;
       } else if (target == "unassigned" && item.type == "pr" //do not repeat what is in dependabot target
         && item.author.toLowerCase().startsWith("dependabot")) {
         //console.log(`Filtering unassigned item authored by dependabot: ${item.repo_name} ${item.title}`)
-        items.splice(i, 1);
+        return true;
+      } else if (viewFilter != undefined && user != undefined // filter by author (filters out if filter value is false)
+        && ( !viewFilter.authorMe && item.author == user || !viewFilter.authorOthers && item.author != user )) {
+          return true;
       } else if (labelToFilter != "") { //filter by label
         for (let label of item.labels)
           if (label.name == labelToFilter) {
             //console.log(`Filtering item by label [${label.name}]: ${item.repo_name} ${item.title}`)
-            items.splice(i, 1);
-            break;
+            return true;
           }
       }
-    }
-    return items;
+    return false;
   },
 
   merge: function (items) {

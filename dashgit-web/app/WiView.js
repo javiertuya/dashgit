@@ -51,17 +51,24 @@ const wiView = {
   renderWorkItems: function (target, models, highlightSince) {
     let sorting = $("#inputSort").val();
     let grouping = $("#checkGroup").is(':checked');
+    // initial values of view filters (not all views allow selecting these filters from the ui)
+    if (config.session.viewFilter[target] == undefined)
+      config.session.viewFilter[target] = { authorMe: target != "unassigned", authorOthers: true };
+
     let html = `<div class="accordion" id="wi-providers-panel">`;
     if (target == "dependabot")
       html = html + this.updateHeader2html();
     if (target == "follow-up")
       html = html + this.followUpHeader2html();
+    if (target == "unassigned" || target == "involved") // other views do not have option to manage the filters
+      html = html + this.viewFilterHeader2html(target, config.session.viewFilter[target]);
+
     for (let mod of models) {
       let header = mod.header;
       let items = mod.items;
       items = wiServices.merge(items);
       items = wiServices.sort(sorting, items);
-      items = wiServices.filter(target, mod.header.uid, items);
+      items = wiServices.filter(target, mod.header.uid, mod.header.user, items);
       items = wiServices.group(grouping, items);
       html += this.model2html(target, header, items, grouping, sorting, highlightSince);
     }
@@ -157,6 +164,20 @@ const wiView = {
         ${this.labels2html(item.repo_name, item.labels)}
       </td>
     </tr>
+    `;
+  },
+  // Generic view header to perform additional filtering
+  viewFilterHeader2html: function (target, viewFilters) {
+    return `
+    <div style="padding-left:8px">
+      <div class="col-auto mb-2">
+        <input class="form-check-input wi-view-filter-clickable" type="checkbox" ${viewFilters.authorMe ? "checked" : ""} value="" id="wi-view-filter-${target}-authorMe">
+        <label class="form-check-label" for="wi-view-filter-${target}-authorMe">Authored by me</label>
+        &nbsp;
+        <input class="form-check-input wi-view-filter-clickable" type="checkbox" value="" ${viewFilters.authorOthers ? "checked" : ""} id="wi-view-filter-${target}-authorOthers">
+        <label class="form-check-label" for="wi-view-filter-${target}-authorOthers">Authored by others</label>
+      </div>
+    </div>
     `;
   },
 

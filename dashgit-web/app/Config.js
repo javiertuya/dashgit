@@ -26,6 +26,7 @@ const config = {
   //Persistent data, kept only if page is not reloaded
   session: {
     panelCollapsed: {}, //panel with the id indicated by the key is collapsed
+    viewFilter: {}, // additional filters applicable to the view indicated by the key
   },
 
   //Persisten configuration data, that is saved to browser storage
