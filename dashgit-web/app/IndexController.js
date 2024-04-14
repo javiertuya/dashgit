@@ -19,8 +19,7 @@ $(document).on('click', '#inputPasswordButton', function (e) {
   if ($('#inputPassword').val().length > 0) {
     config.xtoken = $("#inputPassword").val();
     if (config.isValidPassword(config.data.providers, config.xtoken)) {
-      indexController.workMode();
-      indexController.render();
+      indexController.start();
     } else {
       $('#inputPassword')[0].setCustomValidity("Password does not match with the one used to encrypt the access tokens");
       $('#inputPassword')[0].reportValidity();
@@ -34,8 +33,7 @@ $(document).on('click', '#inputPasswordButton', function (e) {
 });
 
 $(document).on('click', '#inputSkipButton', function (e) {
-  indexController.workMode();
-  indexController.render();
+  indexController.start();
   $(this).closest("form")[0].reset();
   e.preventDefault()
 });
@@ -81,11 +79,14 @@ const indexController = {
     if (config.data.encrypted) {
       indexController.loginMode();
     } else {
-      wiController.reset(true);
-      indexController.workMode();
-      indexController.render();
+      indexController.start();
     }
     $('[data-toggle="tooltip"]').tooltip({trigger:"hover", delay:600});
+  },
+  start: function() {
+    wiController.reset(true);
+    indexController.workMode();
+    indexController.render();
   },
 
   //Rendering depends on the selected tab, calls the appropriate controller to update the UI
