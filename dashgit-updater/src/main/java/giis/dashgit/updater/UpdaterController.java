@@ -92,7 +92,7 @@ public class UpdaterController {
 		IGitClient gitClient = new DependencyUpdaterFacade().getGitClient(providerType, urlValue, userValue, token);
 		GitLocal gitLocal = new GitLocal("target", urlValue, userValue, userEmail, token);
 		try {
-			new DependencyUpdaterFacade().mergeCombinedPullRequest(gitClient, gitLocal, repo, pulls, 1000, dryRun);
+			new DependencyUpdaterFacade().mergeCombinedPullRequest(gitClient, gitLocal, repo, pulls, 2000, dryRun);
 			return "";
 		} catch (Exception e) {
 			log.error("Can not create combined pull request", e);
