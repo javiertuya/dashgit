@@ -1,4 +1,5 @@
 import { config } from "./Config.js"
+import { wiHeaders } from "./WiViewHeaders.js"
 import { wiRender } from "./WiViewRender.js"
 import { wiServices } from "./WiServices.js"
 
@@ -56,12 +57,7 @@ const wiView = {
       config.session.viewFilter[target] = { authorMe: target != "unassigned", authorOthers: true };
 
     let html = `<div class="accordion" id="wi-providers-panel">`;
-    if (target == "dependabot")
-      html = html + this.updateHeader2html();
-    if (target == "follow-up")
-      html = html + this.followUpHeader2html();
-    if (target == "unassigned" || target == "involved") // other views do not have option to manage the filters
-      html = html + this.viewFilterHeader2html(target, config.session.viewFilter[target]);
+    html += wiHeaders.allProvidersHeader2html(target);
 
     for (let mod of models) {
       let header = mod.header;
@@ -105,11 +101,9 @@ const wiView = {
           class="${this.statePanelBody(target, provider)}">
         <div class="accordion-body">
 `;
-    // adds the header for combined updates (if applicable)
-    if (config.data.enableManagerRepo && target == "dependabot")
-      html += this.updateProvider2html(provider);
-    if (target == "involved") // Additional comment to mentions in this target, PENDING: refactor this kind of headers
-      html += `<div id="wi-providers-target-header-${target}-${provider}"></div>`
+    // adds the header (if applicable)
+    html += wiHeaders.providerHeader2html(target, provider);
+
     // adds every row
     html += `<table id="wi-items-${this.getId(target, header.uid, "all")}" provider="${provider}" class='table table-sm table-borderless m-0'>`;
     html += this.rowsmodel2html(target, header, items, grouping, sorting, highlightSince);
@@ -164,21 +158,6 @@ const wiView = {
         ${wiRender.labels2html(item.repo_name, item.labels)}
       </td>
     </tr>
-    `;
-  },
-
-  // Generic view header to perform additional filtering
-  viewFilterHeader2html: function (target, viewFilters) {
-    return `
-    <div style="padding-left:8px">
-      <div class="col-auto mb-2">
-        <input class="form-check-input wi-view-filter-clickable" type="checkbox" ${viewFilters.authorMe ? "checked" : ""} value="" id="wi-view-filter-${target}-authorMe">
-        <label class="form-check-label" for="wi-view-filter-${target}-authorMe">Authored by me</label>
-        &nbsp;
-        <input class="form-check-input wi-view-filter-clickable" type="checkbox" value="" ${viewFilters.authorOthers ? "checked" : ""} id="wi-view-filter-${target}-authorOthers">
-        <label class="form-check-label" for="wi-view-filter-${target}-authorOthers">Authored by others</label>
-      </div>
-    </div>
     `;
   },
 
@@ -330,64 +309,6 @@ const wiView = {
 
   // Content of UI related with dependabot updates
 
-  updateHeader2html: function () {
-    if (!config.data.enableManagerRepo)
-      return `
-      <div style="padding-left:8px">
-        <p class="mb-3 mt-2">
-          This view displayw all pull requests created by Dependabot.
-          From this view, you can combine all updates into a sigle PR per repository and merge them automatically with just a few clicks.
-        </p>
-        <p class="mb-3 mt-2 text-danger">
-          To enable this feature, you have to check the configuration option <em>Enable a Manager Repository for advanced functions</em>,
-          create the manager repository as indicated
-          <a href="${config.param.readmeManagerRepo}" target="_blank">[here]</a>
-          and follow instructions in this tab.
-        </p>
-      </div>
-      `;
-    else
-      return `
-      <div style="padding-left:8px">
-        <p class="mb-3 mt-2">
-          To set up your manager repository <code>${config.data.managerRepoName}</code>
-          you have to add a workflow file <code>.github/workflows/manage-updates.yml</code>.<br/>
-          <a href="#" id="wi-update-workflow-file-show">Click here to get the required content and copy it to the workflow file</a>.<br/>
-          Since no token is ever transmitted out of the browser, you also have to create the secrets indicated below in each provider
-          (storing an api access token to each one).
-        </p>
-        <div id="wi-update-workflow-file-div" style="display: none">
-          <a href="#" id="wi-update-workflow-file-hide">[Hide]</a>
-          <textarea class="form-control" id="wi-update-workflow-file-content" rows="10"></textarea>
-        </div>
-
-        <p class="mb-3 mt-2">
-          Click the checkboxes to select the dependabot updates that you want combine and merge in a single pull request for each repository. 
-          The manager repository will do the work. 
-          <a href="${config.param.readmeDependencyUpdates}" target="_blank">[learn more]</a>
-        </p>
-
-        <div class="col-auto mb-2">
-          <button type="button" id="wi-btn-update-select-all" class="btn btn-success btn-sm">Select all</button>
-          <button type="button" id="wi-btn-update-unselect-all" class="btn btn-success btn-sm">Unselect all</button>
-          <button type="button" id="wi-btn-update-dispatch" class="btn btn-primary btn-sm">Combine and merge the selected dependency updates</button>
-          &nbsp;
-          <input class="form-check-input" type="checkbox" value="" id="wi-btn-update-dry-run">
-          <label class="form-check-label" for="wi-btn-update-dry-run">Dry Run (only create combined PRs, no merge)</label>
-        </div>
-        <div class="col-auto m-3" id="wi-update-header-confirm"></div>
-      </div>
-      `;
-  },
-  updateProvider2html: function (providerId) {
-    return `
-      <div>
-        <p class="mb-0">The manager repository will access this provider with the token stored in the secret:
-        <code>${config.getProviderByUid(providerId).updates.tokenSecret}</code></p>
-      </div>
-      `;
-  },
-
   confirmUpdateClear: function () {
     $("#wi-update-header-confirm").html("");
   },
@@ -425,29 +346,7 @@ const wiView = {
   },
 
   //Display at the follow-up form
-  followUpHeader2html: function () {
-     let html = `
-      <div style="padding-left:8px">
-        <p class="mb-3 mt-2">
-          This view displays all work items that you have flagged for follow up.
-          You can flag any work item from any view by clicking the left icon(s)
-          and entering the date when you want to see a reminder (in days since today).
-          Work items where the reminder date has arrived appear in the <em>Assigned</em> tab even if you are not assignee or reviewer.
-        </p>
-      </div>
-      `;
-    if (!config.data.enableManagerRepo)
-      html += `
-      <div style="padding-left:8px">
-        <p class="mb-3 mt-2 text-danger">
-          To enable follow-ups, you have to check the configuration option <em>Enable a Manager Repository for advanced functions</em>
-          and create the manager repository as indicated
-          <a href="${config.param.readmeManagerRepo}" target="_blank">[here]</a>.</div>
-        </p>
-      </div>
-    `;
-    return html;
-  },
+  
   followUpSetValues: function (params) {
     $("#wi-follow-up-modal-server").text(params.server);
     $("#wi-follow-up-modal-user").text(params.user);
