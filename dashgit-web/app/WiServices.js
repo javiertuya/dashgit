@@ -195,18 +195,6 @@ const wiServices = {
     return days;
   },
 
-  getColorLuma: function (color) {
-    //https://stackoverflow.com/questions/12043187/how-to-check-if-hex-color-is-too-black
-    //The resulting luma value range is 0..255, where 0 is the darkest and 255 is the lightest. 
-    //Values greater than 128 are considered light by tinycolor
-    let c = color.substring(1);      // strip #
-    let rgb = parseInt(c, 16);   // convert rrggbb to decimal
-    let r = (rgb >> 16) & 0xff;  // extract red
-    let g = (rgb >> 8) & 0xff;  // extract green
-    let b = (rgb >> 0) & 0xff;  // extract blue
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b; // per ITU-R BT.709
-  },
-
 }
 
 export { wiServices };
