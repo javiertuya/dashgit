@@ -1,5 +1,5 @@
-import { cache } from "./Cache.js"
 import { config } from "./Config.js"
+import { wiRender } from "./WiViewRender.js"
 import { wiServices } from "./WiServices.js"
 
 /**
@@ -94,10 +94,10 @@ const wiView = {
             aria-expanded="${this.statePanelAria(target, provider)}" 
             aria-controls="wi-providers-panel-${target}-${provider}">
           <p class="m-0">
-            <span class='h4'>${this.provider2html(header.provider)} ${header.provider} - ${header.user}</span>
+            <span class='h4'>${wiRender.provider2html(header.provider)} ${header.provider} - ${header.user}</span>
             <span class='h6'>${header.url != "" ? " &nbsp; at " + header.url.replace("https://", "") : ""}</span>
             <span id="wi-badges-${this.getId(target, header.uid, "all")}" style='position:relative; bottom:4px;'></span>
-            <span id="wi-spinner-${this.getId(target, header.uid, "all")}" style='position:relative; bottom:2px;'> ${target != "statuses" ? this.spinnerIcon : ""}</span>
+            <span id="wi-spinner-${this.getId(target, header.uid, "all")}" style='position:relative; bottom:2px;'> ${target != "statuses" ? wiRender.spinnerIcon : ""}</span>
           </p>
         </button>
       </h4>
@@ -130,7 +130,7 @@ const wiView = {
         if ((i == 0 || this.groupValue(item, grouping, sorting) != this.groupValue(items[i - 1], grouping, sorting)))
           html += `<tr class="wi-status-class-header fs-5"><td colspan=4>
             ${grouping
-              ? this.repourl2html(item.repo_url, item.repo_name)
+              ? wiRender.repourl2html(item.repo_url, item.repo_name)
               : "<span class='text-secondary fw-bold'>" + this.groupValue(item, grouping, sorting) + "</span>"}
           <td><tr>`;
         html += this.rowmodel2html(target, header, item, grouping, highlightSince);
@@ -144,28 +144,29 @@ const wiView = {
         itemrepo="${item.repo_name}"
         itemtype="${item.type}"
         itemiid="${item.iid}"
-        class="wi-status-class-any wi-status-class-${this.status2class(item.type, header.uid, item.uid)}">
-      <td style="width:24px;" class="wi-item-column-clickable">${this.status2html(item.type, target, header.uid, item.uid)}</td>
-      <td style="width:24px;" class="wi-item-column-clickable">${this.type2html(item.type, new Date(item.updated_at) > highlightSince)}</td>
-      <td style="width:24px; color:${this.gitColor};" 
+        class="wi-status-class-any wi-status-class-${wiRender.status2class(item.type, header.uid, item.uid)}">
+      <td style="width:24px;" class="wi-item-column-clickable">${wiRender.status2html(item.type, header.uid, item.uid, this.getId(target, header.uid, item.uid))}</td>
+      <td style="width:24px;" class="wi-item-column-clickable">${wiRender.type2html(item.type, new Date(item.updated_at) > highlightSince)}</td>
+      <td style="width:24px; color:${wiRender.gitColor};" 
         class="wi-item-column-clickable wi-notifications-${this.getId(target, header.uid, 'all')}" 
         id="wi-notifications-${this.getId(target, header.uid, item.uid)}">
-        ${this.notification2html(header.uid, item.uid)}
+        ${wiRender.notifications2html(header.uid, item.uid)}
       </td>
       <td>
-        ${this.updateCheck2html(target, header.uid, item.repo_name, item.iid)}
-        ${this.actions2html(item.actions)}
-        ${grouping ? "" : this.repourl2html(item.repo_url, item.repo_name)}
-        ${this.branch2html(item.branch_url, item.branch_name)}
-        <span class='wi-item-title ${item.type == "branch" ? "fw-normal" : "fw-bold"}'>${this.url2html(item.url, item.title)}</span>
+        ${wiRender.updateCheck2html(target, header.uid, item.repo_name, item.iid)}
+        ${wiRender.actions2html(item.actions)}
+        ${grouping ? "" : wiRender.repourl2html(item.repo_url, item.repo_name)}
+        ${wiRender.branch2html(item.branch_url, item.branch_name)}
+        <span class='wi-item-title ${item.type == "branch" ? "fw-normal" : "fw-bold"}'>${wiRender.url2html(item.url, item.title)}</span>
         <span class='text-secondary'>${item.iidstr}</span>
         <span class='text-primary'>${item.assignees}</span>
         <span class='text-secondary'>${wiServices.intervalToString(item.created_at, item.updated_at)}</span>
-        ${this.labels2html(item.repo_name, item.labels)}
+        ${wiRender.labels2html(item.repo_name, item.labels)}
       </td>
     </tr>
     `;
   },
+
   // Generic view header to perform additional filtering
   viewFilterHeader2html: function (target, viewFilters) {
     return `
@@ -182,17 +183,6 @@ const wiView = {
   },
 
   // Other low level content
-
-  actions2html: function (actions) {
-    if (actions == undefined)
-      return "";
-    let html = "";
-    if (actions["review_request"])
-      html += `<span class="wi-item-column-clickable badge text-dark bg-warning wi-action-badge" title="A review on this PR has been requested"><i class="fa-solid fa-magnifying-glass"></i> review</span> `;
-    if (actions["follow_up"])
-      html += `<span class="wi-item-column-clickable badge text-dark bg-warning wi-action-badge" title="This work item has been flagged for follow up"><i class="fa-regular fa-flag"></i> follow up</span> `;
-    return html;
-  },
 
   groupValue: function (item, grouping, sorting) {
     //grouping=true is to group by project name. If false, groups by date groups (today, week, month, older)
@@ -222,7 +212,7 @@ const wiView = {
   upateStatusIcon: function (status, providerId, itemId) {
     const target = this.selectActiveTarget();
     const id = this.getId(target, providerId, itemId);
-    const statusIcon = this.status2htmlContent(status, false);
+    const statusIcon = wiRender.statusIcon(status, false);
     let selector = $("#wi-status-" + id);
     if (selector.length) {
       selector.html(statusIcon);
@@ -277,21 +267,21 @@ const wiView = {
     for (let viewItem of viewItems) {
       let viewId = $(viewItem).attr("id");
       let itemId = viewId.replace(`wi-notifications-${this.getIdPrefix(target, providerId)}`, "");
-      let html = this.notification2html(providerId, itemId);
+      let html = wiRender.notifications2html(providerId, itemId);
       $(viewItem).html(html);
-      if (html.includes(this.mentionIconClass)) // only increment if html displays a mention
+      if (html.includes(wiRender.mentionIconClass)) // only increment if html displays a mention
         displayedMentions++;
     }
     $(`${panel} .wi-notification-icon`).tooltip({ delay: 200 });
     //In addition to the notifications of each item, updates the display of total notifications that are mentions
     //Note that although this display is shown in the involved tab, it is updated when displaying any other tab
-    let notifHtml = allMentions == 0 ? "" : ` <i class="${this.mentionIconClass}"></i><strong>${allMentions}</strong>`;
+    let notifHtml = allMentions == 0 ? "" : ` <i class="${wiRender.mentionIconClass}"></i><strong>${allMentions}</strong>`;
     $(`#wi-notifications-tab-badge`).html(notifHtml);
     //If mentions that are displayed is lower than mentions in this provider, displays a message (only if displaying involved tab)
     //PENDING: in a next iteration, include mentions of closed items in this view (need to refactor the merge of work items)
     if (target == "involved" && thisMentions > displayedMentions)
       $(`#wi-providers-target-header-${target}-${providerId}`)
-       .html(`<div class="mb-0" style="color:${this.gitColor}"><em>You have ${thisMentions-displayedMentions} mention(s) in closed work items not shown in this view.</em></div>`)
+       .html(`<div class="mb-0" style="color:${wiRender.gitColor}"><em>You have ${thisMentions-displayedMentions} mention(s) in closed work items not shown in this view.</em></div>`)
   },
   updateSpinnerEnd: function (provider) {
     const target = this.selectActiveTarget();
@@ -300,19 +290,19 @@ const wiView = {
     $(spinnerAll).hide();
     // convert spinner at each row into not available (it will be updted later if status is known)
     let panel = `#${this.getPanelId(target, provider)}`;
-    let spinners = $(panel).find(`.${this.spinnerClass}`);
+    let spinners = $(panel).find(`.${wiRender.spinnerClass}`);
     for (let spinner of spinners)
-      $(spinner).parent().html(this.unknownIcon);
+      $(spinner).parent().html(wiRender.unknownIcon);
   },
   updateBadges: function (provider, inProgress) {
     const target = this.selectActiveTarget();
     let panel = `wi-items-${this.getId(target, provider, "all")}`;
     let html = "";
-    html = this.headerbadge2html("Blue", $("#" + panel + " tbody tr.wi-status-class-any").length, "")
-      + this.headerbadge2html("DodgerBlue", $("#" + panel + " tbody tr.wi-status-class-issue").length, "issues")
-      + this.headerbadge2html("MediumSeaGreen", $("#" + panel + " tbody tr.wi-status-class-success").length, "success")
-      + this.headerbadge2html("Red", $("#" + panel + " tbody tr.wi-status-class-failure").length, "failed")
-      + this.headerbadge2html("Orange", $("#" + panel + " tbody tr.wi-status-class-pending").length, "pending")
+    html = wiRender.headerbadge2html("Blue", $("#" + panel + " tbody tr.wi-status-class-any").length, "")
+      + wiRender.headerbadge2html("DodgerBlue", $("#" + panel + " tbody tr.wi-status-class-issue").length, "issues")
+      + wiRender.headerbadge2html("MediumSeaGreen", $("#" + panel + " tbody tr.wi-status-class-success").length, "success")
+      + wiRender.headerbadge2html("Red", $("#" + panel + " tbody tr.wi-status-class-failure").length, "failed")
+      + wiRender.headerbadge2html("Orange", $("#" + panel + " tbody tr.wi-status-class-pending").length, "pending")
     let header = `wi-badges-${this.getId(target, provider, "all")}`
     $("#" + header).html(" &nbsp; " + html);
   },
@@ -324,7 +314,8 @@ const wiView = {
     for (let item of items) {
       let key = $(item).attr("data-colorkey");
       if (allLabels[key] != undefined) {
-        $(item).attr("style", this.getLabelStyle($(item).text(), allLabels[key].color.replace("#", "")));
+        const color = allLabels[key].color.replace("#", "");
+        $(item).attr("style", wiRender.getLabelStyle($(item).text(), color));
         $(item).removeClass("badge-color-undefined"); //do not check this again
       }
     }
@@ -395,14 +386,6 @@ const wiView = {
         <code>${config.getProviderByUid(providerId).updates.tokenSecret}</code></p>
       </div>
       `;
-  },
-  updateCheck2html: function (target, providerId, repoName, iid) {
-    if (config.data.enableManagerRepo && target == "dependabot") {
-      console.log(`${providerId} ${repoName} ${iid}`)
-      return `<input class="form-check-input wi-update-check" type="checkbox" value="" aria-label="..."
-          provider="${providerId}" repo="${repoName}" iid="${iid}"></input>&nbsp;`;
-    }
-    return "";
   },
 
   confirmUpdateClear: function () {
@@ -526,109 +509,6 @@ const wiView = {
     $("#wi-follow-up-btn-error").text("");
   },
 
-  //Primitive functions related to the display of single elements
-
-  labels2html: function (repoName, labels) {
-    let html = "";
-    for (let label of labels)
-      html += " " + this.gitlabel2html(repoName, label.name, label.color);
-    return html;
-  },
-  provider2html: function (provider) {
-    if (provider.toLowerCase() == "github")
-      return this.gitHubIcon;
-    else if (provider.toLowerCase() == "gitlab")
-      return this.gitLabIcon;
-    else
-      return '';
-  },
-  url2html: function (url, title) {
-    return `<a href="${url}" target='_blank' class='link-dark link-underline-opacity-0 link-underline-opacity-100-hover'>${title}</a>`;
-  },
-  repourl2html: function (url, title) {
-    return `<span><a href="${url}" target='_blank' class='fw-bold link-secondary link-underline-opacity-0 link-underline-opacity-100-hover'>${title}</a></span>`;
-  },
-  branch2html: function (url, name) {
-    if (name !== undefined)
-      return `<span class="badge badge-light fw-bold" style="color:black; background-color:#DDF4FF;"><a class="link-underline-light" target="_blank" href="${url}">${name}</a></span>`;
-    return "";
-  },
-  status2class: function (type, provider, uid) {
-    //used to toggle visibility, issues are handled like a different status
-    if (type == undefined)
-      return "notavailable";
-    if (type == "issue") //issues do not have status
-      return "issue";
-    let status = cache.getStatus(provider, uid);
-    return status;
-  },
-  status2html: function (type, target, provider, uid) {
-    if (type == "issue") //issues do not have status
-      return "";
-    // wraps the content (status icon) to later change the icon by id
-    let id = this.getId(target, provider, uid);
-    let status = cache.getStatus(provider, uid);
-    return `<span id="wi-status-${id}">${this.status2htmlContent(status)}</span>`;
-  },
-  status2htmlContent: function (status) {
-    if (status == "success")
-      return `${this.successIcon}`;
-    else if (status == "failure")
-      return `${this.failureIcon}`;
-    else if (status == "pending")
-      return `${this.pendingIcon}`;
-    //There are three cases when the status is not known:
-    // 1. Status has been determined as "notavailable", e.g. because there is no checks (GitHub) or pipelines (GitLab)
-    // 2. Status has not been determined yet, e.g. at the beginnig, before calling the GraphQL api that determines the statuses
-    // 3. Status can't be determined, e.g. the GraphQL api does not have access to the repo because of the query limits
-    // Case 1 will display the unknown icon. Cases 2, 3 will display the spinner icon that will be replaced by unknown
-    // just after the finish of the GraphQL call that determines the statuses
-    else if (status == "notavailable")
-      return `${this.unknownIcon}`;
-    else
-      return `${this.spinnerIcon}`;
-  },
-  type2html: function (type, highlight) {
-    let titleSuffix = highlight ? " (new since last visit to this view)" : "";
-    if (type == "issue")
-      return `<i class="${this.issueIconClass}" style="color:${highlight ? this.gitColor : "MediumSeaGreen"}" title="Issue${titleSuffix}"></i>`;
-    else if (type == "pr")
-      return `<i class="${this.prIconClass}" style="color:${highlight ? this.gitColor : "MediumSeaGreen"}" title="Pull Request${titleSuffix}"></i>`;
-    else if (type == "branch")
-      return `<i class="${this.branchIconClass}" style="color:${highlight ? this.gitColor : "DodgerBlue"}" title="Branch${titleSuffix}"></i>`;
-    else
-      return '';
-  },
-  notification2html: function (provider, uid) {
-    if (cache.notifCache[provider] == undefined)
-      return "";
-    let reason = cache.notifCache[provider][uid];
-    if (reason == undefined)
-      return "";
-    let iconClass = reason == "mention" || reason == "mentioned" || reason == "directly_addressed" ? this.mentionIconClass : this.notificationIconClass;
-    return `<i class="wi-notification-icon ${iconClass}" title="Unread notification, reason: ${reason}"></i>`;
-  },
-
-  headerbadge2html: function (color, count, message) {
-    if (count == undefined || count == 0)
-      return "";
-    return ` <span class="badge badge-primary" style="background-color:${color}">${count} ${message}</span>`;
-  },
-
-  gitlabel2html: function (repoName, name, color) {
-    let cssClass = "badge rounded-pill";
-    if (color == "") {
-      color = "888888"; //default if no color found
-      cssClass += " badge-color-undefined"; //to be replaced later (only GitLab)
-    }
-    //a custom attribute colorkey is set to allow locate labels in data from cache
-    return `<span class="${cssClass}" style="${this.getLabelStyle(name, color)}" data-colorkey="${repoName}-${name}">${name}</span>`;
-  },
-  getLabelStyle: function (name, color) {
-    let foreground = wiServices.getColorLuma(color) > 140.0 ? "000000" : "ffffff";
-    return `background-color:#${color}; color:#${foreground};`;
-  },
-
   //Memoria de los paneles acordeon de cada target+provider
   saveStatePanel: function (id, expanded) {
     //el accordion se maneja cambiando tres atributos diferentes, por lo que no se puede
@@ -656,23 +536,6 @@ const wiView = {
     return config.session.panelCollapsed[`wi-providers-panelbutton-${target}-${provider}`] ? "accordion-button collapsed" : "accordion-button";
   },
 
-  gitHubIcon: '<i class="fa-brands fa-github"></i>',
-  gitLabIcon: '<i class="fa-brands fa-square-gitlab"></i>',
-  gitColor: '#F34F29',
-
-  prIconClass: 'fa-solid fa-code-pull-request',
-  issueIconClass: 'fa-regular fa-circle-dot',
-  branchIconClass: 'fa-solid fa-code-branch',
-
-  successIcon: '<i class="wi-status-icon fa-solid fa-check" style="color:MediumSeaGreen" title="The build has completed succesfully"></i>',
-  failureIcon: '<i class="wi-status-icon fa-solid fa-x" style="color:Red" title="The build has ended with failure"></i>',
-  pendingIcon: '<i class="wi-status-icon fa-regular fa-circle" style="color:Orange" title="The build is executing or waiting to execute"></i>',
-  unknownIcon: '<i class="wi-status-icon fa-regular fa-circle-question" style="color:#AAAAAA" title="The build status cannot be determined"></i>',
-  spinnerIcon: `<span class="spinner-border spinner-border-sm text-secondary" style="opacity:50%" title="The build status is being determined"></span>`,
-  spinnerClass: `spinner-border`,
-
-  notificationIconClass: `fa-regular fa-bell`,
-  mentionIconClass: `fa-solid fa-at`,
 }
 
 export { wiView };
