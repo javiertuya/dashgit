@@ -128,7 +128,9 @@ const configView = {
           ${provider.provider == "GitLab"
             ? this.input2html(`config-graphql-maxPipelines-${key}`, "number", "Max pipelines", provider.graphql.maxPipelines, 'required min="2" max="100"', "150", "100",
               "Maximum number of pipeline runs that are retrieved for each repository/project to get the branches and statuses")
-            : (this.raw2html("API scope", "Specifies the scope of the GitHub GraphQL API requests that get the branches and statuses") + " &nbsp; "
+            : this.check2html(`config-graphql-include-forks-${key}`, "Include Forks", provider.graphql.includeForks)
+              + this.check2html(`config-graphql-only-forks-${key}`, "Only Forks", provider.graphql.onlyForks)
+              + (this.raw2html(" - API scope:", "Specifies the scope of the GitHub GraphQL API requests that get the branches and statuses") + " &nbsp; "
               + this.check2html(`config-graphql-scope-owner-${key}`, "Owner", provider.graphql.ownerAffiliations.includes("OWNER"))
               + this.check2html(`config-graphql-scope-organization-${key}`, "Organization member", provider.graphql.ownerAffiliations.includes("ORGANIZATION_MEMBER"))
               + this.check2html(`config-graphql-scope-collaborator-${key}`, "Collaborator", provider.graphql.ownerAffiliations.includes("COLLABORATOR")))
@@ -211,6 +213,8 @@ const configView = {
     if (provider.provider == "GitLab") {
       provider.graphql.maxPipelines = $(`#config-graphql-maxPipelines-${id}`).val().trim();
     } else {
+      provider.graphql.onlyForks = $(`#config-graphql-only-forks-${id}`).is(':checked')
+      provider.graphql.includeForks = $(`#config-graphql-include-forks-${id}`).is(':checked');
       provider.graphql.ownerAffiliations = [];
       if ($(`#config-graphql-scope-owner-${id}`).is(':checked'))
         provider.graphql.ownerAffiliations.push("OWNER");
@@ -287,6 +291,14 @@ const configView = {
       $(providerRoot).find(".config-providers-graphql-settings").show();
       $(providerRoot).find(".config-providers-surrogate-settings").hide();
     }
+  },
+  refreshGraphqlIncludeForks: function (check, checked) {
+    if (checked)
+       $(check).closest(".config-provider-card").find('input[id^="config-graphql-only-forks-"]').prop("checked", false);
+  },
+  refreshGraphqlOnlyForks: function (check, checked) {
+    if (checked)
+      $(check).closest(".config-provider-card").find('input[id^="config-graphql-include-forks-"]').prop("checked", false);
   },
   countUrls: function (providerRoot) { // how many urls match the providerRoot url
     let count = 0;

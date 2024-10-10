@@ -46,6 +46,14 @@ $(document).on('change', '[id^="config-providers-surrogate-enabled-"]', function
   configView.refreshProviderSurrogate(this, $(this).is(':checked'));
 });
 
+// Only one of these checkboxes can be checked
+$(document).on('change', '[id^="config-graphql-include-forks-"]', function (e) {
+  configView.refreshGraphqlIncludeForks(this, $(this).is(':checked'));
+});
+$(document).on('change', '[id^="config-graphql-only-forks-"]', function (e) {
+  configView.refreshGraphqlOnlyForks(this, $(this).is(':checked'));
+});
+
 // Data update events
 
 $(document).on('click', '.config-btn-provider-submit', function (e) {
