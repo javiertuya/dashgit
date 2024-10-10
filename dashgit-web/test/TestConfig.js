@@ -35,7 +35,7 @@ describe("TestConfig - Sanitizing config data", async function () {
                 statusSurrogateUser: "",
                 filterIfLabel: '', unassignedAdditionalOwner: [], dependabotAdditionalOwner: [],
                 updates: { tokenSecret: "", userEmail: "" },
-                graphql: { ownerAffiliations: ['OWNER'], maxProjects: 20, maxBranches: 10 }
+                graphql: { "includeForks": false, "onlyForks": false, ownerAffiliations: ['OWNER'], maxProjects: 20, maxBranches: 10 }
             }]
         };
         assert.deepEqual(expected, config.parseAndSanitizeData(`{ "statusCacheUpdateTime": 60, "providers": [{"provider":"GitHub"}] }`));
@@ -53,7 +53,7 @@ describe("TestConfig - Sanitizing config data", async function () {
                 statusSurrogateUser: "",
                 filterIfLabel: 'lbl', unassignedAdditionalOwner: [], dependabotAdditionalOwner: ["org1", "org2"],
                 updates: { tokenSecret: "DASHGIT_GITHUB_USER_TOKEN", userEmail: "" },
-                graphql: { ownerAffiliations: ['OWNER', 'ORGANIZATION_MEMBER'], maxProjects: 10, maxBranches: 20 }
+                graphql: { "includeForks": false, "onlyForks": false, ownerAffiliations: ['OWNER', 'ORGANIZATION_MEMBER'], maxProjects: 10, maxBranches: 20 }
             }]
         };
         assert.deepEqual(expected, config.parseAndSanitizeData(JSON.stringify(expected)));

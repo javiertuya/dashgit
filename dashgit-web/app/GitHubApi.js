@@ -178,10 +178,15 @@ const gitHubApi = {
 
   getStatusesQuery: function (provider, maxProjects, includeAll) {
     let affiliations = provider.graphql.ownerAffiliations.toString();
+    let forks = "isFork:false, ";
+    if (provider.graphql.includeForks)
+      forks = "";
+    else if (provider.graphql.onlyForks)
+      forks = "isFork:true, ";
     return `{
       viewer {
         login, resourcePath, url, repositories(first: ${maxProjects}, ownerAffiliations: [${affiliations}], 
-        isFork:false, orderBy: {field: PUSHED_AT, direction: DESC}) {
+        ${forks} orderBy: {field: PUSHED_AT, direction: DESC}) {
           nodes {
             name, nameWithOwner, url, pushedAt
             ${includeAll ? this.getProjectsRefsSubquery(provider) : ""}

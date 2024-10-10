@@ -108,6 +108,8 @@ const config = {
       this.setDefault(element, "unassignedAdditionalOwner", []);
       this.setDefault(element, "dependabotAdditionalOwner", []);
       this.setDefault(element, "graphql", {});
+      this.setDefault(element.graphql, "includeForks", false);
+      this.setDefault(element.graphql, "onlyForks", false);
       this.setDefault(element.graphql, "ownerAffiliations", ["OWNER"]);
       this.setDefault(element.graphql, "maxProjects", 20);
       this.setDefault(element.graphql, "maxBranches", 10);
