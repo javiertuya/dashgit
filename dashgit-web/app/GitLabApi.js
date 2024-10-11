@@ -133,8 +133,7 @@ const gitLabApi = {
     let query0 = this.getProjectsQuery(provider, provider.graphql.maxProjects, true);
     const t0 = Date.now();
     let gqlresponse0 = await this.callGraphqlApi(provider, query0, true);
-    console.log(`time to get projects: ${Date.now() - t0}`)
-    this.log(provider.uid, "Statuses graphql response (projects):", gqlresponse0);
+    this.log(provider.uid, `Statuses graphql response (projects) [${Date.now() - t0}ms]:`, gqlresponse0);
 
     if (updateSince != "") { //filter out oldest projects to do a partial update
       this.filterOldProjects(gqlresponse0, updateSince);
@@ -204,8 +203,9 @@ const gitLabApi = {
   //When the model is completed, calls controller to update the status valueof the current target
   updateStatusesAsync: function (provider, updateSince) {
     this.log(provider.uid, "Get Statuses from the GraphQL api");
+    const t0 = Date.now();
     this.getStatusesRequest(provider, updateSince).then(function (model) {
-      gitLabApi.log(provider.uid, "ASYNC Statuses model:", model);
+      gitLabApi.log(provider.uid, `ASYNC Statuses model [${Date.now() - t0}ms]:`, model);
       wiController.updateStatuses(provider.uid, model, updateSince); //direct call instead of using a callback
     }).catch(function (error) {
       console.error("GitLab GraphQL transformation failed");

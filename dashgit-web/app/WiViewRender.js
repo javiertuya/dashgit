@@ -87,7 +87,9 @@ const wiRender = {
       return "";
     let html = "";
     if (actions["review_request"])
-      html += `<span class="wi-item-column-clickable badge text-dark bg-warning wi-action-badge" title="A review on this PR has been requested"><i class="fa-solid fa-magnifying-glass"></i> review</span> `;
+      html += `<span class="wi-item-column-clickable badge text-dark bg-info wi-action-badge" title="A review on this PR has been requested"><i class="fa-solid fa-magnifying-glass"></i> review request</span> `;
+    if (actions["changes_requested"])
+      html += `<span class="wi-item-column-clickable badge text-light bg-primary wi-action-badge" title="A reviewer commented and requested changes on this PR"><i class="fa-regular fa-comment"></i> changes requested</span> `;
     if (actions["follow_up"])
       html += `<span class="wi-item-column-clickable badge text-dark bg-warning wi-action-badge" title="This work item has been flagged for follow up"><i class="fa-regular fa-flag"></i> follow up</span> `;
     return html;

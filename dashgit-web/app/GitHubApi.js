@@ -25,6 +25,7 @@ const gitHubApi = {
     const assigned = `is:open assignee:${provider.user} archived:false`;
     const unassigned = `is:open no:assignee owner:${provider.user} ${this.additionalOwners(provider, provider.unassignedAdditionalOwner)} archived:false`;
     const reviewer = `is:open user-review-requested:${provider.user} archived:false`
+    const revise= `is:open type:pr review:changes_requested author:${provider.user} archived:false`
     const created = `is:open author:${provider.user} archived:false`
     const involved = `is:open involves:${provider.user} archived:false`
     const dependabot = `is:open is:pr author:app/dependabot owner:${provider.user} ${this.additionalOwners(provider, provider.dependabotAdditionalOwner)} archived:false`;
@@ -35,6 +36,7 @@ const gitHubApi = {
         octokit.rest.search.issuesAndPullRequests({ q: assigned, }),
         //To allow the ui to mark this as a review request, the api call is wrapped to add a special attribute (called custom_actions) to the response
         this.wrapIssuesAndPullRequestsCall(octokit, { q: reviewer, }, "review_request"),
+        this.wrapIssuesAndPullRequestsCall(octokit, { q: revise, }, "changes_requested"),
         //Also show work items that need follow-up
         gitStoreApi.followUpAll(provider, true),
       ];
@@ -158,8 +160,9 @@ const gitHubApi = {
   //When the model is completed, calls controller to update the status value of the current target
   updateStatusesAsync: function (provider, updateSince) {
     this.log(provider.uid, "Get Statuses from the GraphQL api");
+    const t0 = Date.now();
     this.getStatusesRequest(provider, updateSince).then(function (model) {
-      gitHubApi.log(provider.uid, "ASYNC Statuses model:", model);
+      gitHubApi.log(provider.uid, `ASYNC Statuses model [${Date.now() - t0}ms]:`, model);
       wiController.updateStatuses(provider.uid, model, updateSince); //direct call instead of using a callback
     }).catch(function (error) {
       console.error("GitHub GraphQL transformation failed");
@@ -186,7 +189,7 @@ const gitHubApi = {
     return `{
       viewer {
         login, resourcePath, url, repositories(first: ${maxProjects}, ownerAffiliations: [${affiliations}], 
-        ${forks} orderBy: {field: PUSHED_AT, direction: DESC}) {
+        ${forks} isArchived:false, orderBy: {field: PUSHED_AT, direction: DESC}) {
           nodes {
             name, nameWithOwner, url, pushedAt
             ${includeAll ? this.getProjectsRefsSubquery(provider) : ""}
