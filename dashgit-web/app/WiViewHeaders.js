@@ -32,11 +32,11 @@ const wiHeaders = {
       return `
       <div style="padding-left:8px">
         <p class="mb-3 mt-2">
-          This view displayw all pull requests created by Dependabot.
+          This view displays all pull requests created by Dependabot.
           From this view, you can combine all updates into a sigle PR per repository and merge them automatically with just a few clicks.
         </p>
         <p class="mb-3 mt-2 text-danger">
-          To enable this feature, you have to check the configuration option <em>Enable a Manager Repository for advanced functions</em>,
+          To enable the combined updates feature, you have to check the configuration option <em>Enable a Manager Repository for advanced functions</em>,
           create the manager repository as indicated
           <a href="${config.param.readmeManagerRepo}" target="_blank">[here]</a>
           and follow instructions in this tab.
@@ -51,7 +51,7 @@ const wiHeaders = {
           you have to add a workflow file <code>.github/workflows/manage-updates.yml</code>.<br/>
           <a href="#" id="wi-update-workflow-file-show">Click here to get the required content and copy it to the workflow file</a>.<br/>
           Since no token is ever transmitted out of the browser, you also have to create the secrets indicated below in each provider
-          (storing an api access token to each one).
+          and store an API access token in each one.
         </p>
         <div id="wi-update-workflow-file-div" style="display: none">
           <a href="#" id="wi-update-workflow-file-hide">[Hide]</a>

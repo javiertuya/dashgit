@@ -9,7 +9,7 @@
 | [Features and Configuration](#features-and-configuration)
 | [Advanced Features](#advanced-features)
 | [Combined Dependabot Updates](#combined-dependabot-updates)
-| [Follow Up](#follow-up)
+| [Follow-up](#follow-up)
 | [Contributing](contributing)
 
 ## Overview
@@ -51,42 +51,42 @@ A provider is defined by a repository type (GitHub, GitLab), an *user* and an ac
 You can define any combination (e.g. providers with the same username but different token, or different username but same token).
 
 ### Api acces token encryption
-As mentioned before, the configuration is stored in the browser local memory and all processing occours in the browser.
+As mentioned above, the configuration is stored in the browser local memory and all processing occours in the browser.
 To protect sensistive information (the access tokens) the user is given the option to encrypt the tokens using a password.
 If you set a password, the next time that you open DashGit you will be asked for the password.
 
-If you forgot the password, you are given with the option of skip. In that case you may notice that api calls fail, you should go
-to the configuration to reset the tokens to an empty value.
+If you forgot the password, you are given with the option of skip. In that case you may notice that api calls fail: you should go
+to the configuration to reset the tokens.
 Note that once a token is encrypted, you can't decrypt it, only reset.
 
 ### Selecting, sorting and grouping
 The user can customize how the work items are sorted and organized by setting the controls that appear at the top of the header.
-This settings are no stored in the configuration.
+These settings are no stored in the configuration.
 
 ### Scope configuration
-The username is the reference user for which the work items are displayed (assigned to, created by, etc.)
+The *username* is the reference user for which the work items are displayed (assigned to, created by, etc.)
 and the token defines the scope of the request that determines what items are displayed.
-Note that the username can be someone other the token owner.
+Note that the username can be someone other than the token owner.
 
 - The scope of Assigned, Involved and Created views is whatever repository visible for the token.
 - The scope of Unassigned and Dependabot views is restricted to the repository of the token owner. 
-  If you need include other users or organizations, you must include them in the `Add owners to unassigned`
+  If you need to include other users or organizations, you must set them in the `Add owners to unassigned`
   or `Add owners to dependabot` parameters, respectively.
-- The scope of Branches view is handled differently, as data is obtained by the GraphQL API requests insetead of the REST API.
-  On GitHub you will specify one or more than the following scopes: OWNER, ORGANIZATION_MEMBER or COLLABORATOR.
+- The scope of Branches view is handled differently, as data is obtained by the GraphQL API requests instead of the REST API.
+  On GitHub you have to specify one or more than the following scopes: OWNER, ORGANIZATION_MEMBER or COLLABORATOR.
 
-### Filtering
+### Filtering configuration
 The requests made against the repositories get the most recent work items that fit on a single response page,
 that is enough for the most common use case to display the open work items regarding the user.
-Moreover the data displayed can be restricted by setting any of the following parameters:
+Moreover, the data displayed can be restricted by setting any of the following parameters:
 - `Max age`: Filters out the work items that are older than the days specified.
 - `Filter if Label`: Filters out the work items that contain the label specified.
 
-### Status cache
+### Status cache configuration
 Requests to the GraphQL API to get the branches and build statuses are expensive if they retrieve data
 from many repositories and are subject to more restrictive rate limits than REST API.
 To mitigate potential problems with API rate limits and improve the UI response times, these calls are cached and managed
-by two parameters (measured in seconds):
+by two parameters (measured in seconds) that you can tune in the Configuration tab:
 - `Status Cache Update Time`: During this period, any call to get statuses returns the cached data.
   This is to avoid making API calls when the user moves from a view to another in a short period of time.
   When this period of time expires, the cache will be incrementally updated by requesting 
@@ -104,16 +104,16 @@ As DashGit works entirely in the browser without a backend server, before using 
 you have to set up a dedicated (private) repository 
 that we call *manager repository*: 
 - Create the manager repository in GitHub: It is recommended to keep private, since although no token is sent to it, 
-  the logs may contain sensitive information such as urls or usernames when using private or on-premises repositories.
+  the logs may contain sensitive information such as urls or usernames when accesing to private or on-premises repositories.
 - Enable the manager repository: Go to the Configure tab and check the *Enable a Manager Repository for advanced functions*.
   Provide the name of the manager repository (REPO/OWNER) and the token used to push the combined updates or follow-up payload.
 
 ### Combined Dependabot Updates
 
 From the Dependabot tab you can combine pull requests with dependency updates generated by dependabot
-into a sigle PR per repository and merge them automatically with just a few clicks. 
+into a sigle PR per repository and merge all of them automatically with just a few clicks. 
 
-After you confirm the updates to be combined, DashGit pushes a json file with this information to the manager repository
+After you select and confirm the updates to be combined, DashGit pushes a json file with this information to the manager repository
 (*update payload*).
 Then, the manager repository runs a GitHub Actions workflow to create each combined pull request, resolve merge conflicts
 with adjacent lines and enable automerge.
@@ -126,14 +126,14 @@ This requires the previous setup of the manager repository (see above) and a lit
   Create these tokens in the manager repository. Their stored value has to be a token used to create the combined PRs.
 
 Notes:
-- On GitLab the projects have automerge enabled by default, but on GitHub you need to explicitly enable per repository
+- On GitLab, the projects have automerge enabled by default, but on GitHub you need to explicitly enable per repository
   from Settints->General. It is recommended to activate the automatic deletion of head branches when PRs are merged.
-- On GitHub, to automerge when the build succeeds you have to configure the repository to require status checks to pass before merging
-  (to do so, create an branch protection rule on the main branch, check this option and specify the checks that must pass)
+- On GitHub, to automerge when the build succeeds you have to configure the repository to require status checks to pass before merging.
+  To do this, create an branch protection rule on the main branch, check this option and specify the checks that must pass.
 - On GitLab, you can generate dependabot updates using the [Dependabot Script](https://github.com/dependabot/dependabot-script)
   or using [this more customized version of Dependabot Script](https://github.com/javiertuya/dependabot-script).
 
-### Follow up
+### Follow-up
 
 The *Follow up* view displays all work items that you have flagged for follow up.
 You can flag any work item from any view by clicking the left icon(s) and entering 

@@ -46,14 +46,22 @@ const configView = {
     return `
     <div class="card mt-2 text-bg-light" id="config-providers-common">
       <div class="card-body pt-2 pb-2">
+        ${data.providers.length == 0
+        ? `<p class="card-text mb-1 text-danger">To start using DashGit you have to sdd a GitHub or GitLab provider and set the username that is accessing the repository. `
+          + `This will give you access to the public repositories at github.com or gitlab.com.</p>`
+          + `<p class="card-text mb-1 text-danger">It is recommended to configure an API Access Token because unauthenticated providers are subject to lower rate limits and do not allow you to view branches, build statuses and notifications.</p>`
+        : ""}
+
         <p class="card-text mb-1">
           ${data.encrypted
         ? "API access tokens in this configuration will be saved encrypted. If you forget your password you will have to reset both password and tokens."
         : "This configuration is stored in the browser local memory. You can set up a password to encrypt the API access tokens."
-      }
+        }
         </p>
+
         ${this.anyGitHubWithoutToken(data)
-        ? `<p class="card-text mb-1 text-danger">GitHub unauthenticated providers are subject to lower rate limits and do not allow you to view branches, build statuses and notifications.</p>`
+        ? `<p class="card-text mb-1 text-danger">GitHub unauthenticated providers are subject to lower rate limits and do not allow you to view branches, build statuses and notifications. `
+          + `It is recommended to set an API Access Token.</p>`
         : ""}
 
         <h6 class="card-subtitle mb-1 mt-1 text-body-secondary">Common parameters:</h6>
@@ -113,7 +121,7 @@ const configView = {
             "The default scope of Unassigned view is restricted to the repository of the token owner. Here you can include other users or organizations (separated by spaces)")}
           ${this.array2html(`config-providers-dependabotAdditionalOwner-${key}`, "text", "Add owners to dependabot", provider.dependabotAdditionalOwner, '', "225", "150",
             "The default scope of Dependabot view is restricted to the repository of the token owner. Here you can include other users or organizations (separated by spaces)")}
-          ${this.check2html(`config-providers-enableNotifications-${key}`, "Show notifications", provider.enableNotifications)}
+          ${this.check2html(`config-providers-enableNotifications-${key}`, "Show notifications/mentions", provider.enableNotifications)}
         </div>
 
         <div class="row">
@@ -122,15 +130,15 @@ const configView = {
         </div>
         <div class="row config-providers-graphql-settings">
           ${this.input2html(`config-graphql-maxProjects-${key}`, "number", "Max projects", provider.graphql.maxProjects, 'required min="2" max="100"', "150", "100",
-            "Maximum number of repositories/projects that are retrieved to get the branches and statuses")}
+            "Maximum number of repositories/projects that are retrieved to get the branches and build statuses")}
           ${this.input2html(`config-graphql-maxBranches-${key}`, "number", "Max branches", provider.graphql.maxBranches, 'required min="2" max="100"', "150", "100",
             "Maximum number of branches that are retrieved for each repository/project to get the build statuses")}
           ${provider.provider == "GitLab"
             ? this.input2html(`config-graphql-maxPipelines-${key}`, "number", "Max pipelines", provider.graphql.maxPipelines, 'required min="2" max="100"', "150", "100",
-              "Maximum number of pipeline runs that are retrieved for each repository/project to get the branches and statuses")
+              "Maximum number of pipeline runs that are retrieved for each repository/project to get the branches and build statuses")
             : this.check2html(`config-graphql-include-forks-${key}`, "Include Forks", provider.graphql.includeForks)
               + this.check2html(`config-graphql-only-forks-${key}`, "Only Forks", provider.graphql.onlyForks)
-              + (this.raw2html(" - API scope:", "Specifies the scope of the GitHub GraphQL API requests that get the branches and statuses") + " &nbsp; "
+              + (this.raw2html(" - API scope:", "Specifies the scope of the GitHub GraphQL API requests that get the branches and build statuses") + " &nbsp; "
               + this.check2html(`config-graphql-scope-owner-${key}`, "Owner", provider.graphql.ownerAffiliations.includes("OWNER"))
               + this.check2html(`config-graphql-scope-organization-${key}`, "Organization member", provider.graphql.ownerAffiliations.includes("ORGANIZATION_MEMBER"))
               + this.check2html(`config-graphql-scope-collaborator-${key}`, "Collaborator", provider.graphql.ownerAffiliations.includes("COLLABORATOR")))
