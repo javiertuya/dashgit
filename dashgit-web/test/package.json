@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "mocha": "10.7.3",
-    "chai": "5.1.1",
+    "chai": "5.1.2",
     "mochawesome": "7.1.3"
   }
 }
