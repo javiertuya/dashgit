@@ -61,6 +61,7 @@ Note that once a token is encrypted, you can't decrypt it, only reset.
 
 ### Selecting, sorting and grouping
 The user can customize how the work items are sorted and organized by setting the controls that appear at the top of the header.
+An additional option allows restrict the displayed items to the repositories that match a specified search criterion.
 These settings are no stored in the configuration.
 
 ### Scope configuration
@@ -79,7 +80,7 @@ Note that the username can be someone other than the token owner.
 The requests made against the repositories get the most recent work items that fit on a single response page,
 that is enough for the most common use case to display the open work items regarding the user.
 Moreover, the data displayed can be restricted by setting any of the following parameters:
-- `Max age`: Filters out the work items that are older than the days specified.
+- `Max age`: Filters out the work items that are older than the number of days specified.
 - `Filter if Label`: Filters out the work items that contain the label specified.
 
 ### Status cache configuration

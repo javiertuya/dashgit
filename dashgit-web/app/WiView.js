@@ -207,36 +207,50 @@ const wiView = {
   },
   updateStatusVisibility: function () {
     const status = $("#inputStatus").val();
-    // Value encodes the statuses to show in binary, left bit is for issues.
+    // First filter based on the status selected, global change without any iteration
+    // Selected value encodes the statuses to show in binary, left bit is for issues.
     // Hide/show all items that belong to the appropriate class to match the selected status
     const classes = ["issue", "success", "failure", "pending", "notavailable", "undefined"];
     for (let i = 0; i < status.length; i++)
       this.showIf(".wi-status-class-" + classes[i], status.substring(i, i + 1) == "1")
-    // When a row represents a grouping (class wi-status-class-header),
-    // if all inner rows are hidden (display:none), it should be hidden too
+
+    // Additional filters that require iterate over the work items
     for (let target of this.allTargets)
       for (let provider of config.data.providers)
-        this.updateEmptyGroupsVisibility(`wi-items-${target}_${provider.uid}_all`);
+        this.updateOtherFiltersVisibility(`wi-items-${target}_${provider.uid}_all`);
   },
-  updateEmptyGroupsVisibility: function (id) {
+  updateOtherFiltersVisibility: function (id) {
     // As the dom does not have a physical hierarchy, iterates from the end
-    // to find each header that does not contain any visible rows
+    // to allow filter headers that do not contain any visible rows
     let target = $("#" + id).find("tbody tr");
+    let repoFilter = $("#inputFilterRepo").val().trim().toLowerCase();
     let visibleCount = 0;
     for (let i = target.length - 1; i >= 0; i--) {
       let row = target[i];
       if (row.attributes.class != undefined) {
-        // note: requieres a single style with display: none or undefined
-        if ($(row).hasClass("wi-status-class-any")) { //an item
-          const style = $(row).attr("style") ?? "";
-          if (!style.includes("display: none")) //is displayed
-            visibleCount++;
-        } else if ($(row).hasClass("wi-status-class-header")) { //a header, check visibleCount
-          this.showIf(row, visibleCount != 0);
-          visibleCount = 0; //begin next header
-        }
+        visibleCount = this.updateRowVisibility(row, visibleCount, repoFilter);
       }
     }
+  },
+  updateRowVisibility: function(row, visibleCount, repoFilter) {
+      // When a row is not a grouping (has a any status class) apply other filters
+      if ($(row).hasClass("wi-status-class-any")) { //an item
+        // Filter by repo name
+        if (repoFilter != "" && !$(row).attr("itemrepo").trim().toLowerCase().includes(repoFilter))
+            $(row).hide();
+
+        // if visible, increment count in its group, to be used when processing a group header
+        const style = $(row).attr("style") ?? "";
+        if (!style.includes("display: none")) //is displayed
+          visibleCount++;
+
+      // When a row represents a grouping (class wi-status-class-header),
+      // if all inner rows are hidden (display:none), it should be hidden too
+      } else if ($(row).hasClass("wi-status-class-header")) { //a header, check visibleCount
+        this.showIf(row, visibleCount != 0);
+        visibleCount = 0; //begin next header
+      }
+      return visibleCount;
   },
   updateNotifications(providerId, thisMentions, allMentions) {
     const target = this.selectActiveTarget();
