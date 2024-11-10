@@ -99,7 +99,7 @@ const indexController = {
     if (target == "config")
       configController.updateMainTarget();
     else
-      wiController.updateTarget(target); //display work items for the indicated target
+      wiController.updateTarget(target, $("#inputSort").val()); //display work items for the indicated target, with sort criterion
   },
   workMode: function () {
     $("#header-content").show();

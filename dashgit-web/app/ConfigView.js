@@ -67,7 +67,7 @@ const configView = {
         <h6 class="card-subtitle mb-1 mt-1 text-body-secondary">Common parameters:</h6>
         <div class="row">
           ${this.input2html("config-common-max-age", "number", "Max age", data.maxAge == 0 ? "" : data.maxAge, 'min="0" max="365"', "100", "100", 
-            "If present, filters out the work items that are older than the number of days specified")}
+            "If present, filters out the work items with an update date older than the number of days specified")}
           ${this.input2html("config-common-statusCacheUpdateTime", "number", "Status Cache Update Time", data.statusCacheUpdateTime, 'min="5" max="60"', "200", "100",
             "During this period (in seconds), any call to get statuses returns the cached data. When this time expires, the cache is incrementally updated by requesting data only from the latest updated projects")}
           ${this.input2html("config-common-statusCacheRefreshTime", "number", "Status Cache Refresh Time", data.statusCacheRefreshTime, 'min="60" max="7200"', "200", "100",

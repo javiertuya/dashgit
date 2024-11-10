@@ -44,31 +44,31 @@ const wiController = {
   reset: function (hard) {
     cache.reset(hard); //used for reload operations
   },
-  updateTarget: function (target) {
+  updateTarget: function (target, sorting) {
     console.log(`**** Trigger update to target: ${target}`);
     wiView.setLoading(true);
-    this.dispatch(target);
+    this.dispatch(target, sorting);
   },
 
   // Creates the appropriate target promise for each provider and run all promises in parallel
-  dispatch: function (target) {
+  dispatch: function (target, sorting) {
     let promises = [];
     for (let prov of config.data.providers)
       if (prov.enabled)
-        promises.push(this.getPromise(target, prov));
+        promises.push(this.getPromise(target, prov, sorting));
     if (promises.length == 0)
       wiView.renderAlert("warning", "No providers have been configured, please, complete the setup in the Configure tab");
-    this.dispatchPromises(target, promises);
+    this.dispatchPromises(target, promises, sorting);
   },
 
-  getPromise: function (target, provider) {
+  getPromise: function (target, provider, sorting) {
     const type = provider.provider.toLowerCase();
     if (target == "statuses" && (type == "github" || type == "gitlab"))
       return this.getStatusesOrCached(provider, type); //special handling
     else if (type == "github")
-      return gitHubApi.getWorkItems(target, provider);
+      return gitHubApi.getWorkItems(target, provider, sorting);
     else if (type == "gitlab")
-      return gitLabApi.getWorkItems(target, provider);
+      return gitLabApi.getWorkItems(target, provider, sorting);
     else
       console.log(`Invalid target: ${target} for provider ${provider}`);
   },
@@ -106,7 +106,7 @@ const wiController = {
     return model;
   },
 
-  dispatchPromises: async function (target, promises) {
+  dispatchPromises: async function (target, promises, sorting) {
     const currentDate = new Date();
     const responses = await Promise.allSettled(promises);
     console.log("Responses from all promises:");
@@ -123,7 +123,7 @@ const wiController = {
         models.push(response.value);
 
     if (models.length > 0)
-      this.displayWorkItems(target, models, currentDate);
+      this.displayWorkItems(target, models, sorting, currentDate);
 
     // Subsequent async calls (when finish, they will invoque the update* methods)
     this.dispatchNotifications(target);
@@ -134,8 +134,8 @@ const wiController = {
     wiView.setLoading(false);
   },
   
-  displayWorkItems: function(target, models, currentDate) {
-    wiView.renderWorkItems(target, models, config.getLastVisitedDate(target));
+  displayWorkItems: function(target, models, sorting, currentDate) {
+    wiView.renderWorkItems(target, models, sorting, config.getLastVisitedDate(target));
     if (target == "assigned" || target == "unassigned") // only highlight items for these targets
       config.saveLastVisitedDate(target, currentDate);
   },

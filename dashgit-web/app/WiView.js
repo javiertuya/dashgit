@@ -49,9 +49,8 @@ const wiView = {
     return $(".tab-pane.active").attr("id");
   },
 
-  renderWorkItems: function (target, models, highlightSince) {
-    let sorting = $("#inputSort").val();
-    let grouping = $("#checkGroup").is(':checked');
+  renderWorkItems: function (target, models, sorting, highlightSince) {
+     let grouping = $("#checkGroup").is(':checked');
     // initial values of view filters (not all views allow selecting these filters from the ui)
     if (config.session.viewFilter[target] == undefined)
       config.session.viewFilter[target] = { authorMe: target != "unassigned", authorOthers: true };

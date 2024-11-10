@@ -18,13 +18,16 @@ const gitLabApi = {
       console.log(model);
   },
 
-  getWorkItems: async function (target, provider) {
+  getWorkItems: async function (target, provider, sorting) { // NOSONAR
     const api = new Gitlab({ host: provider.url, token: config.decrypt(provider.token), });
-    const assigned = { state: "opened", assignee_username: provider.user, scope: "all", perPage: 100, maxPages: 1 };
-    const unassigned = { state: "opened", assignee_id: "None", scope: "all", perPage: 100, maxPages: 1 };
-    const reviewer = { state: "opened", reviewer_username: provider.user, scope: "all", perPage: 100, maxPages: 1 };
-    const created = { state: "opened", author_username: provider.user, scope: "all", perPage: 100, maxPages: 1 };
-    const dependabot = { state: "opened", author_username: provider.dependabotUser, scope: "all", perPage: 100, maxPages: 1 };
+    // issue #116 set sorting criteria to match the selected in the UI
+    const sort = (sorting??"").includes("updated") ? "updated_at" : "created_at";
+    const order = (sorting??"").includes("descending") ? "desc" : "asc";
+    const assigned = { state: "opened", assignee_username: provider.user, scope: "all", perPage: 100, maxPages: 1, order_by: sort, sort: order };
+    const unassigned = { state: "opened", assignee_id: "None", scope: "all", perPage: 100, maxPages: 1, order_by: sort, sort: order };
+    const reviewer = { state: "opened", reviewer_username: provider.user, scope: "all", perPage: 100, maxPages: 1, order_by: sort, sort: order };
+    const created = { state: "opened", author_username: provider.user, scope: "all", perPage: 100, maxPages: 1, order_by: sort, sort: order };
+    const dependabot = { state: "opened", author_username: provider.dependabotUser, scope: "all", perPage: 100, maxPages: 1, order_by: sort, sort: order };
     const dependabotTest = { state: "opened", in: "Test pull Request for dependabot/testupdate" };
 
     let promises = [];
@@ -83,9 +86,10 @@ const gitLabApi = {
     return await this.dispatchPromisesAndGetModel(target, provider, promises);
   },
   dispatchPromisesAndGetModel: async function(target, provider, promises) {
+    const t0 = Date.now();
     let responses = await Promise.all(promises);
-    this.log(provider.uid, "Data received from the api:", responses);
-    //creates single result with all responses
+    this.log(provider.uid, `Data received from the api [${Date.now() - t0}ms]:`, responses);
+     //creates single result with all responses
     let allResponses = [];
     for (let response of responses)
       if (response.followUp != undefined) // follow-ups have different structure than other items

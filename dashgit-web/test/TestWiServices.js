@@ -65,17 +65,17 @@ describe("TestView - Main processing in the view module", function () {
     //Ascending/descending by creation/update date. Uses a function to get the models such that: 
     //even items are swapped when sort descending by created date, Reverse order by updated date
     it("Sort model items by created date (ascending/descending)", function () {
-        let items = wiServices.sort("descending,created_at", getSortModelItems());
+        let items = wiServices.sort("ascending,created_at", getSortModelItems());
         assert.deepEqual(["first", "second", "third", "fourth"], items.map(a => a.title));
 
-        items = wiServices.sort("ascending,created_at", getSortModelItems());
+        items = wiServices.sort("descending,created_at", getSortModelItems());
         assert.deepEqual(["fourth", "third", "second", "first"], items.map(a => a.title));
     });
     it("Sort model items by updated date (ascending/descending)", function () {
-        let items = wiServices.sort("descending,updated_at", getSortModelItems());
+        let items = wiServices.sort("ascending,updated_at", getSortModelItems());
         assert.deepEqual(["fourth", "third", "second", "first"], items.map(a => a.title));
 
-        items = wiServices.sort("ascending,updated_at", getSortModelItems());
+        items = wiServices.sort("descending,updated_at", getSortModelItems());
         assert.deepEqual(["first", "second", "third", "fourth"], items.map(a => a.title));
     });
     let getSortModelItems = function () {

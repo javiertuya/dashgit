@@ -20,37 +20,40 @@ const gitHubApi = {
 
   userAgent: config.getGitHubUserAgent(),
 
-  getWorkItems: async function (target, provider) {
-    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(provider.token), });
-    const assigned = `is:open assignee:${provider.user} archived:false`;
-    const unassigned = `is:open no:assignee owner:${provider.user} ${this.additionalOwners(provider, provider.unassignedAdditionalOwner)} archived:false`;
-    const reviewer = `is:open user-review-requested:${provider.user} archived:false`
-    const revise= `is:open type:pr review:changes_requested author:${provider.user} archived:false`
-    const created = `is:open author:${provider.user} archived:false`
-    const involved = `is:open involves:${provider.user} archived:false`
-    const dependabot = `is:open is:pr author:app/dependabot owner:${provider.user} ${this.additionalOwners(provider, provider.dependabotAdditionalOwner)} archived:false`;
-    const dependabotTest = `is:open is:pr author:${provider.user} archived:false in:title "Test pull Request for dependabot/testupdate"`;
+  getWorkItems: async function (target, provider, sorting) {
+    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(provider.token) });
+    // issue #116 set sorting criteria to match the selected in the UI
+    const sort = (sorting??"").includes("updated") ? "updated" : "created";
+    const order = (sorting??"").includes("descending") ? "desc" : "asc";
+    const assigned = { q:`is:open assignee:${provider.user} archived:false`, sort:sort, order:order };
+    const unassigned = { q:`is:open no:assignee owner:${provider.user} ${this.additionalOwners(provider, provider.unassignedAdditionalOwner)} archived:false`, per_page: 60, sort:sort, order:order };
+    const reviewer = { q:`is:open user-review-requested:${provider.user} archived:false`, sort:sort, order:order }
+    const revise= { q:`is:open type:pr review:changes_requested author:${provider.user} archived:false`, sort:sort, order:order }
+    const created = { q:`is:open author:${provider.user} archived:false`, sort:sort, order:order }
+    const involved = { q:`is:open involves:${provider.user} archived:false`, sort:sort, order:order }
+    const dependabot = { q:`is:open is:pr author:app/dependabot owner:${provider.user} ${this.additionalOwners(provider, provider.dependabotAdditionalOwner)} archived:false`, per_page: 60, sort:sort, order:order };
+    const dependabotTest = { q:`is:open is:pr author:${provider.user} archived:false in:title "Test pull Request for dependabot/testupdate"`, per_page: 60, sort:sort, order:order };
     let promises = [];
     if (target == "assigned")
       promises = [
-        octokit.rest.search.issuesAndPullRequests({ q: assigned, }),
+        octokit.rest.search.issuesAndPullRequests(assigned),
         //To allow the ui to mark this as a review request, the api call is wrapped to add a special attribute (called custom_actions) to the response
-        this.wrapIssuesAndPullRequestsCall(octokit, { q: reviewer, }, "review_request"),
-        this.wrapIssuesAndPullRequestsCall(octokit, { q: revise, }, "changes_requested"),
+        this.wrapIssuesAndPullRequestsCall(octokit, reviewer, "review_request"),
+        this.wrapIssuesAndPullRequestsCall(octokit, revise, "changes_requested"),
         //Also show work items that need follow-up
         gitStoreApi.followUpAll(provider, true),
       ];
     else if (target == "unassigned")
       promises = [
-        octokit.rest.search.issuesAndPullRequests({ q: unassigned, per_page: 60 }),
+        octokit.rest.search.issuesAndPullRequests(unassigned),
       ];
     else if (target == "created")
       promises = [
-        octokit.rest.search.issuesAndPullRequests({ q: created, })
+        octokit.rest.search.issuesAndPullRequests(created)
       ];
     else if (target == "involved")
       promises = [
-        octokit.rest.search.issuesAndPullRequests({ q: involved, })
+        octokit.rest.search.issuesAndPullRequests(involved)
       ];
     else if (target == "follow-up")
       promises = [
@@ -58,18 +61,19 @@ const gitHubApi = {
       ];
     else if (target == "dependabot") {
       promises = [
-        octokit.rest.search.issuesAndPullRequests({ q: dependabot, per_page: 60 }),
+        octokit.rest.search.issuesAndPullRequests(dependabot),
       ];
       if (config.ff["updtest"])
-        promises.push(octokit.rest.search.issuesAndPullRequests({ q: dependabotTest, per_page: 60 }));
+        promises.push(octokit.rest.search.issuesAndPullRequests(dependabotTest));
     } else
       return;
 
     return await this.dispatchPromisesAndGetModel(target, provider, promises);
   },
   dispatchPromisesAndGetModel: async function(target, provider, promises) {
+    const t0 = Date.now();
     const responses = await Promise.all(promises);
-    this.log(provider.uid, "Data received from the api:", responses);
+    this.log(provider.uid, `Data received from the api [${Date.now() - t0}ms]:`, responses);
     //creates single result with all responses
     let allResponses = [];
     for (let response of responses)

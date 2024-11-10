@@ -7,13 +7,13 @@ const wiServices = {
 
   sort: function (sorting, mod) {
     if (sorting == "descending,updated_at")
-      mod.sort((a, b) => a.updated_at?.localeCompare(b.updated_at));
-    else if (sorting == "ascending,updated_at")
       mod.sort((a, b) => b.updated_at?.localeCompare(a.updated_at));
+    else if (sorting == "ascending,updated_at")
+      mod.sort((a, b) => a.updated_at?.localeCompare(b.updated_at));
     else if (sorting == "descending,created_at")
-      mod.sort((a, b) => a.created_at?.localeCompare(b.created_at));
-    else //default ascending,created_at
       mod.sort((a, b) => b.created_at?.localeCompare(a.created_at));
+    else //default ascending,created_at
+      mod.sort((a, b) => a.created_at?.localeCompare(b.created_at));
     return mod;
   },
 
