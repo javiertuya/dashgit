@@ -57,6 +57,8 @@ const wiServices = {
         && item.author.toLowerCase().startsWith("dependabot")) {
         //console.log(`Filtering unassigned item authored by dependabot: ${item.repo_name} ${item.title}`)
         return true;
+      } else if (viewFilter?.compact) {
+        return false; // does not apply filters, view will display a compact layout only
       } else if (viewFilter != undefined && user != undefined // filter by author (filters out if filter value is false)
         && ( !viewFilter.authorMe && item.author == user || !viewFilter.authorOthers && item.author != user )) {
           return true;

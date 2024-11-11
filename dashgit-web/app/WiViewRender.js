@@ -134,6 +134,23 @@ const wiRender = {
     return ` <span class="badge badge-primary" style="background-color:${color}">${count} ${message}</span>`;
   },
 
+  statusBadgeColor: function (status) {
+    if (status == "success")
+      return `bg-success`;
+    else if (status == "failure")
+      return `bg-danger`;
+    else if (status == "pending")
+      return `bg-warning`;
+    else
+      return `bg-secondary`;
+  },
+  statusBadgeStyle: function (status) {
+    if (status == "success")
+      return `background-color:MediumSeaGreen!important`;
+    else
+      return `opacity:0.9`;
+  },
+
   gitlabel2html: function (repoName, name, color) {
     let cssClass = "badge rounded-pill";
     if (color == "") {

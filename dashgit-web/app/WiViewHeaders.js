@@ -11,6 +11,8 @@ const wiHeaders = {
       return this.followUpHeader2html();
     if (target == "unassigned" || target == "involved") // other views do not have option to manage the filters
       return this.filterHeader2html(target, config.session.viewFilter[target]);
+    if (target == "statuses") // special compact view only for statuses (branches)
+      return this.compactHeader2html(target, config.session.viewFilter[target]);
     return "";
   },
 
@@ -111,6 +113,18 @@ const wiHeaders = {
         &nbsp;
         <input class="form-check-input wi-view-filter-clickable" type="checkbox" value="" ${viewFilters.authorOthers ? "checked" : ""} id="wi-view-filter-${target}-authorOthers">
         <label class="form-check-label" for="wi-view-filter-${target}-authorOthers">Authored by others</label>
+      </div>
+    </div>
+    `;
+  },
+
+  // View header to select compact view (only for branches)
+  compactHeader2html: function (target, viewFilters) {
+    return `
+    <div style="padding-left:8px">
+      <div class="col-auto mb-2">
+        <input class="form-check-input wi-view-filter-clickable" type="checkbox" ${viewFilters.compact ? "checked" : ""} value="" id="wi-view-filter-${target}-compact">
+        <label class="form-check-label" for="wi-view-filter-${target}-compact">Compact view (any status)</label>
       </div>
     </div>
     `;

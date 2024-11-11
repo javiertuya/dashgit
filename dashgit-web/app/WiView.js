@@ -50,11 +50,13 @@ const wiView = {
   },
 
   renderWorkItems: function (target, models, sorting, highlightSince) {
-     let grouping = $("#checkGroup").is(':checked');
     // initial values of view filters (not all views allow selecting these filters from the ui)
     if (config.session.viewFilter[target] == undefined)
-      config.session.viewFilter[target] = { authorMe: target != "unassigned", authorOthers: true };
+      config.session.viewFilter[target] = { authorMe: target != "unassigned", authorOthers: true, compact: false };
 
+    let compact =  config.session.viewFilter[target].compact;
+    let grouping = $("#checkGroup").is(':checked');
+    
     let html = `<div class="accordion" id="wi-providers-panel">`;
     html += wiHeaders.allProvidersHeader2html(target);
 
@@ -64,8 +66,8 @@ const wiView = {
       items = wiServices.merge(items);
       items = wiServices.sort(sorting, items);
       items = wiServices.filter(target, mod.header.uid, mod.header.user, items);
-      items = wiServices.group(grouping, items);
-      html += this.model2html(target, header, items, grouping, sorting, highlightSince);
+      items = wiServices.group(grouping || compact, items); // compact view requires grouping
+      html += this.model2html(target, header, items, grouping, compact, sorting, highlightSince);
     }
     html += `</div>`;
     $(`#${target}`).html(html);
@@ -76,7 +78,7 @@ const wiView = {
     }
   },
 
-  model2html: function (target, header, items, grouping, sorting, highlightSince) {
+  model2html: function (target, header, items, grouping, compact, sorting, highlightSince) {
     let provider = header.uid;
     let html = `
     <div class="accordion-item">
@@ -105,30 +107,40 @@ const wiView = {
 
     // adds every row
     html += `<table id="wi-items-${this.getId(target, header.uid, "all")}" provider="${provider}" class='table table-sm table-borderless m-0'>`;
-    html += this.rowsmodel2html(target, header, items, grouping, sorting, highlightSince);
+    html += this.rowsmodel2html(target, header, items, grouping, compact, sorting, highlightSince);
     html += `</table>`;
     html += `</div></div></div>`;
     return html;
   },
 
-  rowsmodel2html: function (target, header, items, grouping, sorting, highlightSince) {
+  rowsmodel2html: function (target, header, items, grouping, compact, sorting, highlightSince) {
     let html = "";
     if (items.length == 0)
       html += `<tr><td>No work items in this view. ${header.message}</td></tr>`;
     else {
       html += header.message;
       for (let i = 0; i < items.length; i++) {
-        let item = items[i];
-        //set group if item group value is different from previous
-        if ((i == 0 || this.groupValue(item, grouping, sorting) != this.groupValue(items[i - 1], grouping, sorting)))
-          html += `<tr class="wi-status-class-header fs-5"><td colspan=4>
-            ${grouping
-              ? wiRender.repourl2html(item.repo_url, item.repo_name)
-              : "<span class='text-secondary fw-bold'>" + this.groupValue(item, grouping, sorting) + "</span>"}
-          <td><tr>`;
-        html += this.rowmodel2html(target, header, item, grouping, highlightSince);
+        html += compact
+          ? this.rowmodel2htmlCompact(items, i)
+          : this.rowmodel2htmlItem(target, header, items, i, grouping, sorting, highlightSince);
       }
     }
+    return html;
+  },
+
+  // Standard view for a given row, grouped by dates or repo
+
+  rowmodel2htmlItem: function (target, header, items, i, grouping, sorting, highlightSince) {
+    let html = "";
+    let item = items[i];
+    //set group if item group value is different from previous
+    if ((i == 0 || this.groupValue(item, grouping, sorting) != this.groupValue(items[i - 1], grouping, sorting)))
+      html += `<tr class="wi-status-class-header fs-5"><td colspan=4>
+        ${grouping
+          ? wiRender.repourl2html(item.repo_url, item.repo_name)
+          : "<span class='text-secondary fw-bold'>" + this.groupValue(item, grouping, sorting) + "</span>"}
+      <td><tr>`;
+    html += this.rowmodel2html(target, header, item, grouping, highlightSince);
     return html;
   },
   rowmodel2html: function (target, header, item, grouping, highlightSince) {
@@ -158,6 +170,31 @@ const wiView = {
       </td>
     </tr>
     `;
+  },
+
+  // Compact view for a single row per repo, add branches in the row repo
+  // (requires the items be grouped by repo)
+
+  rowmodel2htmlCompact: function (items, i) {
+    let html = "";
+    let item = items[i];
+    //Set new row if item group value is different from previous
+    //Note that this row has wi-status-class-compact instead wi-status-class-any to handle differenty in setting visibility
+    if (i == 0 || item.repo_name != items[i - 1].repo_name) // row begin
+      html += `
+        <tr class="wi-status-class-branch-compact" itemrepo="${item.repo_name}"><td colspan=4>
+        ${wiRender.repourl2html(item.repo_url, item.repo_name)} `;
+
+    html += this.branch2htmlCompact(item.branch_name, item.branch_url, item.status);
+
+    if (i == items.length - 1 || item.repo_name != items[i + 1].repo_name) // row end, finish this repo
+      html += `</td></tr>`;
+
+    return html;
+  },
+  branch2htmlCompact: function (name, url, status) {
+    return `
+      <a href="${url}" target="_blank" class="badge ${wiRender.statusBadgeColor(status)} text-decoration-none" style="${wiRender.statusBadgeStyle(status)}">${name}</a>`;
   },
 
   // Other low level content
@@ -214,6 +251,7 @@ const wiView = {
       this.showIf(".wi-status-class-" + classes[i], status.substring(i, i + 1) == "1")
 
     // Additional filters that require iterate over the work items
+    // Apply to all targets to avoid flickering when changing target
     for (let target of this.allTargets)
       for (let provider of config.data.providers)
         this.updateOtherFiltersVisibility(`wi-items-${target}_${provider.uid}_all`);
@@ -248,7 +286,12 @@ const wiView = {
       } else if ($(row).hasClass("wi-status-class-header")) { //a header, check visibleCount
         this.showIf(row, visibleCount != 0);
         visibleCount = 0; //begin next header
+
+        // Special case, branch compact view does not apply status filter, only repo filter
+      } else if ($(row).hasClass("wi-status-class-branch-compact")) {
+        this.showIf($(row), repoFilter == "" || $(row).attr("itemrepo").trim().toLowerCase().includes(repoFilter))
       }
+      
       return visibleCount;
   },
   updateNotifications(providerId, thisMentions, allMentions) {
