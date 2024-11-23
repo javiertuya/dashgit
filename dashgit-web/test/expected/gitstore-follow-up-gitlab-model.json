@@ -15,7 +15,7 @@
       "iid": "10",
       "title": "issue repo1 10",
       "actions": {
-        "follow_up": true
+        "follow_up": true,  "follow_up_message": "follow up"
       },
       "author": "",
       "assignees": "",
@@ -33,7 +33,7 @@
       "iid": "11",
       "title": "pr repo1 11",
       "actions": {
-        "follow_up": true
+        "follow_up": true,  "follow_up_message": "custom message"
       },
       "author": "",
       "assignees": "",
@@ -51,7 +51,7 @@
       "iid": "10",
       "title": "issue repo2 10",
       "actions": {
-        "follow_up": true
+        "follow_up": true,  "follow_up_message": "follow up"
       },
       "author": "",
       "assignees": "",

@@ -43,8 +43,7 @@ $('button[data-bs-toggle="tab"]').on('shown.bs.tab', async function (e) {
 });
 
 $(document).on('click', '#reloadIcon', async function () {
-  wiController.reset(false);
-  indexController.render();
+  indexController.reload();
 });
 $(document).on('change', '#inputSort', async function () {
   indexController.render();
@@ -95,6 +94,10 @@ const indexController = {
   start: function() {
     wiController.reset(true);
     indexController.workMode();
+    indexController.render();
+  },
+  reload: function() {
+    wiController.reset(false);
     indexController.render();
   },
 

@@ -4,10 +4,14 @@
 const gitStoreAdapter = {
 
   followUp2model: function (provider, item) {
+    // custom message to place in the follow up label
+    let message = item.message??""; 
+    if (message == "")
+      message = "follow up"; // default text if no message
     return {
       repo_name: item.repo, type: item.type, iid: item.iid,
       title: decodeURIComponent(item.title), // to displaw appropriately in the work item list
-      actions: { follow_up: true },
+      actions: { follow_up: true, follow_up_message: message },
       author: "", assignees: "", created_at: item.remind, updated_at: item.remind,
       iidstr: this.getIidStr(provider, item.iid, item.type),
       url: this.getItemUrl(provider, item.repo, item.iid, item.type),

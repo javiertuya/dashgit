@@ -139,7 +139,9 @@ Notes:
 The *Follow up* view displays all work items that you have flagged for follow up.
 You can flag any work item from any view by clicking the left icon(s) and entering 
 the time when you want to see a reminder (in days since today date). 
+You can specify an optional message to display in the follow up label (text *follow up* will be displayed by default).
 Work items where reminder date has arrived appear in the *Assigned* tab even if you are not assignee or reviewer.
+
 
 This requires the previous setup of the manager repository (see above). 
 Work items flagged for follow up are stored in the *manager repository* in a dedicated branch named `dashgit/follow-up` that shouldn't be deleted.

@@ -2,6 +2,7 @@ import { gitStoreApi } from "./GitStoreApi.js"
 import { wiView } from "./WiView.js"
 import { wiServices } from "./WiServices.js"
 import { config } from "./Config.js"
+import { indexController } from "./IndexController.js"
 
 /**
  * Additional work item controller to manage the follow ups
@@ -27,10 +28,12 @@ $(document).on('click', '.wi-item-column-clickable', async function (e) {
 $(document).on('click', '#wi-follow-up-btn-save', async function (e) {
   wiView.followUpProgress();
   await wiControllerFollowUp.save(wiView.followUpGetValues(), false);
+  indexController.reload();
 });
 $(document).on('click', '#wi-follow-up-btn-delete', async function (e) {
   wiView.followUpProgress();
   await wiControllerFollowUp.save(wiView.followUpGetValues(), true);
+  indexController.reload();
 });
 $(".modal").on("hidden.bs.modal", function () { // clear modal content on close
   wiView.followUpClear();
@@ -79,11 +82,13 @@ const wiControllerFollowUp = {
         followUps.splice(followUpIndex, 1);
       } else {
         followUp.title = params.title;
+        followUp.message = params.message;
         followUp.remind = wiServices.dateAfterDays(params.days);
       }
     } else { // was not found, adds to the end a new follow up
       followUp = {
         repo: params.repo, type: params.type, iid: params.iid, title: params.title,
+        message: params.message,
         remind: wiServices.dateAfterDays(params.days)
       }
       followUps.push(followUp)

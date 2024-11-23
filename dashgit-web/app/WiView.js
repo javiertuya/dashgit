@@ -411,6 +411,7 @@ const wiView = {
     $("#wi-follow-up-modal-type-label").text(params.type == "issue" ? "Issue number:" : "Pull Request number:");
     $("#wi-follow-up-modal-iid").text(params.iid);
     $("#wi-follow-up-modal-title").text(decodeURIComponent(params.title));
+    $("#wi-follow-up-modal-message").val(params.message);
     $("#wi-follow-up-modal-days").val(params.days);
     // The own button stores the kind of operation to do on save
     $("#wi-follow-up-btn-save").html(params.exists ? "Update" : "Create");
@@ -428,6 +429,7 @@ const wiView = {
       iid: $("#wi-follow-up-modal-iid").text(),
       // Always encode title to allow non ascii characters be transformed into base64 to use the content rest api
       title: encodeURIComponent($("#wi-follow-up-modal-title").text()).replaceAll("%20", " "),
+      message: $("#wi-follow-up-modal-message").val(),
       days: $("#wi-follow-up-modal-days").val(),
     };
   },
@@ -452,7 +454,7 @@ const wiView = {
     }
   },
   followUpClear: function () {
-    this.followUpSetValues({ server: "", repo: "", type: "", iid: "", title: "" });
+    this.followUpSetValues({ server: "", repo: "", type: "", iid: "", title: "", message: "" });
     $("#wi-follow-up-modal-label").text("Loading ...");
     $("#wi-follow-up-btn-cancel").text("Cancel");
     $("#wi-follow-up-btn-delete").hide();
