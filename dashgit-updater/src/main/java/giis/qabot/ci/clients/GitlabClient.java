@@ -147,7 +147,7 @@ public class GitlabClient implements IGitClient {
 	@Override
 	@SneakyThrows(GitLabApiException.class)
 	public void addPullRequestCommment(PullRequest pullRequest, String comment) {
-		api.getNotesApi().createMergeRequestNote(asObject(pullRequest.repoId()), pullRequest.prId(), comment);
+		api.getNotesApi().createMergeRequestNote(asObject(pullRequest.repoId()), pullRequest.prId(), comment, null, false);
 	}
 
 	/**
