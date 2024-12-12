@@ -37,9 +37,11 @@ This is an example view of DashGit configured to manage two GitHub and one GitLa
 ## Quick Start
 
 To start, enter into DashGit at [https://javiertuya.github.io/dashgit](https://javiertuya.github.io/dashgit),
-go to the Configure tab and specify a GitHub provider by setting your username and an access token.
-Leave other parameters to their default values.
-You can omit the token, but this is subject to lower rate limits and does not allow you to view the branches tab, build statuses and notifications.
+go to the Configure tab and specify a GitHub provider by setting your username and an access token:
+- Use a personal access token (classic) with permissions `repo` and `notifications`
+  (see below to narrow the scope of tokens or use fine-grained tokens).
+- Leave other parameters to their default values.
+- You can omit the token, but this is subject to lower rate limits and does not allow you to view the branches tab, build statuses and notifications.
 
 The configuration is stored in the local browser memory. 
 To protect the tokens you can encrypt them with a password that will be requested when you open a new DashGit browser tab.
@@ -49,6 +51,30 @@ To protect the tokens you can encrypt them with a password that will be requeste
 The different *views* (tabs) shown in the UI display the open *work items* (issues, pull requests, etc.) in a collapsible panel for each *provider*.
 A provider is defined by a repository type (GitHub, GitLab), an *user* and an access *token* to authenticate the requests. 
 You can define any combination (e.g. providers with the same username but different token, or different username but same token).
+
+### Api access token permissions
+Each tab in DashGit issues different api calls to the repository APIs to get issues, pull requests, notifications, branches and build statuses
+that require different permission levels.
+Below the token permissions are described for different scenarios:
+
+- **GitHub authenticated with personal access tokens (classic)**:
+  - To access public and private repositories: `repo` and `notifications` permissions (recommended).
+  - To access public repositories and private repositories owned by you, but not other repositories where you are collaborator:
+    `repo:status`, `repo:public_repo` and `notifications`
+- **GitHub authenticated with fine-grained tokens**. Note that at the moment of writing this documentation, the fine-grained token feature is still in beta:
+  - Currently, private repositories not owned by you can not be accessed using fine-grained tokens
+    (see below to access private organization repositories).
+  - To access public repositories and private repositories owned by you, but not other repositories where you are collaborator:
+    Set read-only repository permissions: `Commit statuses`, `Contents`, `Issues`, `Metadata`, `Pull requests`.
+    Yo should also set the `Notifications` permission, however, this is not supported yet (although documentation mentions it).
+    The consequence is that you will not be able to see the notifications/mentions.
+- **GitHub authenticated with fine-grained tokens to access organization repositories**.
+  You can access to private organization repositories provided that:
+  - The organization has enabled fine-grained tokens.
+  - When creating the token, you specify the organization as the **resource owner**.
+  - The token has the aforementioned permissions: `Commit statuses`, `Contents`, `Issues`, `Metadata`, `Pull requests`
+    (and `Notifications` when available).
+- **GitLab**: Set a personal access token with `api` permission.
 
 ### Api acces token encryption
 As mentioned above, the configuration is stored in the browser local memory and all processing occours in the browser.

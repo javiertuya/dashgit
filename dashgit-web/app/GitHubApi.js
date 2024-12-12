@@ -21,13 +21,14 @@ const gitHubApi = {
   userAgent: config.getGitHubUserAgent(),
 
   getWorkItems: async function (target, provider, sorting) {
-    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(provider.token) });
+    const token = config.decrypt(provider.token);
+    const octokit = new Octokit({ userAgent: this.userAgent, auth: token });
     // issue #116 set sorting criteria to match the selected in the UI
     const sort = (sorting??"").includes("updated") ? "updated" : "created";
     const order = (sorting??"").includes("descending") ? "desc" : "asc";
     const assigned = { q:`is:open assignee:${provider.user} archived:false`, sort:sort, order:order };
     const unassigned = { q:`is:open no:assignee owner:${provider.user} ${this.additionalOwners(provider, provider.unassignedAdditionalOwner)} archived:false`, per_page: 60, sort:sort, order:order };
-    const reviewer = { q:`is:open user-review-requested:${provider.user} archived:false`, sort:sort, order:order }
+    const reviewer = { q:`is:open type:pr user-review-requested:${provider.user} archived:false`, sort:sort, order:order }
     const revise= { q:`is:open type:pr review:changes_requested author:${provider.user} archived:false`, sort:sort, order:order }
     const created = { q:`is:open author:${provider.user} archived:false`, sort:sort, order:order }
     const involved = { q:`is:open involves:${provider.user} archived:false`, sort:sort, order:order }
@@ -36,7 +37,8 @@ const gitHubApi = {
     let promises = [];
     if (target == "assigned")
       promises = [
-        octokit.rest.search.issuesAndPullRequests(assigned),
+        // spread because this returns an array with one or two queries depending on the kind of token used
+        ...this.issuesAndPullRequests(octokit, token, assigned),
         //To allow the ui to mark this as a review request, the api call is wrapped to add a special attribute (called custom_actions) to the response
         this.wrapIssuesAndPullRequestsCall(octokit, reviewer, "review_request"),
         this.wrapIssuesAndPullRequestsCall(octokit, revise, "changes_requested"),
@@ -45,15 +47,15 @@ const gitHubApi = {
       ];
     else if (target == "unassigned")
       promises = [
-        octokit.rest.search.issuesAndPullRequests(unassigned),
+        ...this.issuesAndPullRequests(octokit, token, unassigned),
       ];
     else if (target == "created")
       promises = [
-        octokit.rest.search.issuesAndPullRequests(created)
+        ...this.issuesAndPullRequests(octokit, token, created)
       ];
     else if (target == "involved")
       promises = [
-        octokit.rest.search.issuesAndPullRequests(involved)
+        ...this.issuesAndPullRequests(octokit, token, involved)
       ];
     else if (target == "follow-up")
       promises = [
@@ -88,6 +90,20 @@ const gitHubApi = {
   additionalOwners: function (provider, additionalOwners) {
     return additionalOwners.length == 0 ? "" : " owner:" + additionalOwners.join(" owner:");
   },
+  issuesAndPullRequests: function (octokit, token, query) {
+    // Issue #129 Although documentation says that search query returns both issues and prs if no 'is:*' is specified,
+    // this is not true when using fine grained tokens, that requires separate queries for issues and prs.
+    if (token == "" || token.startsWith("ghp_")) { // single query for no token or fine grained token
+      return [octokit.rest.search.issuesAndPullRequests(query)];
+    } else { // separated queries to find issues and prs
+      console.log("Assuming fine grained token, using separated queries for issues and PRs");
+      let qissue = JSON.parse(JSON.stringify(query));
+      let qpr = JSON.parse(JSON.stringify(query));
+      qissue.q = "is:issue " + query.q;
+      qpr.q = "is:pr " + query.q;
+      return [octokit.rest.search.issuesAndPullRequests(qissue), octokit.rest.search.issuesAndPullRequests(qpr)];
+    }
+  },
   wrapIssuesAndPullRequestsCall: async function (octokit, query, action) {
     return octokit.rest.search.issuesAndPullRequests(query)
       .then(async function (response) {
@@ -115,9 +131,10 @@ const gitHubApi = {
     // Issue #44: According the api doc a call using Last-Modified header should be done. 
     // This works well when a notification appears, But when the notification is read, the browser still gets not modified (when using cache).
     // Therefore, this approach can't be used and overrides the cache using If-None-Match header.
+    gitHubApi.notifLastModified = Math.floor(new Date().getTime()/1000);
+    gitHubApi.notifPollInterval = 120; //default value, if below query fails (eg. token without permission), next call will be done after this interval
     octokit.rest.activity.listNotificationsForAuthenticatedUser({ participating: true, headers: { 'If-None-Match': '' } }).then(function (response) {
       gitHubApi.log(provider.uid, "ASYNC Notifications response:", response);
-      gitHubApi.notifLastModified = Math.floor(new Date().getTime()/1000);
       gitHubApi.notifPollInterval = response.headers["x-poll-interval"];
       let model = gitHubAdapter.notifications2model(response);
       wiController.updateNotifications(provider.uid, model); //direct call instead of using a callback
