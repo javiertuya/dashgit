@@ -1,58 +1,56 @@
 { "viewer": { "login": "myuser", "resourcePath": "/myuser", "url": "https://github.com/myuser", "repositories": { "nodes":
     [
         {   "name": "testrepo", "nameWithOwner": "myuser/testrepo", "url": "https://github.com/myuser/testrepo",
+            "pullRequests": { "edges": [
+                { "node": { "title": "test pr assignee", "number": 63, "url": "https://github.com/myuser/testrepo/pull/63", 
+                    "state": "OPEN", "createdAt": "2024-01-09T19:56:21Z", "updatedAt": "2024-01-10T17:27:30Z", 
+                    "baseRepository": { "nameWithOwner": "myuser/testrepo" }, "headRepository": { "nameWithOwner": "myuser/testrepo" },
+                    "headRefName": "branch-pr63", "statusCheckRollup": { "state": "SUCCESS" }
+                } },
+                { "node": { "title": "test pr reviewer, other project", "number": 61, "url": "https://github.com/myuser/testrepo/pull/61",
+                    "state": "OPEN", "createdAt": "2024-01-08T12:52:35Z", "updatedAt": "2024-01-08T12:52:56Z", 
+                    "baseRepository": { "nameWithOwner": "myuser/testrepo" }, "headRepository": { "nameWithOwner": "myuser/testrepo" },
+                    "headRefName": "branch-pr61", "statusCheckRollup": { "state": "FAILURE" }
+                } },
+                { "node": { "title": "in progress", "number": 60, "url": "https://github.com/myuser/testrepo/pull/60",
+                    "state": "OPEN", "createdAt": "2024-01-08T12:50:35Z", "updatedAt": "2024-01-08T12:50:56Z", 
+                    "baseRepository": { "nameWithOwner": "myuser/testrepo" }, "headRepository": { "nameWithOwner": "myuser/testrepo" },
+                    "headRefName": "branch-pr60", "statusCheckRollup": { "state": "PENDING" }
+                } },
+                { "node": { "title": "no status", "number": 59, "url": "https://github.com/myuser/testrepo/pull/59",
+                    "state": "OPEN", "createdAt": "2024-01-08T12:49:35Z", "updatedAt": "2024-01-08T12:49:56Z", 
+                    "baseRepository": { "nameWithOwner": "myuser/testrepo" }, "headRepository": { "nameWithOwner": "myuser/testrepo" },
+                    "headRefName": "branch-pr59", "statusCheckRollup": null
+                } }
+            ] },
             "refs": { "nodes": 
             [
                 {   "name": "branch-pr63", "target": {
-                    "associatedPullRequests": { "edges": [
-                        { "node": { "title": "test pr assignee", "number": 63, "url": "https://github.com/myuser/testrepo/pull/63", 
-                                  "state": "OPEN", "createdAt": "2024-01-09T19:56:21Z", "updatedAt": "2024-01-10T17:27:30Z" }
-                        }
-                    ] },
                     "history": { "nodes": [
                         { "messageHeadline": "test pr assignee", "committedDate": "2024-01-09T19:50:21Z", "statusCheckRollup": { "state": "SUCCESS" }}
                     ] } }
                 },
                 {   "name": "branch-pr61", "target": {
-                    "associatedPullRequests": { "edges": [
-                        {   "node": { "title": "test pr reviewer, other project", "number": 61, "url": "https://github.com/myuser/testrepo/pull/61",
-                            "state": "OPEN", "createdAt": "2024-01-08T12:52:35Z", "updatedAt": "2024-01-08T12:52:56Z" }
-                        }
-                    ] },
                     "history": { "nodes": [
                         { "messageHeadline": "commit title", "committedDate": "2024-01-08T12:52:35Z", "statusCheckRollup": { "state": "FAILURE" } }
                     ] } }
                 },
                 {   "name": "branch-pr60", "target": {
-                    "associatedPullRequests": { "edges": [
-                        {   "node": { "title": "in progress", "number": 60, "url": "https://github.com/myuser/testrepo/pull/60",
-                            "state": "OPEN", "createdAt": "2024-01-08T12:50:35Z", "updatedAt": "2024-01-08T12:50:56Z" }
-                        }
-                    ] },
                     "history": { "nodes": [
                         { "messageHeadline": "in progress", "committedDate": "2024-01-08T12:50:35Z", "statusCheckRollup": { "state": "PENDING" } }
                     ] } }
                 },
                 {   "name": "branch-pr59", "target": {
-                    "associatedPullRequests": { "edges": [
-                        {   "node": { "title": "no status", "number": 59, "url": "https://github.com/myuser/testrepo/pull/59",
-                            "state": "OPEN", "createdAt": "2024-01-08T12:49:35Z", "updatedAt": "2024-01-08T12:49:56Z" }
-                        }
-                    ] },
                     "history": { "nodes": [
                         { "messageHeadline": "no status", "committedDate": "2024-01-08T12:49:35Z" }
                     ] } }
                 },
                 {   "name": "develop", "target": {
-                    "associatedPullRequests": { "edges": [
-                    ] },
                     "history": { "nodes": [
                         { "messageHeadline": "branch success", "committedDate": "2024-01-08T12:48:35Z", "statusCheckRollup": { "state": "SUCCESS" }  }
                     ] } }
                 },
                 {   "name": "main", "target": {
-                    "associatedPullRequests": { "edges": [
-                    ] },
                     "history": { "nodes": [
                         { "messageHeadline": "branch no status", "committedDate": "2024-01-08T12:47:35Z"  }
                     ] } }
@@ -60,6 +58,18 @@
             ]
         } },
         {   "name": "testrepo2", "nameWithOwner": "myuser/testrepo2", "url": "https://github.com/myuser/testrepo2",
+            "pullRequests": { "edges": [
+                { "node": { "title": "pr status closed", "number": 79, "url": "https://github.com/myuser/testrepo2/pull/79", 
+                    "state": "CLOSED", "createdAt": "2024-01-09T19:56:21Z", "updatedAt": "2024-01-10T17:27:30Z", 
+                    "baseRepository": { "nameWithOwner": "myuser/testrepo2" }, "headRepository": { "nameWithOwner": "myuser/testrepo2" },
+                    "headRefName": "branch-pr79", "statusCheckRollup": { "state": "SUCCESS" }
+                } },
+                { "node": { "title": "pr status other", "number": 78, "url": "https://github.com/myuser/testrepo2/pull/78", 
+                    "state": "XXXXX", "createdAt": "2024-01-09T19:56:21Z", "updatedAt": "2024-01-10T17:27:30Z", 
+                    "baseRepository": { "nameWithOwner": "myuser/testrepo2" }, "headRepository": { "nameWithOwner": "myuser/testrepo2" },
+                    "headRefName": "branch-pr78", "statusCheckRollup": { "state": "SUCCESS" }
+                } }
+            ] },
             "refs": { "nodes": 
             [
                 {   "name": "branch-pr79", "target": {

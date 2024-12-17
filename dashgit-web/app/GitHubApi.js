@@ -146,11 +146,12 @@ const gitHubApi = {
       return gitHubAdapter.statuses2model(provider, {});
     let gqlresponse = {};
     let maxProjects = provider.graphql.maxProjects;
+    const graphqlV2 = true; // TODO make configurable opt-out
     try {
       if (updateSince != "")
-        maxProjects = await this.countProjectsToUpdate(provider, updateSince);
+        maxProjects = await this.countProjectsToUpdate(provider, updateSince, graphqlV2);
 
-      const query = gitHubApi.getStatusesQuery(provider, maxProjects, true);
+      const query = gitHubApi.getStatusesQuery(provider, maxProjects, true, graphqlV2);
       const graphql = gitHubApi.getGraphQlApi(provider);
       gqlresponse = await graphql(query);
     } catch (error) {
@@ -159,13 +160,13 @@ const gitHubApi = {
       wiController.updateStatusesOnError("GitHub GraphQL api call failed. Message: " + error, provider.uid);
     }
     this.log(provider.uid, `Statuses graphql response, maxProjects: ${maxProjects}, since: "${updateSince}":`, gqlresponse);
-    const model = gitHubAdapter.statuses2model(provider, gqlresponse);
+    const model = gitHubAdapter.statuses2model(provider, gqlresponse, graphqlV2);
     return model;
   },
 
   //Gets number of projects that require update
-  countProjectsToUpdate: async function (provider, keepSince) {
-    const query0 = gitHubApi.getStatusesQuery(provider, provider.graphql.maxProjects, false);
+  countProjectsToUpdate: async function (provider, keepSince, graphqlV2) {
+    const query0 = gitHubApi.getStatusesQuery(provider, provider.graphql.maxProjects, false, graphqlV2);
     const graphql0 = gitHubApi.getGraphQlApi(provider);
     let gqlresponse0 = await graphql0(query0);
     //console.log("Count projects to update query model:")
@@ -200,7 +201,7 @@ const gitHubApi = {
     });
   },
 
-  getStatusesQuery: function (provider, maxProjects, includeAll) {
+  getStatusesQuery: function (provider, maxProjects, includeAll, graphqlV2) {
     let affiliations = provider.graphql.ownerAffiliations.toString();
     let forks = "isFork:false, ";
     if (provider.graphql.includeForks)
@@ -213,22 +214,30 @@ const gitHubApi = {
         ${forks} isArchived:false, orderBy: {field: PUSHED_AT, direction: DESC}) {
           nodes {
             name, nameWithOwner, url, pushedAt
-            ${includeAll ? this.getProjectsRefsSubquery(provider) : ""}
+            ${includeAll ? this.getProjectsRefsSubquery(provider, graphqlV2) : ""}
           }
         }
       }
     }`;
   },
-  getProjectsRefsSubquery: function (provider) {
+  getProjectsRefsSubquery: function (provider, graphqlV2) {
     return `
+    ${graphqlV2 ? `
+    pullRequests(first: ${provider.graphql.maxBranches}, states:[OPEN], orderBy: {field:UPDATED_AT, direction:DESC}) 
+      { edges { node { title, number, url, state, createdAt, updatedAt,
+        headRefName, baseRepository {nameWithOwner}, headRepository {nameWithOwner}, 
+        statusCheckRollup { state } } } }
+    ` : ``}
     refs(refPrefix: "refs/heads/", first: ${provider.graphql.maxBranches}) {
       nodes {
         name
         target {
           ... on Commit {
+            ${!graphqlV2 ? `
             associatedPullRequests(first: 1) {
               edges {  node { title, number, url, state, createdAt, updatedAt } }
             }
+            ` : ``}
             history(first: 1) { 
               nodes { messageHeadline, committedDate, statusCheckRollup { state } } 
             }
