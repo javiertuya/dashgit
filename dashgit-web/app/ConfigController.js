@@ -116,6 +116,8 @@ const configController = {
     data = configView.html2common(data);
     // Updates with current common config data that is not configurable from the ui
     data.encrypted = config.data.encrypted;
+    // to do not display update message after setting up the first provider
+    data["appLastVersion"] = config.appVersion;
 
     // Finds each provider data in the ui and adds the provider to this config data object
     for (let item of configView.getProviders()) {

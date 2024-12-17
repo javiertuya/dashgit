@@ -49,6 +49,17 @@ const config = {
       provider.token = this.encrypt(provider.token, config.xtoken);
   },
 
+  // Determines if version has changed from last used configuration (used to display a message to the user),
+  // does not fire if there are no providers (still not initialized)
+  appUpdateEvent: function() {
+    if (config.appVersion != config.data["appLastVersion"] && config.data.providers.length > 0) {
+      config.data["appLastVersion"] = config.appVersion;
+      this.save(); // save to prevent this message again
+      return true;
+    }
+    return false;
+  },
+
   // Save from a string representation of the data object
   updateFromString: function (dataStr) {
     config.data = this.parseAndSanitizeData(dataStr);
@@ -79,6 +90,7 @@ const config = {
   },
   setAllDefaults: function (data) {
     this.setDefault(data, "version", this.dataVersion);
+    this.setDefault(data, "appLastVersion", "");
     this.setDefault(data, "encrypted", false);
     this.setDefault(data, "statusCacheUpdateTime", 30);
     this.setDefault(data, "statusCacheRefreshTime", 3600);

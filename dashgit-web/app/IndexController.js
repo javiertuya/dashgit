@@ -104,6 +104,9 @@ const indexController = {
   //Rendering depends on the selected tab, calls the appropriate controller to update the UI
   render: function () {
     wiView.resetAlerts();
+    if (config.appUpdateEvent())
+      wiView.renderAlert("info", `Dashgit version has been updated to ${config.appVersion}. See the release notes at <a target="_blank" href="https://github.com/javiertuya/dashgit/releases">https://github.com/javiertuya/dashgit/releases</a>`);
+
     let target = $(".nav-link.active").attr("aria-controls");
     if (target == "config")
       configController.updateMainTarget();
