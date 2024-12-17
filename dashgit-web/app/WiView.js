@@ -161,7 +161,7 @@ const wiView = {
         ${wiRender.updateCheck2html(target, header.uid, item.repo_name, item.iid)}
         ${wiRender.actions2html(item.actions)}
         ${grouping ? "" : wiRender.repourl2html(item.repo_url, item.repo_name)}
-        ${wiRender.branch2html(item.branch_url, item.branch_name)}
+        ${wiRender.branch2html(item.branch_url, this.branchName2display(item))}
         <span class='wi-item-title ${item.type == "branch" ? "fw-normal" : "fw-bold"}'>${wiRender.url2html(item.url, item.title)}</span>
         <span class='text-secondary'>${item.iidstr}</span>
         <span class='text-primary'>${item.assignees}</span>
@@ -170,6 +170,10 @@ const wiView = {
       </td>
     </tr>
     `;
+  },
+  branchName2display: function(item) {
+    // Replaces the prefix fork: in the item branch name by the fork icon (as the we do not store this characteristic in the model)
+    return item?.branch_name?.startsWith("fork:") ? item.branch_name.replace("fork:", wiRender.forkIcon + " ") : item.branch_name;
   },
 
   // Compact view for a single row per repo, add branches in the row repo
@@ -185,7 +189,7 @@ const wiView = {
         <tr class="wi-status-class-branch-compact" itemrepo="${item.repo_name}"><td colspan=4>
         ${wiRender.repourl2html(item.repo_url, item.repo_name)} `;
 
-    html += this.branch2htmlCompact(item.branch_name, item.branch_url, item.status);
+    html += this.branch2htmlCompact(this.branchName2display(item), item.branch_url, item.status);
 
     if (i == items.length - 1 || item.repo_name != items[i + 1].repo_name) // row end, finish this repo
       html += `</td></tr>`;

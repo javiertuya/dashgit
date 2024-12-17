@@ -50,24 +50,43 @@ describe("TestGitHubAdapter - Model transformations from GitHub API results", fu
         assert.deepEqual(expected, actual);
     });
 
-    // GraphQL API, basic (use a first repo: testrepo)
-    // - pr open, branch (does not have associatedPullRequests)
-    // - status success, failure, pending, not available (does not have History)
-    //   combine success/not available for pr/branch
-    // - title pr equal/different commit (if different uses pr title)
-    // - pr dates!=commit dates (get pr dates)
-    // Focus on other features (different repo: testrepo2)
-    // - pr status OPEN(alredy covered)/CLOSED/other (any different to OPEN is managed as a branch)
-    // - Status coverage of all statusCheckRollup values at: https://docs.github.com/en/graphql/reference/enums#statusstate (in dedicated test)
-    it("Transform GitHub GraphQL API results", function () {
-        let input = JSON.parse(fs.readFileSync("./input/github-graphql-result1.json"));
-        let actual = gitHubAdapter.statuses2model({ provider: "GitHub", uid: "0-github", user: "usr1" }, input);
-        fs.writeFileSync("./actual/github-graphql-model1.json", JSON.stringify(actual, null, 2)); //to allow extenal diff
-        let expected = JSON.parse(fs.readFileSync("./expected/github-graphql-model1.json"));
-        assert.deepEqual(expected, actual);
+    // GraphQL API
+    [
+        // Basic (use a first repo: testrepo), deprecated version V1
+        // - pr with branch (63), branch without PR (develop)
+        // - all pr statuses: success, failure, pending, not available (63 61 60 59)
+        // - branch without PR statuses: only existing (develop) and not available (main)
+        // - title pr equal (63)/different (64) of commit (if different uses pr title)
+        // - pr dates!=commit dates (all)
+        // Focus on other features (different repo: testrepo2)
+        // - pr status OPEN(alredy covered)/CLOSED(79)/other(78) (any different to OPEN is managed as a branch)
+        { input: "github-graphql-result1.json", expected: "github-graphql-model1.json", graphqlV2: false },
+
+        // Version V2. Uses the same expected model than the previous,
+        // but the input is adapted to have the PRs as siblings of the branches
+        { input: "github-graphqlV2-result1.json", expected: "github-graphql-model1.json", graphqlV2: true },
+
+        // PR from a fork (baseRepo!=headRepo -> branchUrl is at the forked repo (head) and branchName with fork icon)
+        // - no matching branch (fork20)
+        // - matching branch by name and title (match20) with PR in my repo (match20) -> show PR and branch
+        { input: "github-graphqlV2-result2.json", expected: "github-graphql-model2.json", graphqlV2: true },
+    ].forEach(function (item) {
+        it(`Transform GitHub GraphQL API results from ${item.input}`, function () {
+            let input = JSON.parse(fs.readFileSync(`./input/${item.input}`));
+            let actual = gitHubAdapter.statuses2model({ provider: "GitHub", uid: "0-github", user: "usr1" }, input, item.graphqlV2);
+            fs.writeFileSync(`./actual/${item.expected}`, JSON.stringify(actual, null, 2)); //to allow extenal diff
+            let expected = JSON.parse(fs.readFileSync(`./expected/${item.expected}`));
+            assert.deepEqual(expected, actual);
+        });
     });
 
+    // Matching Status coverage of 
+    // - all statusCheckRollup values at: https://docs.github.com/en/graphql/reference/enums#statusstate
+    // - not defined or not matching any value
     [
+        { input: null, expected: "notavailable" },
+        { input: undefined, expected: "notavailable" },
+        { input: "XXXXX", expected: "notavailable" },
         { input: "ERROR", expected: "failure" },
         { input: "EXPECTED", expected: "pending" },
         { input: "FAILURE", expected: "failure" },
@@ -76,7 +95,7 @@ describe("TestGitHubAdapter - Model transformations from GitHub API results", fu
     ].forEach(function (item) {
         it(`GitHub StatusCheckRollup state conversion: ${item.input} to ${item.expected}`, function () {
             assert.equal(item.expected, gitHubAdapter.transformStatus(item.input));
-            assert.equal(item.expected, gitHubAdapter.transformStatus(item.input.toLowerCase()));
+            assert.equal(item.expected, gitHubAdapter.transformStatus(item.input??"".toLowerCase()));
         });
     });
 

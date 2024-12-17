@@ -13,6 +13,8 @@ const wiRender = {
   issueIconClass: 'fa-regular fa-circle-dot',
   branchIconClass: 'fa-solid fa-code-branch',
 
+  forkIcon: '<i class="fa-solid fa-code-fork"></i>',
+
   successIcon: '<i class="wi-status-icon fa-solid fa-check" style="color:MediumSeaGreen" title="The build has completed succesfully"></i>',
   failureIcon: '<i class="wi-status-icon fa-solid fa-x" style="color:Red" title="The build has ended with failure"></i>',
   pendingIcon: '<i class="wi-status-icon fa-regular fa-circle" style="color:Orange" title="The build is executing or waiting to execute"></i>',

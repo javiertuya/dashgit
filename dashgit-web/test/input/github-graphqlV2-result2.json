@@ -1,0 +1,27 @@
+{ "viewer": { "login": "myuser", "resourcePath": "/myuser", "url": "https://github.com/myuser", "repositories": { "nodes":
+    [
+        {   "name": "testrepo", "nameWithOwner": "myuser/testrepo", "url": "https://github.com/myuser/testrepo",
+            "pullRequests": { "edges": [
+                { "node": { "title": "test pr from fork", "number": 20, "url": "https://github.com/myuser/testrepo/pull/20", 
+                    "state": "OPEN", "createdAt": "2024-01-09T19:56:21Z", "updatedAt": "2024-01-10T17:27:30Z", 
+                    "baseRepository": { "nameWithOwner": "myuser/testrepo" }, "headRepository": { "nameWithOwner": "otheruser/forkrepo" },
+                    "headRefName": "branch-fork20", "statusCheckRollup": { "state": "SUCCESS" }
+                } },
+                { "node": { "title": "test matching", "number": 21, "url": "https://github.com/myuser/testrepo/pull/21", 
+                    "state": "OPEN", "createdAt": "2024-01-09T19:56:21Z", "updatedAt": "2024-01-10T17:27:30Z", 
+                    "baseRepository": { "nameWithOwner": "myuser/testrepo" }, "headRepository": { "nameWithOwner": "otheruser/forkrepo" },
+                    "headRefName": "branch-match20", "statusCheckRollup": { "state": "ERROR" }
+                } }
+            ] },
+            "refs": { "nodes": 
+            [
+                {   "name": "branch-match20", "target": {
+                    "history": { "nodes": [
+                        { "messageHeadline": "test matching", "committedDate": "2024-01-09T19:50:21Z", "statusCheckRollup": { "state": "PENDING" }}
+                    ] } }
+                }
+            ]
+        } }
+
+    ] } } 
+}

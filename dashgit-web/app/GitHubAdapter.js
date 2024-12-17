@@ -69,7 +69,7 @@ const gitHubAdapter = {
   },
 
   //Model transformations from the result of the graphql invocation to the provider independent format
-  statuses2model: function (provider, gqlresponse) {
+  statuses2model: function (provider, gqlresponse, graphqlV2) {
     let m = new Model().setHeader(provider.provider, provider.uid, provider.user, "");
     if (gqlresponse.viewer == undefined)
       return m;
@@ -77,12 +77,71 @@ const gitHubAdapter = {
       const repoName = repo.nameWithOwner;
       const repoUrl = repo.url;
       m.header.repo_names.push(repoName);
-      for (let ref of repo.refs.nodes) {
-        this.statusesNode2model(ref, repoName, repoUrl, m);
+      if (graphqlV2) {
+        let loadedBranches = {}; // to exclude branches if already added from a PR
+        for (let ref of repo.pullRequests.edges)
+          this.statusesPrNode2model(ref.node, repoName, repoUrl, m, loadedBranches);
+        for (let ref of repo.refs.nodes)
+          this.statusesBranchNode2model(ref, repoName, repoUrl, m, loadedBranches);
+      } else { // deprecated, gets PRs inside branches
+        for (let ref of repo.refs.nodes)
+          this.statusesNode2model(ref, repoName, repoUrl, m);
       }
     }
     return m;
   },
+  statusesPrNode2model: function (node, repoName, repoUrl, targetModel, loadedBranches) {
+    // Should ignore PRs in other states
+    if (node.state != "OPEN") 
+      return;
+
+    let status = this.transformStatus(node.statusCheckRollup?.state);
+    // Construct manually as we do not have the url for a commit
+    let branchUrl = "";
+    let branchName = "";
+    if (node.headRepository.nameWithOwner == node.baseRepository.nameWithOwner) { // local PR
+      branchUrl = repoUrl + "/tree/" + node.headRefName;
+      branchName = node.headRefName;
+    } else { // PR from fork, branch url refers to the fork and name has a fork icon
+      branchUrl = "https://github.com/" + node.headRepository.nameWithOwner + "/tree/" + node.headRefName;
+      branchName = "fork:" + node.headRefName; // fork: will be replaced by icon in render
+    }
+
+    targetModel.addItem({
+      repo_name: repoName, type: "pr", iid: node.number,
+      branch_name: branchName, status: status,
+      title: node.title, actions: {},
+      author: "", assignees: "", created_at: node.createdAt, updated_at: node.updatedAt,
+      iidstr: "#" + node.number, url: node.url, branch_url: branchUrl, repo_url: repoUrl,
+      labels: []
+    });
+    // Adds the branch (url) to avoid duplications when this branch is detected
+    loadedBranches[branchUrl] = branchUrl;
+  },
+  statusesBranchNode2model: function (ref, repoName, repoUrl, targetModel, loadedBranches) {
+    // Exit if there is no info on the single commit that should be retrieved by graphQL
+    if (ref.target.history.nodes.length == 0)
+      return;
+
+    let node = ref.target.history.nodes[0];
+    let status = this.transformStatus(node.statusCheckRollup?.state);
+    // Construct manually as we do not have the url for a commit
+    let branchUrl = repoUrl + "/tree/" + ref.name;
+
+    // Exit if this branch was aready loaded from a PR
+    if (loadedBranches[branchUrl] == branchUrl)
+      return;
+
+    targetModel.addItem({
+      repo_name: repoName, type: "branch", iid: "",
+      branch_name: ref.name, status: status,
+      title: node.messageHeadline, actions: {},
+      author: "", assignees: "", created_at: node.committedDate, updated_at: node.committedDate,
+      iidstr: "", url: branchUrl, branch_url: branchUrl, repo_url: repoUrl,
+      labels: []
+    });
+  },
+  
   statusesNode2model: function(ref, repoName, repoUrl, targetModel) {
         const branch = ref.name;
         // Los siguientes datos son los de los commits de ramas y prs.
@@ -129,13 +188,15 @@ const gitHubAdapter = {
         });
   },
   transformStatus: function (status) {
-    status = status.toUpperCase();
+    status = status??"".toUpperCase();
     if (status == "SUCCESS")
       return "success";
     else if (status == "FAILURE" || status == "ERROR")
       return "failure";
-    else // other status is EXPECTED, but any other value asumes pending as there is a check
+    else if (status == "EXPECTED" || status == "PENDING")
       return "pending";
+    else // other status is not available, but any other value asumes pending as there is a check
+      return "notavailable";
   },
 
 }

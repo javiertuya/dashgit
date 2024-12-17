@@ -1,0 +1,72 @@
+{
+  "header": {
+    "provider": "GitHub",
+    "uid": "0-github",
+    "user": "usr1",
+    "url": "",
+    "repo_names": [
+      "myuser/testrepo"
+    ],
+    "target": "",
+    "message": ""
+  },
+  "items": [
+    {
+      "repo_name": "myuser/testrepo",
+      "type": "pr",
+      "iid": 20,
+      "branch_name": "fork:branch-fork20",
+      "status": "success",
+      "title": "test pr from fork",
+      "actions": {},
+      "author": "",
+      "assignees": "",
+      "created_at": "2024-01-09T19:56:21Z",
+      "updated_at": "2024-01-10T17:27:30Z",
+      "iidstr": "#20",
+      "url": "https://github.com/myuser/testrepo/pull/20",
+      "branch_url": "https://github.com/otheruser/forkrepo/tree/branch-fork20",
+      "repo_url": "https://github.com/myuser/testrepo",
+      "labels": [],
+      "uid": "myuser-testrepo_pr_20"
+    },
+    {
+      "repo_name": "myuser/testrepo",
+      "type": "pr",
+      "iid": 21,
+      "branch_name": "fork:branch-match20",
+      "status": "failure",
+      "title": "test matching",
+      "actions": {},
+      "author": "",
+      "assignees": "",
+      "created_at": "2024-01-09T19:56:21Z",
+      "updated_at": "2024-01-10T17:27:30Z",
+      "iidstr": "#21",
+      "url": "https://github.com/myuser/testrepo/pull/21",
+      "branch_url": "https://github.com/otheruser/forkrepo/tree/branch-match20",
+      "repo_url": "https://github.com/myuser/testrepo",
+      "labels": [],
+      "uid": "myuser-testrepo_pr_21"
+    },
+    {
+      "repo_name": "myuser/testrepo",
+      "type": "branch",
+      "iid": "",
+      "branch_name": "branch-match20",
+      "status": "pending",
+      "title": "test matching",
+      "actions": {},
+      "author": "",
+      "assignees": "",
+      "created_at": "2024-01-09T19:50:21Z",
+      "updated_at": "2024-01-09T19:50:21Z",
+      "iidstr": "",
+      "url": "https://github.com/myuser/testrepo/tree/branch-match20",
+      "branch_url": "https://github.com/myuser/testrepo/tree/branch-match20",
+      "repo_url": "https://github.com/myuser/testrepo",
+      "labels": [],
+      "uid": "myuser-testrepo_branch_branch-match20"
+    }
+  ]
+}
