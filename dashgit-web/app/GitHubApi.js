@@ -142,11 +142,11 @@ const gitHubApi = {
   },
 
   getStatusesRequest: async function (provider, updateSince) {
+    const graphqlV2 = !provider.graphql.deprecatedGraphqlV1;
     if (provider.token == "") //returns empty model if no token provider to avoid api call errors
-      return gitHubAdapter.statuses2model(provider, {});
+      return gitHubAdapter.statuses2model(provider, {}, graphqlV2);
     let gqlresponse = {};
     let maxProjects = provider.graphql.maxProjects;
-    const graphqlV2 = true; // TODO make configurable opt-out
     try {
       if (updateSince != "")
         maxProjects = await this.countProjectsToUpdate(provider, updateSince, graphqlV2);
