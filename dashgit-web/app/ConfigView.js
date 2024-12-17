@@ -127,6 +127,9 @@ const configView = {
         <div class="row">
           <div class="col-auto card-subtitle h6 mb-1 mt-1 text-body-secondary">GraphQL API parameters:</div>
           ${this.check2html(`config-providers-surrogate-enabled-${key}`, "Use a status surrogate", provider.statusSurrogateUser != "")}
+          ${provider.provider == "GitHub"
+            ? this.check2html(`config-providers-deprecated-graphqlV1-${key}`, "Use deprecated GraphQL query (before V1.6)", provider.graphql.deprecatedGraphqlV1)
+            : ""}
         </div>
         <div class="row config-providers-graphql-settings">
           ${this.input2html(`config-graphql-maxProjects-${key}`, "number", "Max projects", provider.graphql.maxProjects, 'required min="2" max="100"', "150", "100",
@@ -221,6 +224,7 @@ const configView = {
     if (provider.provider == "GitLab") {
       provider.graphql.maxPipelines = $(`#config-graphql-maxPipelines-${id}`).val().trim();
     } else {
+      provider.graphql.deprecatedGraphqlV1 = $(`#config-providers-deprecated-graphqlV1-${id}`).is(':checked')
       provider.graphql.onlyForks = $(`#config-graphql-only-forks-${id}`).is(':checked')
       provider.graphql.includeForks = $(`#config-graphql-include-forks-${id}`).is(':checked');
       provider.graphql.ownerAffiliations = [];
