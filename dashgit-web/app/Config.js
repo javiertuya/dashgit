@@ -120,6 +120,7 @@ const config = {
       this.setDefault(element, "unassignedAdditionalOwner", []);
       this.setDefault(element, "dependabotAdditionalOwner", []);
       this.setDefault(element, "graphql", {});
+      this.setDefault(element.graphql, "deprecatedGraphqlV1", false);
       this.setDefault(element.graphql, "includeForks", false);
       this.setDefault(element.graphql, "onlyForks", false);
       this.setDefault(element.graphql, "ownerAffiliations", ["OWNER"]);
