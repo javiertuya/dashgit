@@ -16,6 +16,7 @@ describe("TestConfig - Sanitizing config data", async function () {
 
     it("Set default config attributes when reading empty", function () {
         let expected = { version: 2, encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 30, maxAge: 0, 
+            appLastVersion: "", 
             enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
             providers: [] };
         assert.deepEqual(expected, config.parseAndSanitizeData(""));
@@ -26,6 +27,7 @@ describe("TestConfig - Sanitizing config data", async function () {
     it("Set default config attributes to GitHub provider", function () {
         let expected = {
             version: 2,
+            appLastVersion: "",
             encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 60, maxAge: 0,
             enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
             providers: [{
@@ -44,6 +46,7 @@ describe("TestConfig - Sanitizing config data", async function () {
     it("No attributes are overriden by defaults if already set", function () {
         let expected = {
             version: 2,
+            appLastVersion: "",
             encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 30, maxAge: 0,
             enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
             providers: [{
