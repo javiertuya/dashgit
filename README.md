@@ -101,6 +101,7 @@ Note that the username can be someone other than the token owner.
   or `Add owners to dependabot` parameters, respectively.
 - The scope of Branches view is handled differently, as data is obtained by the GraphQL API requests instead of the REST API.
   On GitHub you have to specify one or more than the following scopes: OWNER, ORGANIZATION_MEMBER or COLLABORATOR.
+  Optionally you can include PRs from other repositories even if they are out of the scope.
 
 ### Filtering configuration
 The requests made against the repositories get the most recent work items that fit on a single response page,
@@ -117,7 +118,7 @@ by two parameters (measured in seconds) that you can tune in the Configuration t
 - `Status Cache Update Time`: During this period, any call to get statuses returns the cached data.
   This is to avoid making API calls when the user moves from a view to another in a short period of time.
   When this period of time expires, the cache will be incrementally updated by requesting 
-  data only from the latest updated projects.
+  data only from the projects that had recent commits.
 - `Status Cache Refresh Time`: It specifies a much longer period than `Status Cache Update Time`.
   When this period of time expires, the cache is fully refreshed.
 

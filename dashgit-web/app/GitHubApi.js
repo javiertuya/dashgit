@@ -143,39 +143,49 @@ const gitHubApi = {
 
   getStatusesRequest: async function (provider, updateSince) {
     const graphqlV2 = !provider.graphql.deprecatedGraphqlV1;
+    let userSpecRepos = graphqlV2 ? provider.graphql.userSpecRepos : "";
     if (provider.token == "") //returns empty model if no token provider to avoid api call errors
       return gitHubAdapter.statuses2model(provider, {}, graphqlV2);
     let gqlresponse = {};
-    let maxProjects = provider.graphql.maxProjects;
     try {
-      if (updateSince != "")
-        maxProjects = await this.countProjectsToUpdate(provider, updateSince, graphqlV2);
+      // check how many repositories must be updated, this info will be used to construct the query
+      let updateReqs = await this.getUpdateReqs(provider, userSpecRepos, updateSince, graphqlV2);
+      if (updateReqs.maxProjects == 0 && updateReqs.otherRepos == "") {
+        this.log(provider.uid, `No projects to update, since: "${updateSince}":`);
+        return gitHubAdapter.statuses2model(provider, {}, graphqlV2);
+      }
 
-      const query = gitHubApi.getStatusesQuery(provider, maxProjects, true, graphqlV2);
+      const query = gitHubApi.getStatusesQuery(provider, updateReqs.maxProjects, updateReqs.otherRepos, true, graphqlV2);
       const graphql = gitHubApi.getGraphQlApi(provider);
       gqlresponse = await graphql(query);
+      this.log(provider.uid, `Statuses graphql response, maxProjects: ${updateReqs.maxProjects} and "${updateReqs.otherRepos}", since: "${updateSince}":`, gqlresponse);
     } catch (error) {
       console.error("GitHub GraphQL api call failed");
       console.error(error);
       wiController.updateStatusesOnError("GitHub GraphQL api call failed. Message: " + error, provider.uid);
     }
-    this.log(provider.uid, `Statuses graphql response, maxProjects: ${maxProjects}, since: "${updateSince}":`, gqlresponse);
+    // Conversion to the model requires a previous postprocessing to get the user specified repositories (if any)
+    gqlresponse = gitHubAdapter.postprocessGraphQl(gqlresponse);
     const model = gitHubAdapter.statuses2model(provider, gqlresponse, graphqlV2);
     return model;
   },
 
-  //Gets number of projects that require update
-  countProjectsToUpdate: async function (provider, keepSince, graphqlV2) {
-    const query0 = gitHubApi.getStatusesQuery(provider, provider.graphql.maxProjects, false, graphqlV2);
+  //Gets number of repositories and other user specified that require update
+  getUpdateReqs: async function (provider, userSpecRepos, updateSince, graphqlV2) {
+    let updateReqs = { maxProjects: provider.graphql.maxProjects, otherRepos: userSpecRepos };
+    if (updateSince == "")
+      return updateReqs;
+
+    const query0 = gitHubApi.getStatusesQuery(provider, provider.graphql.maxProjects, updateReqs.otherRepos, false, graphqlV2);
     const graphql0 = gitHubApi.getGraphQlApi(provider);
+    const t0 = Date.now();
     let gqlresponse0 = await graphql0(query0);
+    gitHubApi.log(provider.uid, `Statuses graphql response, time to get update reqs [${Date.now() - t0}ms]:`, gqlresponse0);
     //console.log("Count projects to update query model:")
     //console.log(gqlresponse0)
-    let nodes = gqlresponse0.viewer.repositories.nodes;
-    for (let i = 0; i < nodes.length; i++)
-      if (new Date(keepSince).getTime() > new Date(nodes[i].pushedAt).getTime()) //old project
-        return i;
-    return gqlresponse0.viewer.repositories.nodes.length;
+    updateReqs.maxProjects = gitHubAdapter.getNumReposToUpdate(gqlresponse0, updateReqs.maxProjects, updateSince);
+    updateReqs.otherRepos = gitHubAdapter.getUserReposToUpdate(gqlresponse0, updateSince);
+    return updateReqs;
   },
 
   //Gets the statuses model, but asynchronously.
@@ -201,7 +211,7 @@ const gitHubApi = {
     });
   },
 
-  getStatusesQuery: function (provider, maxProjects, includeAll, graphqlV2) {
+  getStatusesQuery: function (provider, maxProjects, userSpecRepos, includeAll, graphqlV2) {
     let affiliations = provider.graphql.ownerAffiliations.toString();
     let forks = "isFork:false, ";
     if (provider.graphql.includeForks)
@@ -214,20 +224,28 @@ const gitHubApi = {
         ${forks} isArchived:false, orderBy: {field: PUSHED_AT, direction: DESC}) {
           nodes {
             name, nameWithOwner, url, pushedAt
-            ${includeAll ? this.getProjectsRefsSubquery(provider, graphqlV2) : ""}
+            ${includeAll ? this.getReposSubquery(provider, graphqlV2) : ""}
           }
         }
       }
+      ${graphqlV2 ? this.getUserSpecReposSubquery(provider, userSpecRepos, includeAll) : ""}
     }`;
   },
-  getProjectsRefsSubquery: function (provider, graphqlV2) {
+  getReposSubquery: function (provider, graphqlV2) {
     return `
-    ${graphqlV2 ? `
+    ${graphqlV2 ? this.getPullRequestsNode(provider) : ``}
+    ${this.getRefsNode(provider)}
+    `;
+  },
+  getPullRequestsNode: function(provider) {
+    return `
     pullRequests(first: ${provider.graphql.maxBranches}, states:[OPEN], orderBy: {field:UPDATED_AT, direction:DESC}) 
       { edges { node { title, number, url, state, createdAt, updatedAt,
         headRefName, baseRepository {nameWithOwner}, headRepository {nameWithOwner}, 
-        statusCheckRollup { state } } } }
-    ` : ``}
+        statusCheckRollup { state } } } }`;
+  },
+  getRefsNode: function(provider, graphqlV2) {
+    return `
     refs(refPrefix: "refs/heads/", first: ${provider.graphql.maxBranches}) {
       nodes {
         name
@@ -244,7 +262,29 @@ const gitHubApi = {
           }
         }
       }
-    }`
+    }`;
+  },
+  getUserSpecReposSubquery: function(provider, reposStr, includeAll) {
+    if (reposStr == undefined)
+      return "";
+    let repos = reposStr.split(" ");
+    let query = "";
+    let i = 0;
+    for (let item of repos) {
+      if (item == "")
+        continue;
+      const repoAlias = "xr" + i;
+      const repoAll = item.split("/");
+      const owner = repoAll[0];
+      const repo = repoAll.length < 2 ? "" :repoAll[1];
+      query += `
+    ${repoAlias}:repository(owner:"${owner}", name:"${repo}") {
+      name, nameWithOwner, url, pushedAt, updatedAt
+      ${includeAll ? this.getPullRequestsNode(provider) : ""}
+    }`;
+      i++;
+    }
+    return query
   },
 
 }
