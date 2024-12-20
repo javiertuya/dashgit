@@ -70,9 +70,17 @@ describe("TestGitHubAdapter - Model transformations from GitHub API results", fu
         // - no matching branch (fork20)
         // - matching branch by name and title (match20) with PR in my repo (match20) -> show PR and branch
         { input: "github-graphqlV2-result2.json", expected: "github-graphql-model2.json", graphqlV2: true },
+
+        // Postprocessing of the GraphQL query: The user specified repositories are siblings of the viewer node
+        // and must be moved to the viewer node and transformed accordingly
+        // - more than one, first (userrepo1) and last(userrepo9)
+        // - already in the viewer (do not duplicate model) (userrepo2)
+        // - without PRs (do not add to the model) (userrepo3)
+        { input: "github-graphqlV2-result-user-spec.json", expected: "github-graphql-model-user-spec.json", graphqlV2: true },
     ].forEach(function (item) {
         it(`Transform GitHub GraphQL API results from ${item.input}`, function () {
             let input = JSON.parse(fs.readFileSync(`./input/${item.input}`));
+            input = gitHubAdapter.postprocessGraphQl(input);
             let actual = gitHubAdapter.statuses2model({ provider: "GitHub", uid: "0-github", user: "usr1" }, input, item.graphqlV2);
             fs.writeFileSync(`./actual/${item.expected}`, JSON.stringify(actual, null, 2)); //to allow extenal diff
             let expected = JSON.parse(fs.readFileSync(`./expected/${item.expected}`));
@@ -96,6 +104,29 @@ describe("TestGitHubAdapter - Model transformations from GitHub API results", fu
         it(`GitHub StatusCheckRollup state conversion: ${item.input} to ${item.expected}`, function () {
             assert.equal(item.expected, gitHubAdapter.transformStatus(item.input));
             assert.equal(item.expected, gitHubAdapter.transformStatus(item.input??"".toLowerCase()));
+        });
+    });
+
+    // Determine what repositories need to be updated since a given date (update requirements)
+    // - viewer repos: all, none, one included, one excluded
+    // - user spec repos: idem
+    // - date is empty string (include all)
+    // Check boundaries of date for each repo
+    [
+        { since: "2024-12-09T14:00:31Z", maxProjects: 0, otherRepos: "" },
+        { since: "2024-12-09T14:00:29Z", maxProjects: 1, otherRepos: "" },
+        { since: "2024-12-09T13:00:31Z", maxProjects: 1, otherRepos: "" },
+        { since: "2024-12-09T13:00:29Z", maxProjects: 1, otherRepos: "user3/userrepo3" },
+        { since: "2024-12-09T12:00:31Z", maxProjects: 1, otherRepos: "user3/userrepo3" },
+        { since: "2024-12-09T12:00:29Z", maxProjects: 2, otherRepos: "user3/userrepo3" },
+        { since: "2024-12-09T11:00:31Z", maxProjects: 2, otherRepos: "user3/userrepo3" },
+        { since: "2024-12-09T11:00:29Z", maxProjects: 2, otherRepos: "user3/userrepo3 user4/userrepo4" },
+        { since: "", maxProjects: 2, otherRepos: "user3/userrepo3 user4/userrepo4" },
+    ].forEach(function (item) {
+        it(`Update requirements since "${item.since}" -> ${item.maxProjects} "${item.otherRepos}"`, function () {
+            let gqlresponse = JSON.parse(fs.readFileSync(`./input/github-graphqlV2-result-update-reqs.json`));
+            assert.equal(item.maxProjects, gitHubAdapter.getNumReposToUpdate(gqlresponse, 2, item.since));
+            assert.equal(item.otherRepos, gitHubAdapter.getUserReposToUpdate(gqlresponse, item.since));
         });
     });
 

@@ -1,0 +1,14 @@
+{ 
+"viewer": { 
+    "login": "myuser", "resourcePath": "/myuser", "url": "https://github.com/myuser", 
+    "repositories": { "nodes":
+    [
+        { "name": "viewrepo1", "nameWithOwner": "user1/viewrepo1", "pushedAt": "2024-12-09T14:00:30Z" },
+        { "name": "viewrepo2", "nameWithOwner": "user2/viewrepo2", "pushedAt": "2024-12-09T12:00:30Z" }
+    ] } 
+    },
+    
+"xr0": { "name": "userrepo3", "nameWithOwner": "user3/userrepo3", "pushedAt": "2024-12-09T13:00:30Z" },
+"xr1": { "name": "userrepo4", "nameWithOwner": "user4/userrepo4", "pushedAt": "2024-12-09T11:00:30Z" }
+
+}

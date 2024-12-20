@@ -69,7 +69,7 @@ const configView = {
           ${this.input2html("config-common-max-age", "number", "Max age", data.maxAge == 0 ? "" : data.maxAge, 'min="0" max="365"', "100", "100", 
             "If present, filters out the work items with an update date older than the number of days specified")}
           ${this.input2html("config-common-statusCacheUpdateTime", "number", "Status Cache Update Time", data.statusCacheUpdateTime, 'min="5" max="60"', "200", "100",
-            "During this period (in seconds), any call to get statuses returns the cached data. When this time expires, the cache is incrementally updated by requesting data only from the latest updated projects")}
+            "During this period (in seconds), any call to get statuses returns the cached data. When this time expires, the cache is incrementally updated by requesting data only from the projects that had recent commits")}
           ${this.input2html("config-common-statusCacheRefreshTime", "number", "Status Cache Refresh Time", data.statusCacheRefreshTime, 'min="60" max="7200"', "200", "100",
             "Specifies a much longer period (in seconds) than Status Cache Update Time. When this time expires, the cache is fully refreshed")}
         </div>
@@ -144,7 +144,9 @@ const configView = {
               + (this.raw2html(" - API scope:", "Specifies the scope of the GitHub GraphQL API requests that get the branches and build statuses") + " &nbsp; "
               + this.check2html(`config-graphql-scope-owner-${key}`, "Owner", provider.graphql.ownerAffiliations.includes("OWNER"))
               + this.check2html(`config-graphql-scope-organization-${key}`, "Organization member", provider.graphql.ownerAffiliations.includes("ORGANIZATION_MEMBER"))
-              + this.check2html(`config-graphql-scope-collaborator-${key}`, "Collaborator", provider.graphql.ownerAffiliations.includes("COLLABORATOR")))
+              + this.check2html(`config-graphql-scope-collaborator-${key}`, "Collaborator", provider.graphql.ownerAffiliations.includes("COLLABORATOR"))
+              + this.input2html(`config-graphql-userSpecRepos-${key}`, "text", "Also include PRs from these repos", provider.graphql.userSpecRepos, '', "250", "450",
+                "Include PRs from other repositories that are out of the scope. Specify the repos by full name (OWNER/REPO) and separated by spaces") )
           }
         </div>
         <div class="row config-providers-surrogate-settings">
@@ -236,6 +238,7 @@ const configView = {
         provider.graphql.ownerAffiliations.push("COLLABORATOR");
       if (provider.graphql.ownerAffiliations.length == 0) //default if none selected
         provider.graphql.ownerAffiliations.push("OWNER");
+      provider.graphql.userSpecRepos = $(`#config-graphql-userSpecRepos-${id}`).val().trim();
     }
     return provider;
   },

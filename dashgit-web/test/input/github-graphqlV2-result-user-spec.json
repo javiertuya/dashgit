@@ -1,0 +1,80 @@
+{ "viewer": { "login": "myuser", "resourcePath": "/myuser", "url": "https://github.com/myuser", "repositories": { "nodes":
+    [
+        {   "name": "testrepo", "nameWithOwner": "myuser/testrepo", "url": "https://github.com/myuser/testrepo",
+            "pullRequests": { "edges": [
+                { "node": { "title": "test pr assignee", "number": 63, "url": "https://github.com/myuser/testrepo/pull/63", 
+                    "state": "OPEN", "createdAt": "2024-01-09T19:56:21Z", "updatedAt": "2024-01-10T17:27:30Z", 
+                    "baseRepository": { "nameWithOwner": "myuser/testrepo" }, "headRepository": { "nameWithOwner": "myuser/testrepo" },
+                    "headRefName": "branch-pr63", "statusCheckRollup": { "state": "SUCCESS" }
+                } }
+                
+            ] }
+        },
+        {
+            "name": "userrepo2",
+            "nameWithOwner": "user2/userrepo2",
+            "url": "https://github.com/user2/userrepo2",
+            "pushedAt": "2024-12-09T14:59:47Z",
+            "updatedAt": "2024-12-16T02:31:54Z",
+            "pullRequests": { "edges": [
+                { "node": { "title": "test pr userrepo2", "number": 102, "url": "https://github.com/user2/userrepo2/pull/102", 
+                    "state": "OPEN", "createdAt": "2024-01-09T19:56:21Z", "updatedAt": "2024-01-10T17:27:30Z", 
+                    "baseRepository": { "nameWithOwner": "user2/userrepo2" }, "headRepository": { "nameWithOwner": "user2/userrepo2" },
+                    "headRefName": "branch-pr102", "statusCheckRollup": { "state": "SUCCESS" }
+                } }
+            ] }
+        }
+    ] } },
+
+    "xr0": {
+        "name": "userrepo1",
+        "nameWithOwner": "user1/userrepo1",
+        "url": "https://github.com/user1/userrepo1",
+        "pushedAt": "2024-12-09T14:59:47Z",
+        "updatedAt": "2024-12-16T02:31:54Z",
+        "pullRequests": { "edges": [
+            { "node": { "title": "test pr userrepo1", "number": 100, "url": "https://github.com/user1/userrepo1/pull/101", 
+                "state": "OPEN", "createdAt": "2024-01-09T19:56:21Z", "updatedAt": "2024-01-10T17:27:30Z", 
+                "baseRepository": { "nameWithOwner": "user1/userrepo1" }, "headRepository": { "nameWithOwner": "user1/userrepo1" },
+                "headRefName": "branch-pr101", "statusCheckRollup": { "state": "SUCCESS" }
+            } }
+        ] }
+    },
+    "xr1": {
+        "name": "userrepo2",
+        "nameWithOwner": "user2/userrepo2",
+        "url": "https://github.com/user2/userrepo2",
+        "pushedAt": "2024-12-09T14:59:47Z",
+        "updatedAt": "2024-12-16T02:31:54Z",
+        "pullRequests": { "edges": [
+            { "node": { "title": "test pr userrepo2", "number": 102, "url": "https://github.com/user2/userrepo2/pull/102", 
+                "state": "OPEN", "createdAt": "2024-01-09T19:56:21Z", "updatedAt": "2024-01-10T17:27:30Z", 
+                "baseRepository": { "nameWithOwner": "user2/userrepo2" }, "headRepository": { "nameWithOwner": "user2/userrepo2" },
+                "headRefName": "branch-pr102", "statusCheckRollup": { "state": "SUCCESS" }
+            } }
+        ] }
+    },
+    "xr2": {
+        "name": "userrepo3",
+        "nameWithOwner": "user3/userrepo3",
+        "url": "https://github.com/user3/userrepo3",
+        "pushedAt": "2024-12-09T14:59:47Z",
+        "updatedAt": "2024-12-16T02:31:54Z",
+        "pullRequests": { "edges": [ ] }
+    },
+    "xr3": {
+        "name": "userrepo9",
+        "nameWithOwner": "user9/userrepo9",
+        "url": "https://github.com/user9/userrepo9",
+        "pushedAt": "2024-12-09T14:59:47Z",
+        "updatedAt": "2024-12-16T02:31:54Z",
+        "pullRequests": { "edges": [
+            { "node": { "title": "test pr userrepo9", "number": 100, "url": "https://github.com/user9/userrepo9/pull/109", 
+                "state": "OPEN", "createdAt": "2024-01-09T19:56:21Z", "updatedAt": "2024-01-10T17:27:30Z", 
+                "baseRepository": { "nameWithOwner": "user9/userrepo9" }, "headRepository": { "nameWithOwner": "user9/userrepo9" },
+                "headRefName": "branch-pr109", "statusCheckRollup": { "state": "SUCCESS" }
+            } }
+        ] }
+    }
+
+}

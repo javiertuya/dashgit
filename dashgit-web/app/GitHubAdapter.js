@@ -79,9 +79,9 @@ const gitHubAdapter = {
       m.header.repo_names.push(repoName);
       if (graphqlV2) {
         let loadedBranches = {}; // to exclude branches if already added from a PR
-        for (let ref of repo.pullRequests.edges)
+        for (let ref of repo.pullRequests?.edges??[])
           this.statusesPrNode2model(ref.node, repoName, repoUrl, m, loadedBranches);
-        for (let ref of repo.refs.nodes)
+        for (let ref of repo.refs?.nodes??[])
           this.statusesBranchNode2model(ref, repoName, repoUrl, m, loadedBranches);
       } else { // deprecated, gets PRs inside branches
         for (let ref of repo.refs.nodes)
@@ -197,6 +197,63 @@ const gitHubAdapter = {
       return "pending";
     else // other status is not available, but any other value asumes pending as there is a check
       return "notavailable";
+  },
+
+  // Transformations of the GraphQL response prior to conversion into a model
+
+  // Adds the user specified reports (Sibling of the viewer node) as additional repositories in the viewer
+  postprocessGraphQl: function(gqlresponse) {
+    let repos = this.getUserSpecRepos(gqlresponse);
+    if (repos.length == 0) // postprocessing not needed
+      return gqlresponse;
+
+    let includedRepos = {}; // to control duplicates
+    for (let repo of gqlresponse.viewer.repositories.nodes)
+      includedRepos[repo.nameWithOwner] = true;
+
+    for (let repo of repos) {
+      if (repo.pullRequests.edges.length == 0) // repos without PRs are ignored
+        continue;
+      if (includedRepos[repo.nameWithOwner] != undefined) // avoid duplicate repos
+        continue;
+
+      includedRepos[repo.nameWithOwner] = true;
+      gqlresponse.viewer.repositories.nodes.push(repo);
+    }
+    return gqlresponse;
+  },
+  getUserSpecRepos: function(gqlresponse) {
+    let nodes = [];
+    let i = 0;
+    let repo;
+    do {
+      repo = gqlresponse["xr" + i];
+      if (repo != undefined)
+        nodes.push(repo);
+      i++;
+    } while (repo != undefined);
+    return nodes;
+  },
+  
+  // Determination of the scope to update statuses since a given date
+  getNumReposToUpdate: function(gqlresponse0, maxProjects, keepSince) {
+    if (keepSince == "")
+      return maxProjects;
+    let nodes = gqlresponse0.viewer.repositories.nodes;
+    for (let i = 0; i < nodes.length; i++)
+      if (new Date(keepSince).getTime() > new Date(nodes[i].pushedAt).getTime()) { //old project
+        maxProjects = i;
+        break;
+      }
+    return maxProjects;
+  },
+  getUserReposToUpdate: function(gqlresponse0, keepSince) {
+    let reposToUpdate = "";
+    let repos = gitHubAdapter.getUserSpecRepos(gqlresponse0);
+    for (let repo of repos)
+      if (keepSince == "" || new Date(keepSince).getTime() <= new Date(repo.pushedAt).getTime())
+        reposToUpdate += " " + repo.nameWithOwner;
+    return reposToUpdate.trim();
   },
 
 }
