@@ -189,16 +189,29 @@ const wiView = {
         <tr class="wi-status-class-branch-compact" itemrepo="${item.repo_name}"><td colspan=4>
         ${wiRender.repourl2html(item.repo_url, item.repo_name)} `;
 
-    html += this.branch2htmlCompact(this.branchName2display(item), item.branch_url, item.status);
+    // add pr icon and link to pr for prs that are not from forks
+    let labelName = item.branch_name;
+    let labelUrl = item.branch_url;
+    let labelTitle = "";
+    if (item.type == "pr" && !item.branch_name?.startsWith("fork:")) {
+      labelName = wiRender.prIcon + " " + item.branch_name;
+      labelUrl = item.url;
+      labelTitle = "Pull Request: " + item.title;
+    } else if (item.branch_name?.startsWith("fork:")) {
+      labelName = this.branchName2display(item);
+      labelUrl = item.url;
+      labelTitle = "Pull Request from forked repository: " + item.title;
+    }
+    html += this.branch2htmlCompact(labelName, labelUrl, labelTitle, item.status);
 
     if (i == items.length - 1 || item.repo_name != items[i + 1].repo_name) // row end, finish this repo
       html += `</td></tr>`;
 
     return html;
   },
-  branch2htmlCompact: function (name, url, status) {
+  branch2htmlCompact: function (name, url, title, status) {
     return `
-      <a href="${url}" target="_blank" class="badge ${wiRender.statusBadgeColor(status)} text-decoration-none" style="${wiRender.statusBadgeStyle(status)}">${name}</a>`;
+      <a href="${url}" title="${title}" target="_blank" class="badge ${wiRender.statusBadgeColor(status)} text-decoration-none" style="${wiRender.statusBadgeStyle(status)}">${name}</a>`;
   },
 
   // Other low level content

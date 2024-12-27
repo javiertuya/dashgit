@@ -13,6 +13,7 @@ const wiRender = {
   issueIconClass: 'fa-regular fa-circle-dot',
   branchIconClass: 'fa-solid fa-code-branch',
 
+  prIcon: '<i class="fa-solid fa-code-pull-request"></i>',
   forkIcon: '<i class="fa-solid fa-code-fork"></i>',
 
   successIcon: '<i class="wi-status-icon fa-solid fa-check" style="color:MediumSeaGreen" title="The build has completed succesfully"></i>',
