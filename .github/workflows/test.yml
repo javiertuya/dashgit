@@ -52,7 +52,7 @@ jobs:
       - if: github.event.pull_request.head.repo.fork
         name: Failing job that is executed from forked repo
         run: exit 1
-      - uses: javiertuya/sonarqube-action@v1.4.0
+      - uses: javiertuya/sonarqube-action@v1.4.1
         with: 
           github-token: ${{ secrets.GITHUB_TOKEN }}
           sonar-token: ${{ secrets.SONAR_TOKEN }}
