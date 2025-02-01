@@ -126,7 +126,7 @@ jobs:
       - name: Set up & wait mutex - ${{ matrix.scope }}
         env: 
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: ben-z/gh-action-mutex@v1.0.0-alpha.9
+        uses: ben-z/gh-action-mutex@v1.0.0-alpha.10
         with:
           branch: gh-mutex-${{ matrix.scope }}
 
