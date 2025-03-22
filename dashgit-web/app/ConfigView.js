@@ -47,9 +47,9 @@ const configView = {
     <div class="card mt-2 text-bg-light" id="config-providers-common">
       <div class="card-body pt-2 pb-2">
         ${data.providers.length == 0
-        ? `<p class="card-text mb-1 text-danger">To start using DashGit you have to sdd a GitHub or GitLab provider and set the username that is accessing the repository. `
-          + `This will give you access to the public repositories at github.com or gitlab.com.</p>`
-          + `<p class="card-text mb-1 text-danger">It is recommended to configure an API Access Token because unauthenticated providers are subject to lower rate limits and do not allow you to view branches, build statuses and notifications.</p>`
+        ? `<p class="card-text mb-1 text-danger">To start using DashGit you have to add a GitHub or GitLab provider and set the username that is accessing the repository. `
+          + `This will give you access to the public repositories at github.com or gitlab.com, respectively.</p>`
+          + `<p class="card-text mb-1 text-danger">It is recommended to set up an API Access Token because unauthenticated providers are subject to lower rate limits and do not allow you to view branches, build statuses and notifications.</p>`
         : ""}
 
         <p class="card-text mb-1">
@@ -61,7 +61,7 @@ const configView = {
 
         ${this.anyGitHubWithoutToken(data)
         ? `<p class="card-text mb-1 text-danger">GitHub unauthenticated providers are subject to lower rate limits and do not allow you to view branches, build statuses and notifications. `
-          + `It is recommended to set an API Access Token.</p>`
+          + `It is recommended to set up an API Access Token.</p>`
         : ""}
 
         <h6 class="card-subtitle mb-1 mt-1 text-body-secondary">Common parameters:</h6>
