@@ -109,6 +109,8 @@ jobs:
     permissions:
       contents: write # for mutex on test repos
       checks: write # for junit report
+      pull-requests: write
+      packages: read
     strategy:
       matrix:
         scope: [Github, Gitlab]
