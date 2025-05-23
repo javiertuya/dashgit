@@ -154,13 +154,7 @@ jobs:
           ACTIONS_STEP_DEBUG: true
           DASHGIT_GITHUB_IT_TOKEN: ${{ secrets.DASHGIT_GITHUB_IT_TOKEN}}
           DASHGIT_GITLAB_IT_TOKEN: ${{ secrets.DASHGIT_GITLAB_IT_TOKEN}}
-        run: |
-          if [[ -z "$DASHGIT_GITHUB_IT_TOKEN" ]]; then
-            echo "⚠️ Secret no disponible en el entorno de ejecución"
-          else
-            echo "✅ Secret detectado en el entorno"
-          fi
-          cd dashgit-updater && mvn test -Dtest=TestIt${{ matrix.scope }}*,TestUt* -Dmaven.test.failure.ignore=false -U --no-transfer-progress
+        run: cd dashgit-updater && mvn test -Dtest=TestIt${{ matrix.scope }}*,TestUt* -Dmaven.test.failure.ignore=false -U --no-transfer-progress
         #run: cd dashgit-updater && mvn test -Dtest=TestUt* -Dmaven.test.failure.ignore=false -U --no-transfer-progress
 
       - name: Generate report checks - ${{ matrix.scope }}
