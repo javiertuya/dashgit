@@ -151,7 +151,6 @@ jobs:
 
       - name: Run IT tests - ${{ matrix.scope }}
         env:
-          ACTIONS_STEP_DEBUG: true
           DASHGIT_GITHUB_IT_TOKEN: ${{ secrets.DASHGIT_GITHUB_IT_TOKEN}}
           DASHGIT_GITLAB_IT_TOKEN: ${{ secrets.DASHGIT_GITLAB_IT_TOKEN}}
         run: cd dashgit-updater && mvn test -Dtest=TestIt${{ matrix.scope }}*,TestUt* -Dmaven.test.failure.ignore=false -U --no-transfer-progress
