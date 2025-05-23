@@ -6,7 +6,7 @@
 	<artifactId>dashgit-updater</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
-
+	
 	<name>dashgit-updater</name>
 	<description>Generate dependabot combined updates from DashGit</description>
 	<url>http://github.com/javiertuya/dashgit</url>

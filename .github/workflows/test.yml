@@ -131,16 +131,23 @@ jobs:
           branch: gh-mutex-${{ matrix.scope }}
 
       - name: Create dashgit-updater/it.properties
+        # The test repo should be defined by the user that is running this workflow
+        # except when running from dependabot
         run: |
-          echo "github.server=https://github.com"              > dashgit-updater/it.properties
-          echo "github.repo=${{ github.actor }}/dashgit-test" >> dashgit-updater/it.properties
+          if [[ "${{ github.actor }}" == "dependabot[bot]" ]]; then
+            USERNAME="javiertuya"
+          else
+            USERNAME="${{ github.actor }}"
+          fi
+          echo "github.server=https://github.com"             > dashgit-updater/it.properties
+          echo "github.repo=$USERNAME/dashgit-test"           >> dashgit-updater/it.properties
           echo "github.secret=DASHGIT_GITHUB_IT_TOKEN"        >> dashgit-updater/it.properties
-          echo "github.user=${{ github.actor }}"              >> dashgit-updater/it.properties
+          echo "github.user=$USERNAME"                        >> dashgit-updater/it.properties
           echo "github.email="                                >> dashgit-updater/it.properties
           echo "gitlab.server=https://gitlab.com"             >> dashgit-updater/it.properties
-          echo "gitlab.repo=${{ github.actor }}/dashgit-test" >> dashgit-updater/it.properties
+          echo "gitlab.repo=$USERNAME/dashgit-test"           >> dashgit-updater/it.properties
           echo "gitlab.secret=DASHGIT_GITLAB_IT_TOKEN"        >> dashgit-updater/it.properties
-          echo "gitlab.user=${{ github.actor }}"              >> dashgit-updater/it.properties
+          echo "gitlab.user=$USERNAME"                        >> dashgit-updater/it.properties
           echo "gitlab.email="                                >> dashgit-updater/it.properties
 
       - uses: actions/setup-java@v4
