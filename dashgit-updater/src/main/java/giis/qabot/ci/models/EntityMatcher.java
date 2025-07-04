@@ -29,7 +29,7 @@ public class EntityMatcher {
 	}
 
 	private int minDistance(String target, String[] arg) {
-		LevenshteinDistance ld = new LevenshteinDistance();
+		LevenshteinDistance ld = LevenshteinDistance.getDefaultInstance();
 		int min = Integer.MAX_VALUE;
 		for (String s : arg) {
 			if (target.equals(s))

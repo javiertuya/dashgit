@@ -110,7 +110,7 @@ public class CiObject {
 	public Integer getDistanceTo(String distanceTo) {
 		String thisName = this.name.toLowerCase();
 		distanceTo = distanceTo.toLowerCase();
-		LevenshteinDistance ld = new LevenshteinDistance();
+		LevenshteinDistance ld = LevenshteinDistance.getDefaultInstance();
 		Integer distance;
 		if (thisName.startsWith(distanceTo) || thisName.contains(distanceTo))
 			distance = thisName.length() - 25; // los mas cortos son los mas parecidos (para un max string de 25)

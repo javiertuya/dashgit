@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.math.NumberUtils;
-import org.gitlab4j.api.Constants.MergeRequestScope;
-import org.gitlab4j.api.Constants.MergeRequestState;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.AcceptMergeRequestParams;
 import org.gitlab4j.api.models.MergeRequest;
 import org.gitlab4j.api.models.MergeRequestFilter;
 import org.gitlab4j.api.models.MergeRequestParams;
+import org.gitlab4j.models.Constants.MergeRequestScope;
+import org.gitlab4j.models.Constants.MergeRequestState;
 
 import giis.qabot.ci.models.PullRequest;
 import giis.qabot.core.models.Util;
