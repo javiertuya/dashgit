@@ -142,7 +142,7 @@ public class Base {
 				fail("Combined PR is not closed after max number of attempts");
 			// poll wait wit larger delay
 			log.debug("Combined PR still open");
-			Util.delay(4 * rateLimitDelay);
+			Util.delay(6 * rateLimitDelay);
 		}
 	}
 

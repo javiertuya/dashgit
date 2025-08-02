@@ -33,7 +33,11 @@ public class GitlabClient implements IGitClient {
 	public static final String REBASE_TIMEOUT = "rebase_timeout";
 
 	private static final int AUTOMERGE_RETRY_COUNT = 8;
-	private static final int AUTOMERGE_RETRY_WAIT = 2000;
+	private static final int AUTOMERGE_RETRY_WAIT = 4000;
+	//https://gitlab.com/gitlab-org/gitlab-foss/-/issues/55891
+	//flaky, https://forum.gitlab.com/t/how-to-toggle-merge-when-pipeline-succeeds-via-gitlab-api/15065/10
+	//review gitlab rest api https://docs.gitlab.com/api/merge_requests/#merge-a-merge-request: 
+	//merge_when_pipeline_succeeds attribute (Deprecated in GitLab 17.11.), and auto_merge
 
 	private GitLabApi api;
 	// usuario utilizado en la autenticacion (el propietario del token)
@@ -204,6 +208,7 @@ public class GitlabClient implements IGitClient {
 			api.getMergeRequestApi().acceptMergeRequest(projectId, mrIid, params);
 			return "success";
 		} catch (GitLabApiException e) {
+			log.warn(e.getMessage());
 			return "retry";
 		}
 	}
