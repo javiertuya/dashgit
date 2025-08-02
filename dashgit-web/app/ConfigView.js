@@ -488,7 +488,7 @@ const configView = {
   },
 
   str2array: function (value) {
-    return value.trim() == "" ? [] : value.trim().split(" ");
+    return value.trim() == "" ? [] : value.trim().split(/\s+/);
   },
 
 }

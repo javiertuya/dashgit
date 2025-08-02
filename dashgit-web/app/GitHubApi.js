@@ -26,14 +26,16 @@ const gitHubApi = {
     // issue #116 set sorting criteria to match the selected in the UI
     const sort = (sorting??"").includes("updated") ? "updated" : "created";
     const order = (sorting??"").includes("descending") ? "desc" : "asc";
-    const assigned = { q:`is:open assignee:${provider.user} archived:false`, sort:sort, order:order };
-    const unassigned = { q:`is:open no:assignee owner:${provider.user} ${this.additionalOwners(provider, provider.unassignedAdditionalOwner)} archived:false`, per_page: 60, sort:sort, order:order };
-    const reviewer = { q:`is:open type:pr user-review-requested:${provider.user} archived:false`, sort:sort, order:order }
-    const revise= { q:`is:open type:pr review:changes_requested author:${provider.user} archived:false`, sort:sort, order:order }
-    const created = { q:`is:open author:${provider.user} archived:false`, sort:sort, order:order }
-    const involved = { q:`is:open involves:${provider.user} archived:false`, sort:sort, order:order }
-    const dependabot = { q:`is:open is:pr author:app/dependabot owner:${provider.user} ${this.additionalOwners(provider, provider.dependabotAdditionalOwner)} archived:false`, per_page: 60, sort:sort, order:order };
-    const dependabotTest = { q:`is:open is:pr author:${provider.user} archived:false in:title "Test pull Request for dependabot/testupdate"`, per_page: 60, sort:sort, order:order };
+    const options = { sort:sort, order:order, advanced_search:true };
+    // issue #184, add advanced_search, check if can be removed after September 2025
+    const assigned = { q:`is:open assignee:${provider.user} archived:false`, ...options };
+    const unassigned = { q:`is:open no:assignee owner:placeholder archived:false`, per_page: 60, ...options };
+    const reviewer = { q:`is:open is:pr user-review-requested:${provider.user} archived:false`, ...options };
+    const revise= { q:`is:open is:pr review:changes_requested author:${provider.user} archived:false`, ...options };
+    const created = { q:`is:open author:${provider.user} archived:false`, ...options };
+    const involved = { q:`is:open involves:${provider.user} archived:false`, ...options };
+    const dependabot = { q:`is:open is:pr author:app/dependabot owner:placeholder archived:false`, per_page: 60, ...options };
+    const dependabotTest = { q:`is:open is:pr author:${provider.user} archived:false in:title "Test pull Request for dependabot/testupdate"`, per_page: 60, ...options };
     let promises = [];
     if (target == "assigned")
       promises = [
@@ -45,10 +47,11 @@ const gitHubApi = {
         //Also show work items that need follow-up
         gitStoreApi.followUpAll(provider, true),
       ];
-    else if (target == "unassigned")
-      promises = [
-        ...this.issuesAndPullRequests(octokit, token, unassigned),
-      ];
+    else if (target == "unassigned") { // a call api for each owner (#184)
+       const owners = [provider.user, ...provider.unassignedAdditionalOwner];
+       promises = [
+        ...this.multiOwnerIssuesAndPullRequests(octokit, unassigned, owners),
+      ];}
     else if (target == "created")
       promises = [
         ...this.issuesAndPullRequests(octokit, token, created)
@@ -61,12 +64,13 @@ const gitHubApi = {
       promises = [
         gitStoreApi.followUpAll(provider, false)
       ];
-    else if (target == "dependabot") {
+    else if (target == "dependabot") { // a call api for each owner (#184)
+      const owners = (provider.user + " " + provider.dependabotAdditionalOwner).trim().split(" ");
       promises = [
-        octokit.rest.search.issuesAndPullRequests(dependabot),
+        ...this.multiOwnerIssuesAndPullRequests(octokit, dependabot, owners),
       ];
       if (config.ff["updtest"])
-        promises.push(octokit.rest.search.issuesAndPullRequests(dependabotTest));
+        promises.push(this.octokitSearchIssues(octokit, dependabotTest));
     } else
       return;
 
@@ -87,29 +91,37 @@ const gitHubApi = {
     model.header.target = target;
     return model;
   },
-  additionalOwners: function (provider, additionalOwners) {
-    return additionalOwners.length == 0 ? "" : " owner:" + additionalOwners.join(" owner:");
-  },
   issuesAndPullRequests: function (octokit, token, query) {
     // Issue #129 Although documentation says that search query returns both issues and prs if no 'is:*' is specified,
     // this is not true when using fine grained tokens, that requires separate queries for issues and prs.
     if (token == "" || token.startsWith("ghp_")) { // single query for no token or fine grained token
-      return [octokit.rest.search.issuesAndPullRequests(query)];
+      return [this.octokitSearchIssues(octokit, query)];
     } else { // separated queries to find issues and prs
       console.log("Assuming fine grained token, using separated queries for issues and PRs");
       let qissue = JSON.parse(JSON.stringify(query));
       let qpr = JSON.parse(JSON.stringify(query));
       qissue.q = "is:issue " + query.q;
       qpr.q = "is:pr " + query.q;
-      return [octokit.rest.search.issuesAndPullRequests(qissue), octokit.rest.search.issuesAndPullRequests(qpr)];
+      return [this.octokitSearchIssues(octokit, qissue), this.octokitSearchIssues(octokit, pr)];
     }
   },
   wrapIssuesAndPullRequestsCall: async function (octokit, query, action) {
-    return octokit.rest.search.issuesAndPullRequests(query)
+    return this.octokitSearchIssues(octokit, query)
       .then(async function (response) {
         gitHubAdapter.addActionToPullRequestItems(response.data.items, action);
         return response;
       })
+  },
+  // returns an array of promises for a query, one for each of the items in owner
+  multiOwnerIssuesAndPullRequests: function(octokit, query, owners) {
+    const queries = owners.map(owner => ({ ...query, q: query.q.replace("owner:placeholder", `owner:${owner}`)}));
+    const calls = queries.map(query => this.octokitSearchIssues(octokit, query));
+    return calls;
+  },
+  
+  // octokit rest search issuesAndPullRequests does not exist anymore (#184), this method makes the appropriate search call
+  octokitSearchIssues: function(octokit, query) {
+    return octokit.request('GET /search/issues', query);
   },
 
   // Tracks the poll interval as indicated by the api doc https://docs.github.com/en/rest/activity/notifications?apiVersion=2022-11-28
