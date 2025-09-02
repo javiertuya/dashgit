@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
@@ -35,7 +35,7 @@ jobs:
           ./prepare-release.sh "$GITHUB_REF_NAME"
 
       - name: Upload artifact to deploy
-        uses: actions/upload-pages-artifact@v3.0.1
+        uses: actions/upload-pages-artifact@v4.0.0
         with:
           path: 'dashgit-web/dist'
       - name: Deploy to GitHub Pages
