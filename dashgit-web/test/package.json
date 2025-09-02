@@ -8,7 +8,7 @@
     "report": "mocha Test*.js --reporter mochawesome"
   },
   "dependencies": {
-    "mocha": "11.7.1",
+    "mocha": "11.7.2",
     "chai": "5.2.1",
     "mochawesome": "7.1.3"
   }
