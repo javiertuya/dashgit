@@ -35,7 +35,7 @@ jobs:
           ./prepare-release.sh "$GITHUB_REF_NAME"
 
       - name: Upload artifact to deploy
-        uses: actions/upload-pages-artifact@v3.0.1
+        uses: actions/upload-pages-artifact@v4.0.0
         with:
           path: 'dashgit-web/dist'
       - name: Deploy to GitHub Pages
