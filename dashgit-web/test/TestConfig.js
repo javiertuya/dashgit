@@ -16,6 +16,11 @@ describe("TestConfig - Sanitizing config data", async function () {
 
     it("Set default config attributes when reading empty", function () {
         let expected = { version: 2, encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 30, maxAge: 0, 
+            viewFilter: { 
+                involved: {authorMe: true, authorOthers: true},
+                unassigned: {authorMe: true, authorOthers: true},
+                statuses: {compact: false},
+            },      
             appLastVersion: "", 
             enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
             providers: [] };
@@ -29,6 +34,11 @@ describe("TestConfig - Sanitizing config data", async function () {
             version: 2,
             appLastVersion: "",
             encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 60, maxAge: 0,
+            viewFilter: { 
+                involved: {authorMe: true, authorOthers: true},
+                unassigned: {authorMe: true, authorOthers: true},
+                statuses: {compact: false},
+            },
             enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
             providers: [{
                 provider: 'GitHub', uid: '', user: '', token: '', enabled: true,
@@ -48,6 +58,11 @@ describe("TestConfig - Sanitizing config data", async function () {
             version: 2,
             appLastVersion: "",
             encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 30, maxAge: 0,
+            viewFilter: { 
+                involved: {authorMe: true, authorOthers: true},
+                unassigned: {authorMe: true, authorOthers: true},
+                statuses: {compact: false},
+            },      
             enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
             providers: [{
                 provider: 'GitHub', uid: 'repo_user_id', user: 'user', token: 'XXXXXXXXXXXX', enabled: false,

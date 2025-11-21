@@ -103,6 +103,7 @@ const config = {
       this.setProviderDefaults(provider);
     //suggested name for update secrets that depends on the provider type and user
     this.setProviderSecretDefaults(data);
+    this.setViewFilterDefaults(data);
     return data;
   },
   setProviderDefaults: function(element) {
@@ -139,6 +140,17 @@ const config = {
     this.setDefault(element.updates, "tokenSecret", "");
     this.setDefault(element.updates, "userEmail", "");
   return element;
+  },
+  setViewFilterDefaults: function (data) {
+    this.setDefault(data, "viewFilter", {});
+    this.setDefault(data.viewFilter, "involved", {});
+    this.setDefault(data.viewFilter, "unassigned", {});
+    this.setDefault(data.viewFilter, "statuses", {});
+    this.setDefault(data.viewFilter.involved, "authorMe", true);
+    this.setDefault(data.viewFilter.involved, "authorOthers", true);
+    this.setDefault(data.viewFilter.unassigned, "authorMe", true);
+    this.setDefault(data.viewFilter.unassigned, "authorOthers", true);
+    this.setDefault(data.viewFilter.statuses, "compact", false);
   },
   setDefault: function (parent, property, value) {
     if (parent[property] == undefined || parent[property] == null)

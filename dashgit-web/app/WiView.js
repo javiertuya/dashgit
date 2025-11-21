@@ -50,11 +50,7 @@ const wiView = {
   },
 
   renderWorkItems: function (target, models, sorting, highlightSince) {
-    // initial values of view filters (not all views allow selecting these filters from the ui)
-    if (config.session.viewFilter[target] == undefined)
-      config.session.viewFilter[target] = { authorMe: target != "unassigned", authorOthers: true, compact: false };
-
-    let compact =  config.session.viewFilter[target].compact;
+    let compact =  config.data.viewFilter[target]?.compact ?? false;
     let grouping = $("#checkGroup").is(':checked');
     
     let html = `<div class="accordion" id="wi-providers-panel">`;

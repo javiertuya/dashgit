@@ -39,17 +39,17 @@ const wiServices = {
 
   filter: function (target, providerUid, user, items) {
     let label = config.getProviderByUid(providerUid).filterIfLabel
-    return this.filterBy(target, user, new Date(), config.data.maxAge, label, config.session.viewFilter[target], items)
+    return this.filterBy(target, user, new Date(), config.data.maxAge, label, config.data.viewFilter[target], items)
   },
-  filterBy: function (target, user, today, maxAge, labelToFilter, viewFilter, items) {
+  filterBy: function (target, user, today, maxAge, labelToFilter, targetViewFilter, items) {
     for (let i = items.length - 1; i >= 0; i--) {
       let item = items[i];
-      if (this.filterItem(target, user, today, maxAge, labelToFilter, viewFilter, item))
+      if (this.filterItem(target, user, today, maxAge, labelToFilter, targetViewFilter, item))
         items.splice(i, 1);
     }
     return items;
   },
-  filterItem: function (target, user, today, maxAge, labelToFilter, viewFilter, item) {
+  filterItem: function (target, user, today, maxAge, labelToFilter, targetViewFilter, item) {
       if (maxAge > 0 && this.daysBetweenDates(new Date(item.updated_at), today) > maxAge) { //filter by age
         //console.log(`Filtering item by date: ${item.repo_name} ${item.title}`)
         return true;
@@ -57,10 +57,10 @@ const wiServices = {
         && item.author.toLowerCase().startsWith("dependabot")) {
         //console.log(`Filtering unassigned item authored by dependabot: ${item.repo_name} ${item.title}`)
         return true;
-      } else if (viewFilter?.compact) {
+      } else if (target == "statuses" && targetViewFilter.compact) {
         return false; // does not apply filters, view will display a compact layout only
-      } else if (viewFilter != undefined && user != undefined // filter by author (filters out if filter value is false)
-        && ( !viewFilter.authorMe && item.author == user || !viewFilter.authorOthers && item.author != user )) {
+      } else if ((target == "involved" || target == "unassigned") && user != undefined // filter by author (filters out if filter value is false)
+        && ( !targetViewFilter.authorMe && item.author == user || !targetViewFilter.authorOthers && item.author != user )) {
           return true;
       } else if (labelToFilter != "") { //filter by label
         for (let label of item.labels)

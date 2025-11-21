@@ -10,9 +10,9 @@ const wiHeaders = {
     if (target == "follow-up")
       return this.followUpHeader2html();
     if (target == "unassigned" || target == "involved") // other views do not have option to manage the filters
-      return this.filterHeader2html(target, config.session.viewFilter[target]);
+      return this.filterHeader2html(target, config.data.viewFilter[target]);
     if (target == "statuses") // special compact view only for statuses (branches)
-      return this.compactHeader2html(target, config.session.viewFilter[target]);
+      return this.compactHeader2html(target, config.data.viewFilter[target]);
     return "";
   },
 

@@ -274,12 +274,15 @@ describe("TestView - Main processing in the view module", function () {
         mod.addItem({ repo_name: "repo3", type: "issue", iid: "005", title: "is005", author: "Dependabot" });
         let modStr = JSON.stringify(mod);
 
-        let items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", undefined, JSON.parse(modStr).items);
+        let targetViewFilter = { authorMe: true, authorOthers: true }; // attributes are required, checked by filter
+        let items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", targetViewFilter, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr003', 'is005'], items.map(a => a.title));
 
-        items = wiServices.filterBy("assigned", "usr", new Date(), 0, "", undefined, JSON.parse(modStr).items);
+        items = wiServices.filterBy("assigned", "usr", new Date(), 0, "", targetViewFilter, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr002', 'pr003', 'pr004', 'is005'], items.map(a => a.title));
-        items = wiServices.filterBy("statuses", "usr", new Date(), 0, "", undefined, JSON.parse(modStr).items);
+
+        targetViewFilter = { compact: true };
+        items = wiServices.filterBy("statuses", "usr", new Date(), 0, "", targetViewFilter, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr002', 'pr003', 'pr004', 'is005'], items.map(a => a.title));
     });
 

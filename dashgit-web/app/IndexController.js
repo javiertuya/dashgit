@@ -69,11 +69,12 @@ $(document).on('change', '.wi-view-filter-clickable', async function () {
   let target = $(".nav-link.active").attr("aria-controls");
   // set values to the filters that have the corresponding element in the UI
   if ($(`#wi-view-filter-${target}-authorMe`).length > 0)
-    config.session.viewFilter[target].authorMe = $(`#wi-view-filter-${target}-authorMe`).is(':checked');
+    config.data.viewFilter[target].authorMe = $(`#wi-view-filter-${target}-authorMe`).is(':checked');
   if ($(`#wi-view-filter-${target}-authorOthers`).length > 0)
-    config.session.viewFilter[target].authorOthers = $(`#wi-view-filter-${target}-authorOthers`).is(':checked');
+    config.data.viewFilter[target].authorOthers = $(`#wi-view-filter-${target}-authorOthers`).is(':checked');
   if ($(`#wi-view-filter-${target}-compact`).length > 0)
-    config.session.viewFilter[target].compact = $(`#wi-view-filter-${target}-compact`).is(':checked');
+    config.data.viewFilter[target].compact = $(`#wi-view-filter-${target}-compact`).is(':checked');
+  config.save();
   indexController.render();
 });
 
