@@ -35,13 +35,13 @@ const wiHeaders = {
       <div style="padding-left:8px">
         <p class="mb-3 mt-2">
           This view displays all pull requests created by Dependabot.
-          From this view, you can combine all updates into a sigle PR per repository and merge them automatically with just a few clicks.
+          From here, you can combine all updates into a single PR per repository and merge them automatically with just a few clicks.
         </p>
         <p class="mb-3 mt-2 text-danger">
-          To enable the combined updates feature, you have to check the configuration option <em>Enable a Manager Repository for advanced functions</em>,
+          To enable the combined updates feature, check the configuration option <em>Enable a Manager Repository for advanced functions</em>,
           create the manager repository as indicated
-          <a href="${config.param.readmeManagerRepo}" target="_blank">[here]</a>
-          and follow instructions in this tab.
+          <a href="${config.param.readmeManagerRepo}" target="_blank">[here]</a>,
+          and follow the instructions in this tab.
         </p>
       </div>
       `;
@@ -49,10 +49,10 @@ const wiHeaders = {
       return `
       <div style="padding-left:8px">
         <p class="mb-3 mt-2">
-          To set up your manager repository <code>${config.data.managerRepoName}</code>
-          you have to add a workflow file <code>.github/workflows/manage-updates.yml</code>.<br/>
+          To set up your manager repository <code>${config.data.managerRepoName}</code>,
+          you need to add a workflow file at <code>.github/workflows/manage-updates.yml</code>.<br/>
           <a href="#" id="wi-update-workflow-file-show">Click here to get the required content and copy it to the workflow file</a>.<br/>
-          Since no token is ever transmitted out of the browser, you also have to create the secrets indicated below in each provider
+          Since no token is ever transmitted out of the browser, you also need to create the secrets indicated below in each provider
           and store an API access token in each one.
         </p>
         <div id="wi-update-workflow-file-div" style="display: none">
@@ -61,7 +61,7 @@ const wiHeaders = {
         </div>
 
         <p class="mb-3 mt-2">
-          Click the checkboxes to select the dependabot updates that you want combine and merge in a single pull request for each repository. 
+          Click the checkboxes to select the Dependabot updates you want to combine and merge into a single pull request for each repository. 
           The manager repository will do the work. 
           <a href="${config.param.readmeDependencyUpdates}" target="_blank">[learn more]</a>
         </p>
@@ -83,10 +83,10 @@ const wiHeaders = {
     let html = `
      <div style="padding-left:8px">
        <p class="mb-3 mt-2">
-         This view displays all work items that you have flagged for follow up.
+         This view displays all work items you have flagged for follow-up.
          You can flag any work item from any view by clicking the left icon(s)
-         and entering the date when you want to see a reminder (in days since today).
-         Work items where the reminder date has arrived appear in the <em>Assigned</em> tab even if you are not assignee or reviewer.
+         and entering the number of days from today when you want to see a reminder.
+         Work items whose reminder date has arrived appear in the <em>Assigned</em> tab even if you are not the assignee or reviewer.
        </p>
      </div>
      `;
@@ -94,9 +94,9 @@ const wiHeaders = {
      html += `
      <div style="padding-left:8px">
        <p class="mb-3 mt-2 text-danger">
-         To enable follow-ups, you have to check the configuration option <em>Enable a Manager Repository for advanced functions</em>
+         To enable follow-ups, check the configuration option <em>Enable a Manager Repository for advanced functions</em>
          and create the manager repository as indicated
-         <a href="${config.param.readmeManagerRepo}" target="_blank">[here]</a>.</div>
+         <a href="${config.param.readmeManagerRepo}" target="_blank">[here]</a>.
        </p>
      </div>
    `;

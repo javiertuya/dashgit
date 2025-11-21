@@ -16,9 +16,9 @@ const wiRender = {
   prIcon: '<i class="fa-solid fa-code-pull-request"></i>',
   forkIcon: '<i class="fa-solid fa-code-fork"></i>',
 
-  successIcon: '<i class="wi-status-icon fa-solid fa-check" style="color:MediumSeaGreen" title="The build has completed succesfully"></i>',
-  failureIcon: '<i class="wi-status-icon fa-solid fa-x" style="color:Red" title="The build has ended with failure"></i>',
-  pendingIcon: '<i class="wi-status-icon fa-regular fa-circle" style="color:Orange" title="The build is executing or waiting to execute"></i>',
+  successIcon: '<i class="wi-status-icon fa-solid fa-check" style="color:MediumSeaGreen" title="The build completed successfully"></i>',
+  failureIcon: '<i class="wi-status-icon fa-solid fa-x" style="color:Red" title="The build ended with a failure"></i>',
+  pendingIcon: '<i class="wi-status-icon fa-regular fa-circle" style="color:Orange" title="The build is running or waiting to run"></i>',
   unknownIcon: '<i class="wi-status-icon fa-regular fa-circle-question" style="color:#AAAAAA" title="The build status cannot be determined"></i>',
   spinnerIcon: `<span class="spinner-border spinner-border-sm text-secondary" style="opacity:50%" title="The build status is being determined"></span>`,
   spinnerClass: `spinner-border`,
@@ -57,7 +57,7 @@ const wiRender = {
     return `<span id="wi-status-${id}">${wiRender.statusIcon(status)}</span>`;
   },
   type2html: function (type, highlight) {
-    let titleSuffix = highlight ? " (new since last visit to this view)" : "";
+  let titleSuffix = highlight ? " (new since your last visit to this view)" : "";
     if (type == "issue")
       return `<i class="${this.issueIconClass}" style="color:${highlight ? this.gitColor : "MediumSeaGreen"}" title="Issue${titleSuffix}"></i>`;
     else if (type == "pr")
@@ -90,13 +90,13 @@ const wiRender = {
       return "";
     let html = "";
     if (actions["review_request"])
-      html += `<span class="wi-item-column-clickable badge text-dark bg-info wi-action-badge" title="A review on this PR has been requested"><i class="fa-solid fa-magnifying-glass"></i> review request</span> `;
+  html += `<span class="wi-item-column-clickable badge text-dark bg-info wi-action-badge" title="A review has been requested for this PR"><i class="fa-solid fa-magnifying-glass"></i> review request</span> `;
     if (actions["changes_requested"])
-      html += `<span class="wi-item-column-clickable badge text-light bg-primary wi-action-badge" title="A reviewer commented and requested changes on this PR"><i class="fa-regular fa-comment"></i> changes requested</span> `;
+  html += `<span class="wi-item-column-clickable badge text-light bg-primary wi-action-badge" title="A reviewer has commented and requested changes on this PR"><i class="fa-regular fa-comment"></i> changes requested</span> `;
     if (actions["follow_up"]) {
       let message = actions["follow_up_message"];
       message = $("<p>").text(message).html(); //sanitized
-      html += `<span class="wi-item-column-clickable badge text-dark bg-warning wi-action-badge" title="This work item has been flagged for follow up"><i class="fa-regular fa-flag"></i> ${message}</span> `;
+  html += `<span class="wi-item-column-clickable badge text-dark bg-warning wi-action-badge" title="This work item has been flagged for follow-up"><i class="fa-regular fa-flag"></i> ${message}</span> `;
     }
     return html;
   },

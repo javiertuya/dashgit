@@ -109,14 +109,14 @@ const configView = {
         </div>
         <div class="row">
           ${this.input2html(`config-providers-user-${key}`, "text", "Username", provider.user, 'required', "150", "150",
-            "The reference user for which the work items are displayed (assigned to, created by, etc.)")}
+            "The reference user for whom the work items are displayed (assigned to, created by, etc.)")}
           ${this.input2html(`config-providers-token-${key}`, "password", "Access token", provider.token, '', "150", "225",
-            "An API access token with read permission to the repository, used to authenticate the repository API requests of this provider")}
-          ${this.input2html(`config-providers-url-${key}`, "url", "Repository url", provider.url, 'required', "150", "225", "The url of the repository server")}
+            "An API access token with read permission to the repository, used to authenticate the repository API requests for this provider.")}
+          ${this.input2html(`config-providers-url-${key}`, "url", "Repository url", provider.url, 'required', "150", "225", "The URL of the repository server.")}
         </div>
         <div class="row">  
           ${this.input2html(`config-providers-filterIfLabel-${key}`, "text", "Filter if label", provider.filterIfLabel, '', "150", "150",
-            "Filters out the work items that contain the label specified")}
+            "Filters out work items that contain the specified label.")}
           ${this.array2html(`config-providers-unassignedAdditionalOwner-${key}`, "text", "Add owners to unassigned", provider.unassignedAdditionalOwner, '', "225", "150",
             "The default scope of Unassigned view is restricted to the repository of the token owner. Here you can include other users or organizations (separated by spaces)")}
           ${this.array2html(`config-providers-dependabotAdditionalOwner-${key}`, "text", "Add owners to dependabot", provider.dependabotAdditionalOwner, '', "225", "150",
@@ -376,9 +376,9 @@ const configView = {
   renderEncrypt: function (target, encrypted) {
     this.renderHeaderState($(target), encrypted);
     $("#config-form").html(this.encloseInsideCard(`
-      <p>This configuration is stored in the browser local memory. You can set up a password to encrypt the API access tokens.</p>
+  <p>This configuration is stored in your browser's local storage. You can set a password to encrypt the API access tokens.</p>
       <div class="row">
-      ${this.inputSimple2html("inputEncryptPassword", "password", "Enter a password to encrypt the API access tokens:", "Required")}
+  ${this.inputSimple2html("inputEncryptPassword", "password", "Enter a password to encrypt the API access tokens:", "Required")}
       ${this.button2html("inputEncryptButton", "submit", "Encrypt")}
       </div>
     `));
@@ -386,25 +386,25 @@ const configView = {
   renderDecrypt: function (target, encrypted) {
     this.renderHeaderState($(target), encrypted);
     $("#config-form").html(this.encloseInsideCard(`
-      <p>API access tokens in this configuration are encrypted. If you forgot your password you need to reset both password and tokens.</p>
+  <p>The API access tokens in this configuration are encrypted. If you forgot your password, you must reset both the password and the tokens.</p>
       <div class="row">${this.button2html("inputDecryptButton", "submit", "Reset password and access tokens", "btn-danger")}</div>
     `));
   },
   renderImportExport: function (target, data) {
-    this.renderHeaderState($(target), data.encrypted);
-    $("#config-form").html(`
-    <p class="m-2">You can export or import your configuration by copying or saving the json below.</p>
-    <label for="configJson">Configuration parameters (json):</label>
-    <textarea class="form-control" id="configJson" rows="10">${JSON.stringify(data, null, 2)}</textarea>
-    <button type="submit" class="btn btn-primary btn-sm" id="buttonConfigSave">SAVE CONFIGURATION</button>
-    `);
+  this.renderHeaderState($(target), data.encrypted);
+  $("#config-form").html(`
+  <p class="m-2">You can export or import your configuration by copying or saving the JSON below.</p>
+  <label for="configJson">Configuration parameters (JSON):</label>
+  <textarea class="form-control" id="configJson" rows="10">${JSON.stringify(data, null, 2)}</textarea>
+  <button type="submit" class="btn btn-primary btn-sm" id="buttonConfigSave">SAVE CONFIGURATION</button>
+  `);
   },
 
   login2html: function () { //this is used from the index to set the decrypt password
     return `
     <form id="config-encrypt" class="form-group row" novalidate>
-      <p>Enter the password used to encrypt the access tokens. If you forgot your password, click skip and go to configuration to reset.</p>
-      ${this.inputSimple2html("inputPassword", "password", "Enter you password:", "Required")}
+  <p>Enter the password used to encrypt the access tokens. If you forgot your password, click Skip and go to the configuration page to reset it.</p>
+  ${this.inputSimple2html("inputPassword", "password", "Enter your password:", "Required")}
       ${this.button2html("inputPasswordButton", "submit", "Submit")}
       ${this.button2html("inputSkipButton", "submit", "Skip")}
     </form>
