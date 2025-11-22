@@ -263,30 +263,30 @@ const wiView = {
     for (let i = 0; i < status.length; i++)
       this.showIf(".wi-status-class-" + classes[i], status.substring(i, i + 1) == "1")
 
-    // Additional filters that require iterate over the work items
+    // Additional filters to hide rows in the UI require iterate over the work items (like search or remove empty groups)
     // Apply to all targets to avoid flickering when changing target
     for (let target of this.allTargets)
       for (let provider of config.data.providers)
-        this.updateOtherFiltersVisibility(`wi-items-${target}_${provider.uid}_all`);
+        this.updateUiVisibility(`wi-items-${target}_${provider.uid}_all`);
   },
-  updateOtherFiltersVisibility: function (id) {
+  updateUiVisibility: function (id) {
     // As the dom does not have a physical hierarchy, iterates from the end
     // to allow filter headers that do not contain any visible rows
     let target = $("#" + id).find("tbody tr");
-    let repoFilter = $("#inputFilterRepo").val().trim().toLowerCase();
+    let filterRepoInclude = $("#inputFilterRepoInclude").val().trim().toLowerCase();
     let visibleCount = 0;
     for (let i = target.length - 1; i >= 0; i--) {
       let row = target[i];
       if (row.attributes.class != undefined) {
-        visibleCount = this.updateRowVisibility(row, visibleCount, repoFilter);
+        visibleCount = this.hideInvisibleRows(row, visibleCount, filterRepoInclude);
       }
     }
   },
-  updateRowVisibility: function(row, visibleCount, repoFilter) {
+  hideInvisibleRows: function(row, visibleCount, filterRepoInclude) {
       // When a row is not a grouping (has a any status class) apply other filters
       if ($(row).hasClass("wi-status-class-any")) { //an item
         // Filter by repo name
-        if (repoFilter != "" && !$(row).attr("itemrepo").trim().toLowerCase().includes(repoFilter))
+        if (filterRepoInclude != "" && !$(row).attr("itemrepo").trim().toLowerCase().includes(filterRepoInclude))
             $(row).hide();
 
         // if visible, increment count in its group, to be used when processing a group header
@@ -302,7 +302,7 @@ const wiView = {
 
         // Special case, branch compact view does not apply status filter, only repo filter
       } else if ($(row).hasClass("wi-status-class-branch-compact")) {
-        this.showIf($(row), repoFilter == "" || $(row).attr("itemrepo").trim().toLowerCase().includes(repoFilter))
+        this.showIf($(row), filterRepoInclude == "" || $(row).attr("itemrepo").trim().toLowerCase().includes(filterRepoInclude))
       }
       
       return visibleCount;

@@ -5,15 +5,14 @@ import { config } from "./Config.js"
  */
 const wiHeaders = {
   allProvidersHeader2html: function (target) {
+    let header = "";
     if (target == "dependabot")
-      return this.updateHeader2html();
-    if (target == "follow-up")
-      return this.followUpHeader2html();
-    if (target == "unassigned" || target == "involved") // other views do not have option to manage the filters
-      return this.filterHeader2html(target, config.data.viewFilter[target]);
-    if (target == "statuses") // special compact view only for statuses (branches)
-      return this.compactHeader2html(target, config.data.viewFilter[target]);
-    return "";
+      header = this.updateHeader2html();
+    else if (target == "follow-up")
+      header = this.followUpHeader2html();
+
+    // An additional view filter header to specify addtional filtering options as indicated in the config
+    return header + this.viewFilterHeader2html(target, config.data.viewFilter[target]);
   },
 
   providerHeader2html: function (target, provider) {
@@ -103,31 +102,31 @@ const wiHeaders = {
    return html;
  },
 
-  // Generic view header to perform additional filtering
-  filterHeader2html: function (target, viewFilters) {
-    return `
-    <div style="padding-left:8px">
-      <div class="col-auto mb-2">
-        <input class="form-check-input wi-view-filter-clickable" type="checkbox" ${viewFilters.authorMe ? "checked" : ""} value="" id="wi-view-filter-${target}-authorMe">
-        <label class="form-check-label" for="wi-view-filter-${target}-authorMe">Authored by me</label>
-        &nbsp;
-        <input class="form-check-input wi-view-filter-clickable" type="checkbox" value="" ${viewFilters.authorOthers ? "checked" : ""} id="wi-view-filter-${target}-authorOthers">
-        <label class="form-check-label" for="wi-view-filter-${target}-authorOthers">Authored by others</label>
-      </div>
-    </div>
-    `;
-  },
+  // Generic view header to perform additional filtering, these filters are specified in the config
+  viewFilterHeader2html: function (target, viewFilters) {
+    if (viewFilters === undefined)
+      return "";
 
-  // View header to select compact view (only for branches)
-  compactHeader2html: function (target, viewFilters) {
-    return `
-    <div style="padding-left:8px">
-      <div class="col-auto mb-2">
+    let header= "";
+    if (viewFilters.authorMe !== undefined)
+      header += `
+        <input class="form-check-input wi-view-filter-clickable" type="checkbox" ${viewFilters.authorMe ? "checked" : ""} value="" id="wi-view-filter-${target}-authorMe">
+        <label class="form-check-label" for="wi-view-filter-${target}-authorMe">Authored by me</label>&nbsp;
+      `;
+    if (viewFilters.authorOthers !== undefined)
+      header += `
+        <input class="form-check-input wi-view-filter-clickable" type="checkbox" value="" ${viewFilters.authorOthers ? "checked" : ""} id="wi-view-filter-${target}-authorOthers">
+        <label class="form-check-label" for="wi-view-filter-${target}-authorOthers">Authored by others</label>&nbsp;
+      `;
+    if (viewFilters.compact !== undefined) // compact view (only for branches)
+      header += `
         <input class="form-check-input wi-view-filter-clickable" type="checkbox" ${viewFilters.compact ? "checked" : ""} value="" id="wi-view-filter-${target}-compact">
-        <label class="form-check-label" for="wi-view-filter-${target}-compact">Compact view (any status)</label>
-      </div>
-    </div>
-    `;
+        <label class="form-check-label" for="wi-view-filter-${target}-compact">Compact view (any status)</label>&nbsp;
+      `;
+
+    if (header != "")
+      header = `<div class="col-auto mb-2"><div style="padding-left:8px">${header}</div></div>`;
+    return header;
   },
 
 }
