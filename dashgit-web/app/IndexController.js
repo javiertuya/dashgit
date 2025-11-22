@@ -54,10 +54,10 @@ $(document).on('change', '#checkGroup', async function () {
 $(document).on('change', '#inputStatus', async function () {
   wiView.updateStatusVisibility();
 });
-$(document).on('keyup', '#inputFilterRepo', async function () {
+$(document).on('keyup', '#inputFilterRepoInclude', async function () {
   wiView.updateStatusVisibility();
 });
-$(document).on('search', '#inputFilterRepo', async function () {
+$(document).on('search', '#inputFilterRepoInclude', async function () {
   wiView.updateStatusVisibility();
 });
 $(document).on('click', '.accordion-button', function () {
