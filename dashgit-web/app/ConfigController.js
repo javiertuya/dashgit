@@ -115,6 +115,7 @@ const configController = {
     let data = config.setAllDefaults({});
     data = configView.html2common(data);
     // Updates with current common config data that is not configurable from the ui
+    data.viewFilter = config.data.viewFilter;
     data.encrypted = config.data.encrypted;
     // to do not display update message after setting up the first provider
     data["appLastVersion"] = config.appVersion;

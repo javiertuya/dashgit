@@ -10,7 +10,7 @@ $(document).on('change', '.wi-update-check', function (e) {
   wiView.confirmUpdateClear();
 });
 $(document).on('click', '#wi-btn-update-select-all', function (e) { //only visible for safety
-  $(".accordion-item .show .wi-update-check").prop("checked", true);
+  $(".accordion-item .show .wi-update-check:visible").prop("checked", true);
   wiView.confirmUpdateClear();
 });
 $(document).on('click', '#wi-btn-update-unselect-all', function (e) {

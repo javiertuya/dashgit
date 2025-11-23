@@ -267,27 +267,27 @@ const wiView = {
     // Apply to all targets to avoid flickering when changing target
     for (let target of this.allTargets)
       for (let provider of config.data.providers)
-        this.updateUiVisibility(`wi-items-${target}_${provider.uid}_all`);
+        this.updateUiVisibility(`wi-items-${target}_${provider.uid}_all`, target);
   },
-  updateUiVisibility: function (id) {
+  updateUiVisibility: function (id, targetName) {
     // As the dom does not have a physical hierarchy, iterates from the end
     // to allow filter headers that do not contain any visible rows
     let target = $("#" + id).find("tbody tr");
     let filterRepoInclude = $("#inputFilterRepoInclude").val().trim().toLowerCase();
+    let filterRepoExclude = $(`#wi-view-filter-${targetName}-exclude`)?.val()?.trim()?.toLowerCase() ?? ""; // not in all views
     let visibleCount = 0;
     for (let i = target.length - 1; i >= 0; i--) {
       let row = target[i];
       if (row.attributes.class != undefined) {
-        visibleCount = this.hideInvisibleRows(row, visibleCount, filterRepoInclude);
+        visibleCount = this.hideInvisibleRows(row, visibleCount, filterRepoInclude, filterRepoExclude);
       }
     }
   },
-  hideInvisibleRows: function(row, visibleCount, filterRepoInclude) {
+  hideInvisibleRows: function(row, visibleCount, filterRepoInclude, filterRepoExclude) {
       // When a row is not a grouping (has a any status class) apply other filters
       if ($(row).hasClass("wi-status-class-any")) { //an item
         // Filter by repo name
-        if (filterRepoInclude != "" && !$(row).attr("itemrepo").trim().toLowerCase().includes(filterRepoInclude))
-            $(row).hide();
+        this.hideInvisibleRow(row, filterRepoInclude, filterRepoExclude);
 
         // if visible, increment count in its group, to be used when processing a group header
         const style = $(row).attr("style") ?? "";
@@ -307,6 +307,31 @@ const wiView = {
       
       return visibleCount;
   },
+  hideInvisibleRow: function (row, filterRepoInclude, filterRepoExclude) {
+    if (filterRepoInclude != "" && !$(row).attr("itemrepo").trim().toLowerCase().includes(filterRepoInclude))
+      $(row).hide();
+
+    if (filterRepoExclude != "") {
+      const exclude = filterRepoExclude.split(" ");
+      for (let ex of exclude)
+        if (ex != "" && $(row).attr("itemrepo").trim().toLowerCase().includes(ex))
+          $(row).hide();
+    }
+  },
+  saveViewFilterState: function () {
+    const target = $(".nav-link.active").attr("aria-controls");
+    // set values to the filters that have the corresponding element in the UI
+    if ($(`#wi-view-filter-${target}-authorMe`).length > 0)
+      config.data.viewFilter[target].authorMe = $(`#wi-view-filter-${target}-authorMe`).is(':checked');
+    if ($(`#wi-view-filter-${target}-authorOthers`).length > 0)
+      config.data.viewFilter[target].authorOthers = $(`#wi-view-filter-${target}-authorOthers`).is(':checked');
+    if ($(`#wi-view-filter-${target}-compact`).length > 0)
+      config.data.viewFilter[target].compact = $(`#wi-view-filter-${target}-compact`).is(':checked');
+    if ($(`#wi-view-filter-${target}-exclude`).length > 0)
+      config.data.viewFilter[target].exclude = $(`#wi-view-filter-${target}-exclude`).val().trim();
+    config.save();
+  },
+
   updateNotifications(providerId, thisMentions, allMentions) {
     const target = this.selectActiveTarget();
     let panel = `#${this.getPanelId(target, providerId)}`;
@@ -406,11 +431,12 @@ const wiView = {
     $("#tab-content").find(`.wi-update-check:checkbox:checked`).attr("disabled", true);
   },
   getUpdateCheckItems: function () { // all selected, but not disabled
-    const items = $("#tab-content").find(`.wi-update-check:checkbox:checked`);
+    const items = $("#tab-content").find(`.wi-update-check:checkbox:checked:visible`);
     let updates = [];
     for (let item of items)
       if (!$(item).attr("disabled")) //exclude previous updates (that have been disabled)
         updates.push({ provider: $(item).attr("provider"), repo: $(item).attr("repo"), iid: $(item).attr("iid") });
+    console.log("Updates to process: ", updates);
     return updates;
   },
 
