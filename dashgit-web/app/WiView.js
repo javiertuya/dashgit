@@ -302,21 +302,23 @@ const wiView = {
 
         // Special case, branch compact view does not apply status filter, only repo filter
       } else if ($(row).hasClass("wi-status-class-branch-compact")) {
-        this.showIf($(row), filterRepoInclude == "" || $(row).attr("itemrepo").trim().toLowerCase().includes(filterRepoInclude))
+        this.hideInvisibleRow(row, filterRepoInclude, filterRepoExclude);
       }
       
       return visibleCount;
   },
   hideInvisibleRow: function (row, filterRepoInclude, filterRepoExclude) {
+    let show = true;
     if (filterRepoInclude != "" && !$(row).attr("itemrepo").trim().toLowerCase().includes(filterRepoInclude))
-      $(row).hide();
+      show = false;
 
     if (filterRepoExclude != "") {
       const exclude = filterRepoExclude.split(" ");
       for (let ex of exclude)
         if (ex != "" && $(row).attr("itemrepo").trim().toLowerCase().includes(ex))
-          $(row).hide();
+          show = false;
     }
+    this.showIf(row, show);
   },
   saveViewFilterState: function () {
     const target = $(".nav-link.active").attr("aria-controls");
