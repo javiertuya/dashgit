@@ -132,12 +132,16 @@ const configView = {
             : ""}
         </div>
         <div class="row config-providers-graphql-settings">
-          ${this.input2html(`config-graphql-maxProjects-${key}`, "number", "Max projects", provider.graphql.maxProjects, 'required min="2" max="100"', "150", "100",
+          ${this.input2html(`config-graphql-maxProjects-${key}`, "number", "Max projects", provider.graphql.maxProjects, 'required min="2" max="100"', "150", "70",
             "Maximum number of repositories/projects that are retrieved to get the branches and build statuses")}
-          ${this.input2html(`config-graphql-maxBranches-${key}`, "number", "Max branches", provider.graphql.maxBranches, 'required min="2" max="100"', "150", "100",
+          ${provider.provider == "GitHub"
+            ? this.input2html(`config-graphql-pageSize-${key}`, "number", "Page size", provider.graphql.pageSize, 'required min="2" max="50"', "150", "70",
+              "Page size for the GitHub GraphQL API requests that get the branches and build statuses")
+            : ""}
+          ${this.input2html(`config-graphql-maxBranches-${key}`, "number", "Max branches", provider.graphql.maxBranches, 'required min="2" max="100"', "150", "70",
             "Maximum number of branches that are retrieved for each repository/project to get the build statuses")}
           ${provider.provider == "GitLab"
-            ? this.input2html(`config-graphql-maxPipelines-${key}`, "number", "Max pipelines", provider.graphql.maxPipelines, 'required min="2" max="100"', "150", "100",
+            ? this.input2html(`config-graphql-maxPipelines-${key}`, "number", "Max pipelines", provider.graphql.maxPipelines, 'required min="2" max="100"', "150", "70",
               "Maximum number of pipeline runs that are retrieved for each repository/project to get the branches and build statuses")
             : this.check2html(`config-graphql-include-forks-${key}`, "Include Forks", provider.graphql.includeForks)
               + this.check2html(`config-graphql-only-forks-${key}`, "Only Forks", provider.graphql.onlyForks)
@@ -226,6 +230,7 @@ const configView = {
     if (provider.provider == "GitLab") {
       provider.graphql.maxPipelines = $(`#config-graphql-maxPipelines-${id}`).val().trim();
     } else {
+      provider.graphql.pageSize = $(`#config-graphql-pageSize-${id}`).val().trim();
       provider.graphql.deprecatedGraphqlV1 = $(`#config-providers-deprecated-graphqlV1-${id}`).is(':checked')
       provider.graphql.onlyForks = $(`#config-graphql-only-forks-${id}`).is(':checked')
       provider.graphql.includeForks = $(`#config-graphql-include-forks-${id}`).is(':checked');

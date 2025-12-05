@@ -161,15 +161,12 @@ const gitHubApi = {
     let gqlresponse = {};
     try {
       // check how many repositories must be updated, this info will be used to construct the query
-      let updateReqs = await this.getUpdateReqs(provider, userSpecRepos, updateSince, graphqlV2);
+      let updateReqs = await this.getStatusesUpdateRequirements(provider, userSpecRepos, updateSince, graphqlV2);
       if (updateReqs.maxProjects == 0 && updateReqs.otherRepos == "") {
         this.log(provider.uid, `No projects to update, since: "${updateSince}":`);
         return gitHubAdapter.statuses2model(provider, {}, graphqlV2);
       }
-
-      const query = gitHubApi.getStatusesQuery(provider, updateReqs.maxProjects, updateReqs.otherRepos, true, graphqlV2);
-      const graphql = gitHubApi.getGraphQlApi(provider);
-      gqlresponse = await graphql(query);
+      gqlresponse = await this.graphQlWithPagination(provider, updateReqs.maxProjects, provider.graphql.pageSize, updateReqs.otherRepos, true, graphqlV2);
       this.log(provider.uid, `Statuses graphql response, maxProjects: ${updateReqs.maxProjects} and "${updateReqs.otherRepos}", since: "${updateSince}":`, gqlresponse);
     } catch (error) {
       console.error("GitHub GraphQL api call failed");
@@ -183,15 +180,13 @@ const gitHubApi = {
   },
 
   //Gets number of repositories and other user specified that require update
-  getUpdateReqs: async function (provider, userSpecRepos, updateSince, graphqlV2) {
+  getStatusesUpdateRequirements: async function (provider, userSpecRepos, updateSince, graphqlV2) {
     let updateReqs = { maxProjects: provider.graphql.maxProjects, otherRepos: userSpecRepos };
     if (updateSince == "")
       return updateReqs;
 
-    const query0 = gitHubApi.getStatusesQuery(provider, provider.graphql.maxProjects, updateReqs.otherRepos, false, graphqlV2);
-    const graphql0 = gitHubApi.getGraphQlApi(provider);
     const t0 = Date.now();
-    let gqlresponse0 = await graphql0(query0);
+    let gqlresponse0 = await this.graphQlWithPagination(provider, provider.graphql.maxProjects, provider.graphql.maxProjects, updateReqs.otherRepos, false, graphqlV2);
     gitHubApi.log(provider.uid, `Statuses graphql response, time to get update reqs [${Date.now() - t0}ms]:`, gqlresponse0);
     //console.log("Count projects to update query model:")
     //console.log(gqlresponse0)
@@ -215,6 +210,36 @@ const gitHubApi = {
     });
   },
 
+  graphQlWithPagination: async function (provider, maxProjects, maxPageSize, userSpecRepos, includeAll, graphqlV2) {
+    maxPageSize = Math.max(maxPageSize, 2); // ensure in a range
+    maxPageSize = Math.min(maxPageSize, 50);
+    let allData = {};
+    let page = 0;
+    let remainingProjects = maxProjects;
+    let hasNextPage = true;
+    let endCursor = null;
+    while (hasNextPage && remainingProjects > 0) {
+      const pageSize = Math.min(remainingProjects, maxPageSize);
+      const effectiveUserSpecRepos = endCursor == null ? userSpecRepos : ""; // only included in the first page
+      const goal = includeAll ? "Get statuses" : "Get update reqs"
+      gitHubApi.log(provider.uid, `${goal}, page ${++page}, page size ${pageSize}, remaining ${remainingProjects}`);
+      const query = gitHubApi.getStatusesQuery(provider, pageSize, effectiveUserSpecRepos, includeAll, endCursor, graphqlV2);
+      const graphql = gitHubApi.getGraphQlApi(provider);
+      const response = await graphql(query);
+
+      if (allData.viewer == undefined) // first page
+        allData = response;
+      else
+        allData.viewer.repositories.nodes.push(...response.viewer.repositories.nodes);
+
+      // prepare for next page
+      remainingProjects -= pageSize;
+      hasNextPage = response.viewer.repositories.pageInfo.hasNextPage;
+      endCursor = response.viewer.repositories.pageInfo.endCursor;
+    }
+    return allData;
+  },
+
   getGraphQlApi: function (provider) {
     return graphql.defaults({
       headers: {
@@ -223,7 +248,7 @@ const gitHubApi = {
     });
   },
 
-  getStatusesQuery: function (provider, maxProjects, userSpecRepos, includeAll, graphqlV2) {
+  getStatusesQuery: function (provider, maxProjects, userSpecRepos, includeAll, cursor, graphqlV2) {
     let affiliations = provider.graphql.ownerAffiliations.toString();
     let forks = "isFork:false, ";
     if (provider.graphql.includeForks)
@@ -233,10 +258,14 @@ const gitHubApi = {
     return `{
       viewer {
         login, resourcePath, url, repositories(first: ${maxProjects}, ownerAffiliations: [${affiliations}], 
+        after: ${cursor == null ? "null" : `"${cursor}"`},
         ${forks} isArchived:false, orderBy: {field: PUSHED_AT, direction: DESC}) {
           nodes {
             name, nameWithOwner, url, pushedAt
             ${includeAll ? this.getReposSubquery(provider, graphqlV2) : ""}
+          }
+          pageInfo {
+            hasNextPage, endCursor
           }
         }
       }
