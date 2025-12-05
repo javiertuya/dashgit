@@ -17,7 +17,8 @@ describe("TestConfig - Sanitizing config data", async function () {
     it("Set default config attributes when reading empty", function () {
         let expected = { version: 2, encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 30, maxAge: 0, 
             viewFilter: { 
-                involved: {authorMe: true, authorOthers: true},
+                involved: {authorMe: true, authorOthers: true, exclude: ""},
+                created: {exclude: ""},
                 unassigned: {authorMe: true, authorOthers: true},
                 statuses: {compact: false, exclude: ""},
                 dependabot: {exclude: ""},
@@ -36,7 +37,8 @@ describe("TestConfig - Sanitizing config data", async function () {
             appLastVersion: "",
             encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 60, maxAge: 0,
             viewFilter: { 
-                involved: {authorMe: true, authorOthers: true},
+                involved: {authorMe: true, authorOthers: true, exclude: ""},
+                created: {exclude: ""},
                 unassigned: {authorMe: true, authorOthers: true},
                 statuses: {compact: false, exclude: ""},
                 dependabot: {exclude: ""},
@@ -64,7 +66,8 @@ describe("TestConfig - Sanitizing config data", async function () {
             appLastVersion: "",
             encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 30, maxAge: 0,
             viewFilter: { 
-                involved: {authorMe: true, authorOthers: true},
+                involved: {authorMe: true, authorOthers: true, exclude: ""},
+                created: {exclude: ""},
                 unassigned: {authorMe: true, authorOthers: true},
                 statuses: {compact: false, exclude: ""},
                 dependabot: {exclude: ""},

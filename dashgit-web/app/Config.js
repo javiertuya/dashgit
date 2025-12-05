@@ -145,11 +145,14 @@ const config = {
   setViewFilterDefaults: function (data) {
     this.setDefault(data, "viewFilter", {});
     this.setDefault(data.viewFilter, "involved", {});
+    this.setDefault(data.viewFilter, "created", {});
     this.setDefault(data.viewFilter, "unassigned", {});
     this.setDefault(data.viewFilter, "statuses", {});
     this.setDefault(data.viewFilter, "dependabot", {});
     this.setDefault(data.viewFilter.involved, "authorMe", true);
     this.setDefault(data.viewFilter.involved, "authorOthers", true);
+    this.setDefault(data.viewFilter.involved, "exclude", "");
+    this.setDefault(data.viewFilter.created, "exclude", "");
     this.setDefault(data.viewFilter.unassigned, "authorMe", true);
     this.setDefault(data.viewFilter.unassigned, "authorOthers", true);
     this.setDefault(data.viewFilter.statuses, "compact", false);
