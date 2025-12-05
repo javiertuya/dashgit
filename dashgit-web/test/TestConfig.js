@@ -19,7 +19,7 @@ describe("TestConfig - Sanitizing config data", async function () {
             viewFilter: { 
                 involved: {authorMe: true, authorOthers: true},
                 unassigned: {authorMe: true, authorOthers: true},
-                statuses: {compact: false},
+                statuses: {compact: false, exclude: ""},
                 dependabot: {exclude: ""},
             },      
             appLastVersion: "", 
@@ -38,7 +38,7 @@ describe("TestConfig - Sanitizing config data", async function () {
             viewFilter: { 
                 involved: {authorMe: true, authorOthers: true},
                 unassigned: {authorMe: true, authorOthers: true},
-                statuses: {compact: false},
+                statuses: {compact: false, exclude: ""},
                 dependabot: {exclude: ""},
             },
             enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
@@ -63,7 +63,7 @@ describe("TestConfig - Sanitizing config data", async function () {
             viewFilter: { 
                 involved: {authorMe: true, authorOthers: true},
                 unassigned: {authorMe: true, authorOthers: true},
-                statuses: {compact: false},
+                statuses: {compact: false, exclude: ""},
                 dependabot: {exclude: ""},
             },      
             enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
