@@ -20,7 +20,7 @@ const wiRender = {
   failureIcon: '<i class="wi-status-icon fa-solid fa-x" style="color:Red" title="The build ended with a failure"></i>',
   pendingIcon: '<i class="wi-status-icon fa-regular fa-circle" style="color:Orange" title="The build is running or waiting to run"></i>',
   unknownIcon: '<i class="wi-status-icon fa-regular fa-circle-question" style="color:#AAAAAA" title="The build status cannot be determined"></i>',
-  spinnerIcon: `<span class="spinner-border spinner-border-sm text-secondary" style="opacity:25%" title="The build status is being determined"></span>`,
+  spinnerIcon: `<span class="spinner-border spinner-border-sm text-secondary" style="opacity:15%" title="The build status is being determined"></span>`,
   spinnerClass: `spinner-border`,
 
   notificationIconClass: `fa-regular fa-bell`,

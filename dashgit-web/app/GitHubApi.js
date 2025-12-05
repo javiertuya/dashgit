@@ -222,7 +222,7 @@ const gitHubApi = {
       const pageSize = Math.min(remainingProjects, maxPageSize);
       const effectiveUserSpecRepos = endCursor == null ? userSpecRepos : ""; // only included in the first page
       const goal = includeAll ? "Get statuses" : "Get update reqs"
-      gitHubApi.log(provider.uid, `${goal}, page ${++page}, page size ${pageSize}, remaining ${remainingProjects}`);
+      gitHubApi.log(provider.uid, `${goal}, page ${++page}, page size ${pageSize}, remaining ${remainingProjects} ...`);
       const query = gitHubApi.getStatusesQuery(provider, pageSize, effectiveUserSpecRepos, includeAll, endCursor, graphqlV2);
       const graphql = gitHubApi.getGraphQlApi(provider);
       const response = await graphql(query);

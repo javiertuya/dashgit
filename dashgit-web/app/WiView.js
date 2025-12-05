@@ -44,6 +44,9 @@ const wiView = {
   getPanelId: function (target, providerId) {
     return `wi-items-${this.getId(target, providerId, "all")}`;
   },
+  getPanelBadgesId: function (target, providerId) {
+    return `wi-badges-${this.getId(target, providerId, "all")}`;
+  },
 
   selectActiveTarget: function () {
     return $(".tab-pane.active").attr("id");
@@ -56,6 +59,7 @@ const wiView = {
     let html = `<div class="accordion" id="wi-providers-panel">`;
     html += wiHeaders.allProvidersHeader2html(target);
 
+    let savedBadgesHtml = {};
     for (let mod of models) {
       let header = mod.header;
       let items = mod.items;
@@ -64,11 +68,17 @@ const wiView = {
       items = wiServices.filter(target, mod.header.uid, mod.header.user, items);
       items = wiServices.group(grouping || compact, items); // compact view requires grouping
       html += this.model2html(target, header, items, grouping, compact, sorting, highlightSince);
+
+      // Badges that count items are updated asynchronously later, but when rendering we will need to
+      // display the previous saved value (if any) to avoid flickering
+      let badgesId = this.getPanelBadgesId(target, header.uid);
+      savedBadgesHtml[badgesId] = $(`#${badgesId}`).html();
     }
     html += `</div>`;
     $(`#${target}`).html(html);
     for (let mod of models) {
-      this.updateBadges(target, mod.header.uid, true);
+      let badgesId = this.getPanelBadgesId(target, mod.header.uid);
+      $(`#${badgesId}`).html(savedBadgesHtml[badgesId] ?? ""); // undefined on first load
       $(`#${this.getPanelId(target, mod.header.uid)} .wi-status-icon`).tooltip({ delay: 200 });
       $(`#${this.getPanelId(target, mod.header.uid)} .wi-action-badge`).tooltip({ delay: 200 });
     }
@@ -90,7 +100,9 @@ const wiView = {
             <span class='h4'>${wiRender.provider2html(header.provider)} ${header.provider} - ${header.user}</span>
             <span class='h6'>${header.url != "" ? " &nbsp; at " + header.url.replace("https://", "") : ""}</span>
             <span id="wi-badges-${this.getId(target, header.uid, "all")}" style='position:relative; bottom:4px;'></span>
+            <!--
             <span id="wi-spinner-${this.getId(target, header.uid, "all")}" style='position:relative; bottom:2px;'> ${target != "statuses" ? wiRender.spinnerIcon : ""}</span>
+            -->
           </p>
         </button>
       </h4>
@@ -233,7 +245,7 @@ const wiView = {
       this.upateStatusClass(item.status, providerId, item.uid)
     }
     this.updateSpinnerEnd(providerId);
-    this.updateBadges(providerId, false);
+    this.updateBadges(providerId);
     this.updateStatusVisibility();
     $(`#${this.getPanelId(this.selectActiveTarget(), providerId)} .wi-status-icon`).tooltip({ delay: 200 });
   },
@@ -361,25 +373,24 @@ const wiView = {
   updateSpinnerEnd: function (provider) {
     const target = this.selectActiveTarget();
     // hide spinner at the provider header
-    let spinnerAll = `#wi-spinner-${this.getId(target, provider, "all")}`;
-    $(spinnerAll).hide();
+    // let spinnerAll = `#wi-spinner-${this.getId(target, provider, "all")}`;
+    // $(spinnerAll).hide();
     // convert spinner at each row into not available (it will be updted later if status is known)
     let panel = `#${this.getPanelId(target, provider)}`;
     let spinners = $(panel).find(`.${wiRender.spinnerClass}`);
     for (let spinner of spinners)
       $(spinner).parent().html(wiRender.unknownIcon);
   },
-  updateBadges: function (provider, inProgress) {
+  updateBadges: function (provider) {
     const target = this.selectActiveTarget();
-    let panel = `wi-items-${this.getId(target, provider, "all")}`;
+    const panel = this.getPanelId(target, provider);
     let html = "";
     html = wiRender.headerbadge2html("Blue", $("#" + panel + " tbody tr.wi-status-class-any").length, "")
       + wiRender.headerbadge2html("DodgerBlue", $("#" + panel + " tbody tr.wi-status-class-issue").length, "issues")
       + wiRender.headerbadge2html("MediumSeaGreen", $("#" + panel + " tbody tr.wi-status-class-success").length, "success")
       + wiRender.headerbadge2html("Red", $("#" + panel + " tbody tr.wi-status-class-failure").length, "failed")
       + wiRender.headerbadge2html("Orange", $("#" + panel + " tbody tr.wi-status-class-pending").length, "pending")
-    let header = `wi-badges-${this.getId(target, provider, "all")}`
-    $("#" + header).html(" &nbsp; " + html);
+    $(`#${this.getPanelBadgesId(target, provider)}`).html(" &nbsp; " + html);
   },
   updateLabelColors: function (providerId, allLabels) {
     if (allLabels == undefined) //refresh colors is only needed in GitLab
