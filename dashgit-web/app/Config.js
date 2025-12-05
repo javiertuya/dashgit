@@ -146,11 +146,13 @@ const config = {
     this.setDefault(data.viewFilter, "involved", {});
     this.setDefault(data.viewFilter, "unassigned", {});
     this.setDefault(data.viewFilter, "statuses", {});
+    this.setDefault(data.viewFilter, "dependabot", {});
     this.setDefault(data.viewFilter.involved, "authorMe", true);
     this.setDefault(data.viewFilter.involved, "authorOthers", true);
     this.setDefault(data.viewFilter.unassigned, "authorMe", true);
     this.setDefault(data.viewFilter.unassigned, "authorOthers", true);
     this.setDefault(data.viewFilter.statuses, "compact", false);
+    this.setDefault(data.viewFilter.dependabot, "exclude", "");
   },
   setDefault: function (parent, property, value) {
     if (parent[property] == undefined || parent[property] == null)

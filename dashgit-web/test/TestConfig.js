@@ -20,6 +20,7 @@ describe("TestConfig - Sanitizing config data", async function () {
                 involved: {authorMe: true, authorOthers: true},
                 unassigned: {authorMe: true, authorOthers: true},
                 statuses: {compact: false},
+                dependabot: {exclude: ""},
             },      
             appLastVersion: "", 
             enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
@@ -38,6 +39,7 @@ describe("TestConfig - Sanitizing config data", async function () {
                 involved: {authorMe: true, authorOthers: true},
                 unassigned: {authorMe: true, authorOthers: true},
                 statuses: {compact: false},
+                dependabot: {exclude: ""},
             },
             enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
             providers: [{
@@ -62,6 +64,7 @@ describe("TestConfig - Sanitizing config data", async function () {
                 involved: {authorMe: true, authorOthers: true},
                 unassigned: {authorMe: true, authorOthers: true},
                 statuses: {compact: false},
+                dependabot: {exclude: ""},
             },      
             enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
             providers: [{

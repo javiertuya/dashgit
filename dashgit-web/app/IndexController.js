@@ -54,28 +54,24 @@ $(document).on('change', '#checkGroup', async function () {
 $(document).on('change', '#inputStatus', async function () {
   wiView.updateStatusVisibility();
 });
-$(document).on('keyup', '#inputFilterRepoInclude', async function () {
-  wiView.updateStatusVisibility();
-});
-$(document).on('search', '#inputFilterRepoInclude', async function () {
-  wiView.updateStatusVisibility();
-});
 $(document).on('click', '.accordion-button', function () {
   wiView.saveStatePanel($(this).attr('id'), $(this).attr('aria-expanded'))
 });
 // Generic view header to perform additional filtering, 
 // included here instead of wiController because behaviour is common for several views and causes rendering
 $(document).on('change', '.wi-view-filter-clickable', async function () {
-  let target = $(".nav-link.active").attr("aria-controls");
-  // set values to the filters that have the corresponding element in the UI
-  if ($(`#wi-view-filter-${target}-authorMe`).length > 0)
-    config.data.viewFilter[target].authorMe = $(`#wi-view-filter-${target}-authorMe`).is(':checked');
-  if ($(`#wi-view-filter-${target}-authorOthers`).length > 0)
-    config.data.viewFilter[target].authorOthers = $(`#wi-view-filter-${target}-authorOthers`).is(':checked');
-  if ($(`#wi-view-filter-${target}-compact`).length > 0)
-    config.data.viewFilter[target].compact = $(`#wi-view-filter-${target}-compact`).is(':checked');
-  config.save();
+  wiView.saveViewFilterState();
   indexController.render();
+});
+// Generic view header to perform additional filtering with text input (search, exclude)
+// Changes update the view dynamically without renderiing again
+$(document).on('keyup', '.wi-view-filter-input', async function () { // on typing
+  wiView.updateStatusVisibility();
+  wiView.saveViewFilterState();
+});
+$(document).on('search', '.wi-view-filter-input', async function () { // clearing the input with the cross button
+  wiView.updateStatusVisibility();
+  wiView.saveViewFilterState();
 });
 
 const indexController = {

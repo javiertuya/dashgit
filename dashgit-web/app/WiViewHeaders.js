@@ -12,7 +12,7 @@ const wiHeaders = {
       header = this.followUpHeader2html();
 
     // An additional view filter header to specify addtional filtering options as indicated in the config
-    return header + this.viewFilterHeader2html(target, config.data.viewFilter[target]);
+    return this.viewFilterHeader2html(target, config.data.viewFilter[target]) + header;
   },
 
   providerHeader2html: function (target, provider) {
@@ -47,7 +47,7 @@ const wiHeaders = {
     else
       return `
       <div style="padding-left:8px">
-        <p class="mb-3 mt-2">
+        <p class="mb-3 mt-0">
           To set up your manager repository <code>${config.data.managerRepoName}</code>,
           you need to add a workflow file at <code>.github/workflows/manage-updates.yml</code>.<br/>
           <a href="#" id="wi-update-workflow-file-show">Click here to get the required content and copy it to the workflow file</a>.<br/>
@@ -110,22 +110,35 @@ const wiHeaders = {
     let header= "";
     if (viewFilters.authorMe !== undefined)
       header += `
+        <div class="form-check form-check-inline">
         <input class="form-check-input wi-view-filter-clickable" type="checkbox" ${viewFilters.authorMe ? "checked" : ""} value="" id="wi-view-filter-${target}-authorMe">
-        <label class="form-check-label" for="wi-view-filter-${target}-authorMe">Authored by me</label>&nbsp;
+        <label class="form-check-label" for="wi-view-filter-${target}-authorMe">Authored by me</label>
+        </div>
       `;
     if (viewFilters.authorOthers !== undefined)
       header += `
+        <div class="form-check form-check-inline">
         <input class="form-check-input wi-view-filter-clickable" type="checkbox" value="" ${viewFilters.authorOthers ? "checked" : ""} id="wi-view-filter-${target}-authorOthers">
-        <label class="form-check-label" for="wi-view-filter-${target}-authorOthers">Authored by others</label>&nbsp;
+        <label class="form-check-label" for="wi-view-filter-${target}-authorOthers">Authored by others</label>
+        </div>
       `;
     if (viewFilters.compact !== undefined) // compact view (only for branches)
       header += `
+        <div class="form-check form-check-inline">
         <input class="form-check-input wi-view-filter-clickable" type="checkbox" ${viewFilters.compact ? "checked" : ""} value="" id="wi-view-filter-${target}-compact">
-        <label class="form-check-label" for="wi-view-filter-${target}-compact">Compact view (any status)</label>&nbsp;
+        <label class="form-check-label" for="wi-view-filter-${target}-compact">Compact view (any status)</label>
+        </div>
+      `;
+    if (viewFilters.exclude !== undefined) // opposite to search, exclude based on repo name
+      header += `
+        <div class="form-check form-check-inline">
+        <label for="wi-view-filter-${target}-exclude" class="col-form-label">Exclude Repos:&nbsp; </label>
+        <input id="wi-view-filter-${target}-exclude" value="${viewFilters.exclude}" type="search" class="wi-view-filter-input d-inline-block form-control" placeholder="(exclude)" style="color:red;font-size:0.875rem;width:300px;height:24px;padding-left:4px" aria-label="Exclude:"></input>
+        </div>
       `;
 
     if (header != "")
-      header = `<div class="col-auto mb-2"><div style="padding-left:8px">${header}</div></div>`;
+      header = `<div class="col-auto mb-0"><div style="padding-left:8px">${header}</div></div>`;
     return header;
   },
 
