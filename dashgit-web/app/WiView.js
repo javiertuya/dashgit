@@ -238,12 +238,15 @@ const wiView = {
 
   //Callbacks called from asynchronous calls after the work items are rendered
 
-  updateStatuses: function (statusesModel, providerId, allLabels) {
+  updateStatusItems: function (statusesModel, providerId) {
     for (let item of statusesModel.items) {
       if (item.type == "pr" || item.type == "branch")
         this.upateStatusIcon(item.status, providerId, item.uid);
       this.upateStatusClass(item.status, providerId, item.uid)
     }
+  },
+  updateStatuses: function (statusesModel, providerId) {
+    this.updateStatusItems(statusesModel, providerId);
     this.updateSpinnerEnd(providerId);
     this.updateBadges(providerId);
     this.updateStatusVisibility();

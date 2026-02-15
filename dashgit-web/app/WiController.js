@@ -192,6 +192,15 @@ const wiController = {
       this.displayProviderStatuses(providerId)
   },
 
+  updateStatusesForPage: function (providerId, statusesModel) {
+    console.log(`${providerId}: ASYNC partial update page statuses to view:`);
+    console.log(statusesModel);
+    // direct call to display the statuses of the model without setting the cache
+    wiView.updateStatusItems(statusesModel, providerId); //labels cache only for GitLab, may be undefined
+    for (let surrogated of cache.getStatusSurrogatedIds(providerId))
+      wiView.updateStatusItems(statusesModel, surrogated);
+  },
+
   updateStatusesOnError: function (message, providerId) {
     //In case of failure in getting the status schedules a near refresh to try again
     this.displayError(message);

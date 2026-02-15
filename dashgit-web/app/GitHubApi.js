@@ -166,7 +166,7 @@ const gitHubApi = {
         this.log(provider.uid, `No projects to update, since: "${updateSince}":`);
         return gitHubAdapter.statuses2model(provider, {}, graphqlV2);
       }
-      gqlresponse = await this.graphQlWithPagination(provider, updateReqs.maxProjects, provider.graphql.pageSize, updateReqs.otherRepos, true, graphqlV2);
+      gqlresponse = await this.graphQlWithPagination(provider, updateReqs.maxProjects, provider.graphql.pageSize, updateReqs.otherRepos, true, updateSince == "", graphqlV2);
       this.log(provider.uid, `Statuses graphql response, maxProjects: ${updateReqs.maxProjects} and "${updateReqs.otherRepos}", since: "${updateSince}":`, gqlresponse);
     } catch (error) {
       console.error("GitHub GraphQL api call failed");
@@ -186,7 +186,7 @@ const gitHubApi = {
       return updateReqs;
 
     const t0 = Date.now();
-    let gqlresponse0 = await this.graphQlWithPagination(provider, provider.graphql.maxProjects, provider.graphql.maxProjects, updateReqs.otherRepos, false, graphqlV2);
+    let gqlresponse0 = await this.graphQlWithPagination(provider, provider.graphql.maxProjects, provider.graphql.maxProjects, updateReqs.otherRepos, false, false, graphqlV2);
     gitHubApi.log(provider.uid, `Statuses graphql response, time to get update reqs [${Date.now() - t0}ms]:`, gqlresponse0);
     //console.log("Count projects to update query model:")
     //console.log(gqlresponse0)
@@ -210,7 +210,7 @@ const gitHubApi = {
     });
   },
 
-  graphQlWithPagination: async function (provider, maxProjects, maxPageSize, userSpecRepos, includeAll, graphqlV2) {
+  graphQlWithPagination: async function (provider, maxProjects, maxPageSize, userSpecRepos, includeAll, pagedUpdate, graphqlV2) {
     maxPageSize = Math.max(maxPageSize, 2); // ensure in a range
     maxPageSize = Math.min(maxPageSize, 50);
     let allData = {};
@@ -236,6 +236,14 @@ const gitHubApi = {
       remainingProjects -= pageSize;
       hasNextPage = response.viewer.repositories.pageInfo.hasNextPage;
       endCursor = response.viewer.repositories.pageInfo.endCursor;
+
+      // if required, update the statuses of the partial model (all pages until now) to the ui
+      // When handling last page, the ui will be fully updated by the caller
+      if (includeAll && pagedUpdate && remainingProjects > 0 && hasNextPage) {
+        const gqlresponse = gitHubAdapter.postprocessGraphQl(allData);
+        const model = gitHubAdapter.statuses2model(provider, gqlresponse, graphqlV2);
+        wiController.updateStatusesForPage(provider.uid, model); //direct call instead of using a callback
+      }
     }
     return allData;
   },
