@@ -42,10 +42,10 @@ const cache = {
   getModel: function (provider) {
     if (this.hasStatusSurrogate(provider)) {
       let surrogate = this.getStatusSurrogate(provider);
-      console.log(`${provider} CACHE: Get statuses model from surrogate provider ${surrogate}`);
+      //console.log(`${provider} CACHE: Get statuses model from surrogate provider ${surrogate}`);
       return this.modelCache[surrogate].model;
     }
-    console.log(`${provider} CACHE: Get statuses model.`);
+    //console.log(`${provider} CACHE: Get statuses model.`);
     return this.modelCache[provider].model;
   },
 
@@ -121,22 +121,6 @@ const cache = {
   secondsBetweenDates: function (d2, d1) {
     let timeDiff = Math.abs(d2.getTime() - d1.getTime());
     return Math.floor(timeDiff / (1000));
-  },
-
-  // As the cache initialization occours asyncronously, if an user opens the page and goes to branches,
-  // it may encounter a non initialized cache. This waits until cache is right.
-  ensureCacheIsInitialized: async function (providerId) {
-    if (!cache.initialized(providerId)) {
-      let iter = 0;
-      while (!cache.initialized(providerId)) {
-        console.log(`${providerId}: Wait for Status cache to be initialized ...`)
-        await new Promise(r => setTimeout(r, 200));
-        iter++
-        if (iter > 50) // to avod keep indefinitely waiting
-          throw new Error(`${providerId}: Status cache couldn't be initialized`);
-      }
-      console.log(`${providerId}: Status cache is initialized, continue`)
-    }
   },
 
   ////////////////////////////////////////////////////////////////////////////////////////

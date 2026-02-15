@@ -17,17 +17,20 @@ import { config } from "./Config.js"
  *   (rejected promises are separated to raise an alert).
  *   After finish and send to the view executes asyncrhonous calls to update statuses and notification icons (see below)
  * 
- * - Call to updateNotificationsAsync(): After running the promises, asynchronous call to the REST api 
- *   to update the notifications icon in the view. Data is cached to be available when the view is refreshed.
+ * - Call to updateNotificationsAsync(): After running the promises, asynchronous call to the REST api (via DispatchNotifications)
+ *   to update the notifications icon in the view (updateNotifications). Data is cached to be available when the view is refreshed.
  * 
- * - Call to updateStatusesAsync(): After running the promises, asynchronous call to the GraphQL api 
- *   to update the status icons in the view. Because these queries are expensive,
+ * - Call to updateStatusesAsync(): After running the promises, asynchronous call to the GraphQL api (via DispatchStatuses)
+ *   to update the status icons in the view (updateStatuses). Because these queries are expensive,
  *   the resulting models are cached by the controller so that consecutive calls of the services within the cache lifetime
  *   make use of the cached model.
  * 
- * - Invocation of dispatch() from the view, target statuses: Uses the same data than the obtained to update the status icons.
- *   If status cache has not expired returns it immediately.
- *   If expired, calls synchronously the updateStatusesAsync() on the api and caches the result.
+ * Particular cases:
+ * - Branches view ("statuses" target): Skips all synchronous call using promises and immediately invokes dispatchStatuses().
+ *   The display check if this is the current view populates it with the cached model.
+ * 
+ * - Paginated status updates (GitHub): for every page except the last, the api invokes updateStatusesForPage that
+ *   directly displyay the partial model without using the cache. 
  * 
  * Error control:
  * - Error processing: Each error detected logs the error and raises an alert with the message to the view.
@@ -52,6 +55,13 @@ const wiController = {
 
   // Creates the appropriate target promise for each provider and run all promises in parallel
   dispatch: function (target, sorting) {
+    // Particular case for branches view, only asynchronous call to update the status cache
+    if (target == "statuses") { 
+      this.branchViewSortOrder = sorting;
+      this.dispatchStatuses(target);
+      return;
+    }
+    // General case for the rest of targets, create the promises to get the work items and then update the notifications and statuses asynchronously
     let promises = [];
     for (let prov of config.data.providers)
       if (prov.enabled)
@@ -63,9 +73,7 @@ const wiController = {
 
   getPromise: function (target, provider, sorting) {
     const type = provider.provider.toLowerCase();
-    if (target == "statuses" && (type == "github" || type == "gitlab"))
-      return this.getStatusesOrCached(provider, type); //special handling
-    else if (type == "github")
+    if (type == "github")
       return gitHubApi.getWorkItems(target, provider, sorting);
     else if (type == "gitlab")
       return gitLabApi.getWorkItems(target, provider, sorting);
@@ -73,34 +81,7 @@ const wiController = {
       console.log(`Invalid target: ${target} for provider ${provider}`);
   },
 
-  //Gets a model of all projects, branches and pull requests, including the status
-  //Used to fill the target "statuses". Uses cached data if not invalidated
-  getStatusesOrCached: async function (provider, type) {
-    if (cache.hasStatusSurrogate(provider.uid))
-      return this.emptyModel(provider, "Branch statuses are shown in the surrogate provider defined in the configuration");
-
-    await cache.ensureCacheIsInitialized(provider.uid);
-
-    if (cache.hit(provider.uid)) { // use data from cache
-      console.log(`${provider.uid}: Get Statuses from CACHE`);
-      return cache.getModel(provider.uid);
-    }
-    //Gets the whole model or part of it (depending on the cache state)
-    let updateSince = cache.updateSince(provider.uid);
-
-    console.log(`${provider.uid}: Get Statuses from the GraphQL api. ${updateSince == "" ? "REFRESH" : "Since " + updateSince}`);
-    let model;
-    if (type == "github")
-      model = await gitHubApi.getStatusesRequest(provider, updateSince);
-    else if (type == "gitlab")
-      model = await gitLabApi.getStatusesRequest(provider, updateSince);
-
-    //save refreshed or updated model to allow a hit in further calls
-    cache.setModel(provider.uid, model, updateSince);
-    return cache.getModel(provider.uid);
-  },
   emptyModel: function(provider, message) {
-    console.log(`${provider.uid}: ${message}`);
     let model = new Model().setHeader(provider.provider, provider.uid, provider.user, "");
     model.header.message = message;
     return model;
@@ -150,7 +131,6 @@ const wiController = {
       }
   },
   dispatchStatuses: function (target) {
-    if (target != "statuses") //this target already does the reading of statuses if necessary
       for (let provider of config.data.providers)
         if (provider.enabled) {
           this.dispatchProviderStatuses(provider);
@@ -171,6 +151,12 @@ const wiController = {
           }
   },
   displayProviderStatuses: function(providerId) {
+    // Particular case for branches view, full display of this view
+    if (wiView.selectActiveTarget() == "statuses") {
+      this.displayBranchView(providerId);
+      return;
+    }
+    // General case for the rest of targets, only update the status icons
     let model = cache.getModel(providerId);
     wiView.updateStatuses(model, providerId, cache.labelsCache[providerId]); //labels cache only for GitLab, may be undefined
     //if (providerId=="0-github")
@@ -180,6 +166,28 @@ const wiController = {
   },
   displayError: function (message) {
     wiView.renderAlert("danger", message);
+  },
+
+  // Full display of the branch view, peroforms a full refresh of the view with the availabe data in the cache
+  // (this is called every time a provider has finished the api call to get statuses)
+  branchViewSortOrder: "", // to remember the UI selection because this display is asynchronous
+  displayBranchView: function (providerId) {
+    console.log(`${providerId}: Update branch view from CACHE`);
+    let models = [];
+    // Constructs the arrays of models required for display, handling particular cases of surrogate providers 
+    // and providers where cache has not been initialized yet
+    for (let prov of config.data.providers)
+      if (prov.enabled) {
+        let model = cache.getModel(prov.uid);
+        if (cache.hasStatusSurrogate(prov.uid))
+          model = this.emptyModel(prov, "Branch statuses are shown in the surrogate provider defined in the configuration");
+        else if (model == undefined)
+          model = this.emptyModel(prov, "Still loading <span class='spinner-border spinner-border-sm text-secondary'></span>");
+        models.push(model);
+      }
+
+    this.displayWorkItems("statuses", models, this.branchViewSortOrder, new Date());
+    wiView.setLoading(false);
   },
 
   //Callbacks, they are invoked from the provider api when *Async calls finish
