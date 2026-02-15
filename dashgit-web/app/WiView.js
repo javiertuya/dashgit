@@ -330,7 +330,9 @@ const wiView = {
         if (ex != "" && $(row).attr("itemrepo").trim().toLowerCase().includes(ex))
           show = false;
     }
-    this.showIf(row, show);
+    // Only hide if required to avoid override of other filters (like status)
+    if (!show)
+      $(row).hide();
   },
   saveViewFilterState: function () {
     const target = $(".nav-link.active").attr("aria-controls");
