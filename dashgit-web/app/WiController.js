@@ -187,6 +187,7 @@ const wiController = {
       }
 
     this.displayWorkItems("statuses", models, this.branchViewSortOrder, new Date());
+    wiView.updateStatusVisibility(); // required to filter according the repo name
     wiView.setLoading(false);
   },
 

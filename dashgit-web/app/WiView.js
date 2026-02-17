@@ -219,7 +219,7 @@ const wiView = {
   },
   branch2htmlCompact: function (name, url, title, status) {
     return `
-      <a href="${url}" title="${title}" target="_blank" class="badge ${wiRender.statusBadgeColor(status)} text-decoration-none" style="${wiRender.statusBadgeStyle(status)}">${name}</a>`;
+      <a href="${url}" title="${title}" target="_blank" class="wi-status-class-${status} badge ${wiRender.statusBadgeColor(status)} text-decoration-none" style="${wiRender.statusBadgeStyle(status)}">${name}</a>`;
   },
 
   // Other low level content
@@ -315,9 +315,17 @@ const wiView = {
         this.showIf(row, visibleCount != 0);
         visibleCount = 0; //begin next header
 
-        // Special case, branch compact view does not apply status filter, only repo filter
+      // Special case for branch compact view, each repo group is a single row, that will be hidden here if required
       } else if ($(row).hasClass("wi-status-class-branch-compact")) {
+        $(row).show(); // if not set as shown by default, removing a filter will not redisplay the row
         this.hideInvisibleRow(row, filterRepoInclude, filterRepoExclude);
+        // Always hide the row if there are no branches to show (because they are filtered by status) to avoid show empty groups. 
+        // (first children goes down to the td tag, second children counts branches that are not hidden)
+        const visibleBranches = $(row).children().children("a").filter(function() { 
+          return $(this).css('display') !== 'none'; 
+        }).length;
+        if (visibleBranches == 0)
+          $(row).hide();
       }
       
       return visibleCount;
