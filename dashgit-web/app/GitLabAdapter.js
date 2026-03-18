@@ -152,7 +152,9 @@ const gitLabAdapter = {
             branch_name: branch, status: "notavailable",
             title: "", actions: {},
             author: "", assignees: "", created_at: "", updated_at: "",
-            iidstr: "", url: "", branch_url: "", repo_url: repoUrl,
+            iidstr: "", url: "", 
+            branch_url: repoUrl + "/-/tree/" + branch,
+            repo_url: repoUrl,
             labels: [], gid: projId
           };
   },
@@ -211,7 +213,6 @@ const gitLabAdapter = {
         m.updated_at = ref.finishedAt;
         if (m.updated_at == undefined) //MRs in progress do not have updated_at
           m.updated_at = m.created_at;
-        m.branch_url = mod.header.url + "/" + repoName + "/-/tree/" + branch;
         m.status = this.transformStatus(ref.status);
       }
     }
