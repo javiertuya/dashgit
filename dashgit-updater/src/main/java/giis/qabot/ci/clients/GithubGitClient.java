@@ -265,7 +265,8 @@ public class GithubGitClient implements IGitClient {
 			log.debug("Success: {}", data);
 			return "success";
 		} else {
-			String type = errors.get(0).get("type").asText();
+			// May 12th, Issue #272: Some error messages do don't have the type field, check for null
+			String type = errors.get(0).get("type") == null ? "unknown" : errors.get(0).get("type").asText();
 			String message = errors.get(0).get("message").asText();
 			log.debug("Failure: {} {}", type, message);
 			// Check known conditions that prevent automerge to abort, if not, retry

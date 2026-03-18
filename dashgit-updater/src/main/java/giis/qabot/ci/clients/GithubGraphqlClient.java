@@ -1,5 +1,7 @@
 package giis.qabot.ci.clients;
 
+import java.util.Collections;
+
 import org.springframework.http.ResponseEntity;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -98,8 +100,8 @@ public class GithubGraphqlClient {
 	
 	private String getRepositoryQueryHeader(String repoId) {
 		String[] comp=repoId.split("/");
-		String owner="\\\"" + comp[0] + "\\\"";
-		String repo="\\\"" + comp[1] + "\\\"";
+		String owner = "\"" + comp[0] + "\"";
+		String repo = "\"" + comp[1] + "\"";
 		return "repository(name: " + repo + ", owner: " + owner + ")";
 	}
 	/**
@@ -125,29 +127,30 @@ public class GithubGraphqlClient {
 				+ "  }\n}\n}";
 	}
 	
+	// Issue #272: Los breaking changes del api (12 Mayo 2026) causan fallo en el formateo de la query
+	// cuando los que contienen salto de linea (\n). 
+	// Utiliza strings multilinea con tres comillas que ahora son soportados por GraphQL 
 	public String getAutoMergeQuery (String nodeId, String commitHeadline, String commitBody) {
-		String query="mutation MyMutation {\n" // NOSONAR to be backport compatible
-				+ "  enablePullRequestAutoMerge(input: {"
-				+ "      pullRequestId: \\\"{nodeId}\\\", "
-				+ "      mergeMethod: SQUASH, "
-				+ "      commitHeadline:\\\"{commitHeadline}\\\", "
-				+ "      commitBody:\\\"{commitBody}\\\""
-				+ "    } ) {\n"
-				+ "    clientMutationId\n"
-				+ "  }\n"
-				+ "}";
-		query=query.replace("{nodeId}", nodeId)
-				.replace("{commitHeadline}", commitHeadline.replace("\"", "\\\\\\\""))
-				.replace("{commitBody}", commitBody.replace("\"", "\\\\\\\"").replace("\n", "\\n"));
+    String escapedHeadline = commitHeadline.replace("\"\"\"", "\\\"\\\"\\\"");
+    String escapedBody = commitBody.replace("\"\"\"", "\\\"\\\"\\\"");
+    String query = "mutation MyMutation {\n"
+        + "  enablePullRequestAutoMerge(input: {"
+        + " pullRequestId: \"" + nodeId + "\","
+        + " mergeMethod: SQUASH,"
+        + " commitHeadline: \"\"\"" + escapedHeadline + "\"\"\","
+        + " commitBody: \"\"\"" + escapedBody + "\"\"\""
+        + " }) { clientMutationId }"
+        + "}";
 		return query;
 	}
 
 	/**
 	 * Encierra una query graphql en un json a utilizar en un post.
-	 * Notar que si la query tiene comillas estas tienen que tener doble escape
+	 * Utiliza jackson para evitar requerir escape de comillas dobles
 	 */
+	@SneakyThrows
 	public String getGraphqlToJsonQuery(String graphql) {
-		return "{ \"query\": \"" + graphql.replace("\n", "") + "\" }";
+	    return new ObjectMapper().writeValueAsString(Collections.singletonMap("query", graphql));
 	}
 	
 	/**
