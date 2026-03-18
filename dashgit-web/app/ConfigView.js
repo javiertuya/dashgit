@@ -139,7 +139,8 @@ const configView = {
               "Page size for the GitHub GraphQL API requests that get the branches and build statuses")
             : ""}
           ${this.input2html(`config-graphql-maxBranches-${key}`, "number", "Max branches", provider.graphql.maxBranches, 'required min="2" max="100"', "150", "70",
-            "Maximum number of branches that are retrieved for each repository/project to get the build statuses")}
+            "Maximum number of branches that are retrieved for each repository/project to get the build statuses"
+            + (provider.provider == "GitLab" ? ". Note that in GitLab, more branches can be displayed if they are referenced in open merge requests" : ""))}
           ${provider.provider == "GitLab"
             ? this.input2html(`config-graphql-maxPipelines-${key}`, "number", "Max pipelines", provider.graphql.maxPipelines, 'required min="2" max="100"', "150", "70",
               "Maximum number of pipeline runs that are retrieved for each repository/project to get the branches and build statuses")

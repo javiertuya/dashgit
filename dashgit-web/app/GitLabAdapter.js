@@ -138,21 +138,23 @@ const gitLabAdapter = {
       const repoUrl = proj.webUrl;
       if (!proj.archived && proj.repository?.branchNames!=null) { //gitlab.com may give a null
         m.header.repo_names.push(repoName);
-        for (let repo of this.safe(proj?.repository?.branchNames)) {
-          const branch = repo;
-          const modelItem = { //anyade un id que no esta en gitlab para poder usar como criterio de seleccion en siguiente query
-            repo_name: repoName, type: "branch", iid: "",
-            branch_name: branch, status: "notavailable",
-            title: "", actions: {},
-            author: "", assignees: "", created_at: "", updated_at: "",
-            iidstr: "", url: "", branch_url: "", repo_url: repoUrl,
-            labels: [], gid: proj.id
-          };
+        for (let branch of this.safe(proj?.repository?.branchNames)) {
+          const modelItem = this.newBranchModelItem(repoName, repoUrl, proj.id, branch);
           m.addItem(modelItem);
         }
       }
     }
     return m;
+  },
+  newBranchModelItem: function(repoName, repoUrl, projId, branch) {
+    return { //anyade un id que no esta en gitlab para poder usar como criterio de seleccion en siguiente query
+            repo_name: repoName, type: "branch", iid: "",
+            branch_name: branch, status: "notavailable",
+            title: "", actions: {},
+            author: "", assignees: "", created_at: "", updated_at: "",
+            iidstr: "", url: "", branch_url: "", repo_url: repoUrl,
+            labels: [], gid: projId
+          };
   },
   model4projectIds: function (mod) {
     let gids = [];
@@ -168,6 +170,12 @@ const gitLabAdapter = {
     for (let repo of this.safe(gqlresponse?.data?.projects?.nodes)) {
       const repoName = repo.fullPath;
 
+      // Issue #273:
+      // At this point, the model only contains the branches obtained from the projects query.
+      // But this query may not return all branches, and does not sort by the more recent (a limitation of the query).
+      // There may be more recent branches that are in the MRs, so we complete the model with these branches
+      this.completeBranchesFromMergeRequests(repo, repoName, mod);
+
       //Obtiene ramas y statuses a partir de las pipelines
       this.transformPipelines(repo, repoName, mod);
 
@@ -175,6 +183,16 @@ const gitLabAdapter = {
       this.transformMergeRequests(repo, repoName, mod);
     }
     return mod;
+  },
+  completeBranchesFromMergeRequests: function (repo, repoName, mod) {
+    for (let mr of this.safe(repo?.mergeRequests?.nodes)) {
+      let uid = mod.getModelUid(repoName, "branch", "", mr.sourceBranch);
+      let m = mod.getItemByUid(uid);
+      if (m === undefined) {
+        const modelItem = this.newBranchModelItem(repoName, repo.webUrl, repo.id, mr.sourceBranch);
+        mod.addItem(modelItem);
+      }
+    }
   },
   transformPipelines: function (repo, repoName, mod) {
     for (let ref of this.safe(repo?.pipelines?.nodes)) { //a branch

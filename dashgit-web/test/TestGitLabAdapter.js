@@ -165,9 +165,10 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
     //   - MR but not branch in pipelines (org2/proj7 branch1) status unknown because the pipelinte item was purged
     //     FAILS (issue #3): it should have branch_url, created_at, updated_at, the status is right (unknown)
     // - Branches that are not in projects, must not be shown, maybe the branch was deleted.
-    //   - pipeline and MR (org2/proj7 hidden1)
-    //   - pipeline and not MR (org2/proj7 hidden2)
-    //   - MR and not pipeline (org2/proj7 hidden3)
+    //   But after issue #273, the MR could be recent and be used to complete the branches in the model
+    //   - pipeline and MR (org2/proj7 hidden1): should be shown with valid status
+    //   - pipeline and not MR (org2/proj7 hidden2): should be hidden, it could be a deleted branch
+    //   - MR and not pipeline (org2/proj7 hidden3): should be shown with notavailable status
     // Secondary situations
     // - Number of items in pipeline for same branch: one/more (add pipeline 6540 to feature covers more)
     // - In progress pipeline (no finishedAt date) (org1/proj5 building branch)

@@ -112,6 +112,46 @@
       "labels": [],
       "gid": "gid://gitlab/Project/7",
       "uid": "org2-proj7_pr_49"
+    },
+    {
+      "repo_name": "org2/proj7",
+      "type": "pr",
+      "iid": "48",
+      "branch_name": "hidden1",
+      "status": "success",
+      "title": "hidden pr branch with pipeline",
+      "actions": {},
+      "author": "",
+      "assignees": "",
+      "created_at": "2024-02-07T17:39:00+01:00",
+      "updated_at": "2024-02-07T17:49:00+01:00",
+      "iidstr": "",
+      "url": "https://mygitlab.com/org2/proj7/-/merge_requests/48",
+      "branch_url": "https://mygitlab.com/org2/proj7/-/tree/hidden1",
+      "repo_url": "https://mygitlab.com/org2/proj7",
+      "labels": [],
+      "gid": "gid://gitlab/Project/7",
+      "uid": "org2-proj7_pr_48"
+    },
+    {
+      "repo_name": "org2/proj7",
+      "type": "pr",
+      "iid": "47",
+      "branch_name": "hidden3",
+      "status": "notavailable",
+      "title": "hidden pr branch without pipeline",
+      "actions": {},
+      "author": "",
+      "assignees": "",
+      "created_at": "",
+      "updated_at": "",
+      "iidstr": "",
+      "url": "https://mygitlab.com/org2/proj7/-/merge_requests/47",
+      "branch_url": "",
+      "repo_url": "https://mygitlab.com/org2/proj7",
+      "labels": [],
+      "gid": "gid://gitlab/Project/7",
+      "uid": "org2-proj7_pr_47"
     }
   ]
 }
