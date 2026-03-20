@@ -22,10 +22,10 @@ public class DependencyUpdaterFacade {
 	 * merged. If dryRun is set, the PR is not merged and the original update branches are no deleted
 	 */
 	public PullRequest mergeCombinedPullRequest(IGitClient gitClient, GitLocal gitLocal, 
-			String projectName, long[] prIds, int rateLimitDelay, boolean dryRun) {
+			String projectName, long[] prIds, String assignee, int rateLimitDelay, boolean dryRun) {
 		Project project = getProjectWithPullRequests(gitClient, projectName, prIds);
 		DependencyUpdater updater = new DependencyUpdater().setDryRun(dryRun);
-		return updater.runCreateCombinedProjectPr(gitClient, gitLocal, project, rateLimitDelay);
+		return updater.runCreateCombinedProjectPr(gitClient, gitLocal, project, assignee, rateLimitDelay);
 	}
 
 	private Project getProjectWithPullRequests(IGitClient gitClient, String projectName, long[] prIds) {
