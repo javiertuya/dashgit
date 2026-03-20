@@ -111,7 +111,7 @@ jobs:
       checks: write # for junit report
     strategy:
       matrix:
-        scope: [Gitlab]
+        scope: [Github, Gitlab]
       fail-fast: false
     needs:  test-it-trigger
     if: needs.test-it-trigger.outputs.output1 == 'true'
