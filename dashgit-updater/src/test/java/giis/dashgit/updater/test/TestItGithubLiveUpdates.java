@@ -86,7 +86,7 @@ public class TestItGithubLiveUpdates extends Base {
 
 		PullRequest combinedPr = null;
 		try (GitLocal gitLocal = config.getGitLocal()) {
-			combinedPr = updateService.runCreateCombinedProjectPr(gitClient, gitLocal, project, config.user(), rateLimitDelay);
+			combinedPr = updateService.runCreateCombinedProjectPr(gitClient, gitLocal, project, rateLimitDelay);
 		}
 
 		// Check status of all PRs and content
@@ -119,7 +119,7 @@ public class TestItGithubLiveUpdates extends Base {
 		IGitClient gitClient = config.getGitClient();
 		try (GitLocal gitLocal = config.getGitLocal()) {
 			new DependencyUpdaterFacade().mergeCombinedPullRequest(gitClient, gitLocal, 
-					"*****/*****", new long[] { 1, 2, 3 }, config.user(), 1000, false);
+					"*****/*****", new long[] { 1, 2, 3 }, 1000, false);
 		}
 	}
 	

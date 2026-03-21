@@ -39,7 +39,7 @@ public class DependencyUpdater {
 	 * The combined changes are squashed and details on the included changes are shown in the description.
 	 */
 	public PullRequest runCreateCombinedProjectPr(IGitClient gitClient, GitLocal gitLocal, Project project,
-			String assignee, long rateLimitDelay) {
+			long rateLimitDelay) {
 		log.info("**********************************************************");
 		log.info("****** Rebase and automerge a combined pull request ******");
 		log.info("Project {}", project.name());
@@ -63,7 +63,7 @@ public class DependencyUpdater {
 		// Creates the combined update PR.
 		// Note that target branch is taken from the first PR, and it should be the main branch
 		Formatter formatter = new Formatter();
-		PullRequest refPr = project.branches().get(0).pullRequest().assignee(assignee);
+		PullRequest refPr = project.branches().get(0).pullRequest();
 		PullRequest pr = createCombinedPullRequest(gitClient, formatter, project, refPr, combinedBranch, title);
 		log.info("Combined pull request created: {}", pr.title());
 
