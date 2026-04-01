@@ -162,7 +162,7 @@ public class GitlabClient implements IGitClient {
 	public PullRequest createPullRequest(String projectId, String sourceBranch, String targetBranch, 
 			String title, String description, String assignee, List<String> labels, 
 			boolean deleteBranchOnMerge, boolean squashOnMerge, boolean setAutoMerge) {
-		log.debug("Create gitlab merge request project: {}, source: {}, target: {}, title: {}", projectId, sourceBranch, targetBranch, title);
+		log.debug("Create gitlab merge request, project: {}, source: {}, target: {}, title: {}, assignee: {}", projectId, sourceBranch, targetBranch, title, assignee);
 		MergeRequestParams params = new MergeRequestParams()
 				.withSourceBranch(sourceBranch).withTargetBranch(targetBranch)
 				.withTitle(title).withDescription(description)

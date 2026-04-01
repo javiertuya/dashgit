@@ -15,6 +15,7 @@ import org.kohsuke.github.GitHubBuilder;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import giis.qabot.ci.models.PullRequest;
+import giis.qabot.core.clients.RestClient;
 import giis.qabot.core.models.Util;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,7 @@ public class GithubGitClient implements IGitClient {
 	private String lazyRepoLast = ""; // ultimo lazyRepo obtenido, si coincide lo reutiliza, si no, instancia uno nuevo
 	private String user; // usuario que se ha autenticado
 	private boolean isAdmin = false; // el usuario tiene privilegios de administrador
+	private String token; // needed for the set pr assignee fallback
 
 	// Cuando se debe comprobar el estado de una operacion (check mergeability o rebase)
 	// se debe hacer un poll, indica el numero maximo de veces que se comprueba y el delay entre cada una
@@ -46,6 +48,7 @@ public class GithubGitClient implements IGitClient {
 		this.api = getGhApi(user, token);
 		this.user = user;
 		this.isAdmin = isAdmin;
+		this.token = token;
 	}
 
 	@SneakyThrows(IOException.class)
@@ -214,17 +217,15 @@ public class GithubGitClient implements IGitClient {
 	public PullRequest createPullRequest(String projectId, String sourceBranch, String targetBranch, String title,
 			String description, String assignee, List<String> labels, boolean deleteBranchOnMerge,
 			boolean squashOnMerge, boolean setAutoMerge) {
-		log.debug("Create github pull request project: {}, source: {}, target: {}, title: {}", projectId, sourceBranch,
-				targetBranch, title);
+		log.debug("Create github pull request, project: {}, source: {}, target: {}, title: {}, assignee: {}", projectId, sourceBranch,
+				targetBranch, title, assignee);
 		GHRepository repo = this.getRepository(projectId);
 		GHPullRequest ghpr = repo.createPullRequest(title, sourceBranch, targetBranch, description);
+
 		// Actualiza con resto de valores necesarios (assignee y labels)
-		// En github no se definen a priori los valores deleteBranchOnMerge, squashOnMerge
-		if (assignee != null && !"".equals(assignee)) {
-			GHUser ghuser = api.getUser(assignee);
-			ghpr.assignTo(ghuser);
-		}
-		// setLabels does not work when running from the manager repository action, why?, changed to addLabels
+		if (assignee != null && !"".equals(assignee))
+			setAssignee(ghpr, assignee);
+
 		ghpr.addLabels(labels.toArray(new String[0]));
 		ghpr.refresh();
 
@@ -233,6 +234,32 @@ public class GithubGitClient implements IGitClient {
 
 		// obtengo el modelo de la pull request buscandola por su numero
 		return this.getPullRequest(projectId, ghpr.getNumber());
+	}
+	
+	private void setAssignee(GHPullRequest ghpr, String assignee) throws IOException {
+		// I've seen an issue setting the assignee in some cases when a user creates a combined PR in an organization.
+		// Could this be due to the new March 2026 GitHub API?
+		// Catching possible exceptions to prevent process interruption.
+		try {
+			log.debug("Set pull request assignee to {}", assignee);
+			GHUser ghuser = api.getUser(assignee);
+			ghpr.assignTo(ghuser);
+			return;
+		} catch (Exception e1) {
+			log.error("Can't set the assignee for this pull request", e1);
+		}
+
+		// If the above fails, retry using a direct call to the REST API
+		try {
+			log.debug("Fallback: Retry using a direct call to the REST API");
+			String repo = ghpr.getRepository().getFullName();
+			int prId = ghpr.getNumber();
+			String url = "https://api.github.com/repos/" + repo + "/issues/" + prId + "/assignees";
+			String body = "{\"assignees\":[\"" + assignee + "\"]}";
+			new RestClient().post(url, body, this.token);
+		} catch (Exception e2) {
+			log.error("Still can't set the assignee for this pull request, leaving it without assignee", e2);
+		}
 	}
 
 	private void setAutoMerge(String nodeId, String title, String description) throws InterruptedException {
