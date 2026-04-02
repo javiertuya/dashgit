@@ -14,12 +14,12 @@ node('slave-x1') {
 	  }
 	  
 	  stage("package") {
-        sh "zip -r target/assembly.zip . -x dashgit-web/app/*"
+        sh "zip -r ./assembly.zip . -x dashgit-web/app/*"
 	  }
 	  
 	  stage("Deploy") {
 		def container = branch == productionBranch ? "pro-dashgit" : "dev-dashgit"
-		host.deploy("target/assembly.zip", "dashgit", container, branch, env.BUILD_NUMBER)
+		host.deploy("./assembly.zip", "dashgit", container, branch, env.BUILD_NUMBER)
 	  }
 
 	} catch (Exception e) {
