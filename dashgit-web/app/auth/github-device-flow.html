@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>GitHub Device Flow</title>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+  <!-- Octokit ESM desde CDN -->
+  <script type="module" src="github-device-flow.js"></script>
+
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    code { background: #eee; padding: 4px; }
+  </style>
+</head>
+
+<body>
+  <h2>Autenticación con GitHub</h2>
+
+  <div id="step1">
+    <p>Solicitando código de dispositivo…</p>
+  </div>
+
+  <div id="step2" style="display:none;">
+    <p>Introduce este código en GitHub:</p>
+    <h1 id="user-code"></h1>
+
+    <p>Ve a: <a id="verify-link" href="#" target="_blank"></a></p>
+
+    <p>Esperando autorización…</p>
+  </div>
+
+  <div id="done" style="display:none;">
+    <p>Autenticación completada. Puedes cerrar esta ventana.</p>
+  </div>
+</body>
+</html>
