@@ -1,40 +1,16 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>Auth Test – DashGit</title>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
-    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-
-  <script type="module">
-    // Comunicación con la ventana secundaria
-    window.addEventListener("message", (event) => {
-      if (event.data.type === "github-token") {
-        $("#token").val(event.data.token);
-        alert("Token recibido correctamente");
-      }
-    });
-
-    $(function () {
-      $("#start-oauth").on("click", () => {
-        window.open(
-          "github-device-flow.html",
-          "github_oauth",
-          "width=500,height=600"
-        );
-      });
-    });
-  </script>
+  <title>DashGit – OAuth2 PKCE (ESM)</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script type="module" src="./auth.js"></script>
 </head>
-
 <body>
-  <h1>Prueba de autenticación GitHub Device Flow</h1>
+  <h1>DashGit – Login con GitHub (OAuth2 + PKCE, ESM)</h1>
 
-  <label>Token:</label>
-  <input id="token" type="text" style="width: 400px">
+  <button id="login">Iniciar sesión con GitHub</button>
 
-  <br><br>
-
-  <button id="start-oauth">Iniciar sesión con GitHub</button>
+  <pre id="output"></pre>
 </body>
 </html>

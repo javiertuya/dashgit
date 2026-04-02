@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>OAuth Callback</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script type="module">
+    import { exchangeCodeForToken, initOctokit } from "./auth.js";
+
+    async function main() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+
+      if (!code) {
+        $("#output").text("No se recibió 'code'.");
+        return;
+      }
+
+      const tokenResponse = await exchangeCodeForToken(code);
+
+      if (tokenResponse.error) {
+        $("#output").text("Error: " + JSON.stringify(tokenResponse, null, 2));
+        return;
+      }
+
+      const token = tokenResponse.access_token;
+      const octokit = initOctokit(token);
+
+      const user = await octokit.rest.users.getAuthenticated();
+      $("#output").text(JSON.stringify(user.data, null, 2));
+    }
+
+    main().catch(err => {
+      console.error(err);
+      $("#output").text("Error inesperado: " + err);
+    });
+  </script>
+</head>
+<body>
+  <h2>Procesando autenticación…</h2>
+  <pre id="output"></pre>
+</body>
+</html>
