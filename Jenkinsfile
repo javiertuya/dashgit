@@ -14,7 +14,7 @@ node('slave-x1') {
 	  }
 	  
 	  stage("package") {
-        sh "zip -r ./assembly.zip . -x ./dashgit-web/app"
+        sh "zip -r ./assembly.zip ./dashgit-web/app"
 	  }
 	  
 	  stage("Deploy") {
