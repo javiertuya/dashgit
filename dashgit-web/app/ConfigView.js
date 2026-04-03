@@ -113,7 +113,7 @@ const configView = {
           ${this.input2html(`config-providers-token-${key}`, "password", "Access token", provider.token, '', "150", "225",
             "An API access token with read permission to the repository, used to authenticate the repository API requests for this provider.")}
           ${this.input2html(`config-providers-url-${key}`, "url", "Repository url", provider.url, 'required', "150", "225", "The URL of the repository server.")}
-          ${this.button2html(`config-providers-oauth-${key}`, "submit", "Switch to OAuth", "config-btn-oauth-submit btn-primary")} 
+          ${this.button2html(`config-providers-oauth-${key}`, "submit", "Save config and authenticate with OAuth2", "config-btn-oauth-submit btn-primary")} 
         </div>
         <div class="row">  
           ${this.input2html(`config-providers-filterIfLabel-${key}`, "text", "Filter if label", provider.filterIfLabel, '', "150", "150",

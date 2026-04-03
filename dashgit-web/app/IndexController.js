@@ -81,7 +81,9 @@ const indexController = {
   load: async function() {
     config.loadFeatureFlags();
     config.load();
-    await login.loginAllOauthProviders(); //TODO what happen when encryption is enabled? should we try to login now?
+
+    let failedProviders = await login.loginAllOauthProviders(); //TODO what happen when encryption is enabled? should we try to login now?
+
     $("#appVersion").text(config.appVersion);
     if (config.data.encrypted) {
       indexController.loginMode();
@@ -89,6 +91,15 @@ const indexController = {
       indexController.start();
     }
     $('[data-toggle="tooltip"]').tooltip({trigger:"hover", delay:600});
+
+    // If there are failed providers, show an alert to inform the user and suggest actions
+    // this must be done now that the view is rendered, otherwise the alert will be lost when rendering
+    if (failedProviders.length > 0) {
+      console.log("Login.js: The following OAuth2 providers failed to log in: " + failedProviders.join(", "));
+      wiView.renderAlert("danger", `Login failed for the following providers: ${failedProviders.join(", ")}. `
+        + " Please retry login from the configuration tab or switch back to PAT authentication.");
+    }
+
   },
   start: function() {
     wiController.reset(true);

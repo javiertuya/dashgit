@@ -19,15 +19,24 @@ const login = {
   },
 
   loginAllOauthProviders: async function () {
+    let failedProviders = [];
     for (const providerId in config.data.providers) {
       const provider = config.data.providers[providerId];
+  
       if (provider.enabled) {
         console.log("Login.js: Checking login mode for enabled provider " + provider.uid);
+
         if (provider.oauth) {
-          console.log("Login.js: Provider " + provider.uid + " is configured for OAuth, checking token");
+          console.log("Login.js: Provider " + provider.uid + " is configured for OAuth2, checking token");
           const token = this.getOAuthToken(providerId);
+
           if (token) {
-            console.log("Login.js: Provider " + provider.uid + " already logged");
+            if (token === "failed") {
+              console.log("Login.js: Previous login attempt for provider " + provider.uid + " failed, skipping login");
+              failedProviders.push(provider.uid);
+            } else {
+              console.log("Login.js: Provider " + provider.uid + " already logged");
+            }
           } else {
             console.log("Login.js: Provider " + provider.uid + " not logged, starting login");
             storeProviderId(providerId);
@@ -36,6 +45,7 @@ const login = {
         }
       }
     }
+    return failedProviders;
   },
   getOAuthAppConfig: function(providerId) {
     return {

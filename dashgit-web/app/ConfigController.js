@@ -30,7 +30,8 @@ $(document).on('click', '.config-btn-add-gitlab', function (e) {
 });
 $(document).on('click', '.config-btn-oauth-submit', function (e) {
   const key = $(this).closest(".config-provider-panel").attr("key");
-  console.log("Switch to OAuth for provider " + key);
+  console.log("Switch to OAuth2 for provider " + key);
+  config.save(); // there could be some unsaved data
   $(location).attr('href', `./oauth/?key=${key}`);
   e.preventDefault();
 });

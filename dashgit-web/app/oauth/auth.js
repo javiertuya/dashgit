@@ -76,6 +76,10 @@ export function successfulLogin(token, providerId) {
   config.save();
   login.saveOAuthToken(token, providerId);
 }
+// Called from callback.html when the login fails to ensure a special value in the token to avoid autentication loops
+export function failedLogin(providerId) {
+  login.saveOAuthToken("failed", providerId);
+}
 
 export function initOctokit(token) {
   return new Octokit({ auth: token });
@@ -85,7 +89,7 @@ export function initOctokit(token) {
 if (typeof window !== "undefined") {
   $(document).ready(() => {
     storeProviderIdFromUrl(); // save the id to be retrieved later in the callback.html
-    console.log("auth.js: Opening OAuth login start window with provider " + getProviderId());
+    console.log("auth.js: Opening OAuth2 login start window with provider " + getProviderId());
     config.load();
     const oaconfig = login.getOAuthAppConfig(getProviderId());
 

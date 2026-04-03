@@ -2,20 +2,22 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>OAuth Callback</title>
+  <title>OAuth2 Callback</title>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script type="module">
-    import { exchangeCodeForToken, initOctokit, getProviderId, successfulLogin } from "./auth.js";
+    import { exchangeCodeForToken, initOctokit, getProviderId, successfulLogin, failedLogin } from "./auth.js";
 
     async function main() {
       const providerId = getProviderId();
-      console.log("callback.html: Opening OAuth callback window with provider " + providerId);
+      console.log("callback.html: Opening OAuth2 callback window with provider " + providerId);
+      $("#output").text("Provider ID: " + providerId);
       const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
 
       if (!code) {
         console.error("callback.html: Did not receive 'code'");
         $("#output").text("Did not receive 'code'.");
+        failedLogin(providerId);
         return;
       }
 
@@ -24,6 +26,7 @@
       if (tokenResponse.error) {
         console.error("callback.html: Error exchanging code for token:", tokenResponse);
         $("#output").text("Error: " + JSON.stringify(tokenResponse, null, 2));
+        failedLogin(providerId);
         return;
       }
 
@@ -39,11 +42,13 @@
     main().catch(err => {
       console.error("callback.html: Unexpected error:", err);
       $("#output").text("Unexpected error: " + err);
+      const providerId = getProviderId();
+      failedLogin(providerId);
     });
   </script>
 </head>
 <body>
-  <h2>Processing authentication…</h2>
+  <h2>Processing OAuth2 PKCE authentication…</h2>
   <input type="button" value="Back" onclick="window.location.href='../';">
   <pre id="output"></pre>
 </body>

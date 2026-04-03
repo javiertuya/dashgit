@@ -21,7 +21,7 @@ app.get("/healthcheck", async (req, res) => {
 app.post("/exchange", async (req, res) => {
   try {
     const { code, code_verifier, redirect_uri } = req.body;
-    log(`Received exchange request with code: ${code}, redirect_uri: ${redirect_uri}, code_verifier: ${code_verifier}`);
+    log(`Received exchange request with redirect_uri: ${redirect_uri}`);
 
     const response = await fetch("https://github.com/login/oauth/access_token", {
       method: "POST",
@@ -49,5 +49,5 @@ app.post("/exchange", async (req, res) => {
 });
 
 app.listen(3000, () => {
-  console.log("OAuth microservice running on port 3000");
+  log("OAuth microservice running on port 3000");
 });
