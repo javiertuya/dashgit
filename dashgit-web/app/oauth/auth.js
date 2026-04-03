@@ -5,12 +5,12 @@ import { login } from "../Login.js";
 import { config } from "../Config.js";
 
 export async function startLogin() {
+  config.load();
+  const oaconfig = login.getOAuthAppConfig(getProviderId());
+  console.log("auth.js: Init startLogin with provider " + getProviderId());
+
   const { code_verifier, code_challenge } = await generatePKCE();
   localStorage.setItem("pkce_verifier", code_verifier);
-
-  config.load();
-  const provider = config.data.providers[getProviderKeyFromUrl()];
-  const oaconfig = login.getOAuthAppConfig(provider);
 
   const url =
     oaconfig.authorizeUrl +
@@ -28,8 +28,8 @@ export async function exchangeCodeForToken(code) {
   const code_verifier = localStorage.getItem("pkce_verifier");
 
   config.load();
-  const provider = config.data.providers[getProviderKeyFromUrl()];
-  const oaconfig = login.getOAuthAppConfig(provider);
+  const oaconfig = login.getOAuthAppConfig(getProviderId());
+  console.log("auth.js: Init exchangeCodeForToken with provider " + getProviderId());
 
   const body = {
     client_id: oaconfig.clientId,
@@ -52,9 +52,29 @@ export async function exchangeCodeForToken(code) {
   return res.json();
 }
 
-export function getProviderKeyFromUrl() {
+// This module is called in two scenarios: 
+// - when loading the index.html to initiate OAuth login
+// - when the callback.html is invoked to complete the login
+// In both cases, we need to know which provider is being used, so we get it from the url parameter "key" 
+// and store in sessionStorage for later use in the callback.html
+export function storeProviderIdFromUrl() {
   const params = new URLSearchParams(window.location.search);
-  return params.get("key");
+  const providerId = params.get("key");
+  storeProviderId(providerId);
+}
+export function storeProviderId(providerId) {
+  sessionStorage.setItem("providerKey", providerId);
+}
+export function getProviderId() {
+  return sessionStorage.getItem("providerKey");
+}
+
+// Called from callback.html when the login is successful to save the token and ensure the the provider is marked as oauth
+export function successfulLogin(token, providerId) {
+  config.load();
+  config.data.providers[providerId].oauth = true;
+  config.save();
+  login.saveOAuthToken(token, providerId);
 }
 
 export function initOctokit(token) {
@@ -64,13 +84,13 @@ export function initOctokit(token) {
 // Hook jQuery solo en esta página (index)
 if (typeof window !== "undefined") {
   $(document).ready(() => {
+    storeProviderIdFromUrl(); // save the id to be retrieved later in the callback.html
+    console.log("auth.js: Opening OAuth login start window with provider " + getProviderId());
     config.load();
-    const provider = config.data.providers[getProviderKeyFromUrl()];
-    const oaconfig = login.getOAuthAppConfig(provider);
+    const oaconfig = login.getOAuthAppConfig(getProviderId());
 
     // Temporal, for ddebug
     $("#oaconfig").text(JSON.stringify(oaconfig, null, 2));
-    $("#provider").text(JSON.stringify(provider, null, 2));
 
     const loginBtn = document.getElementById("login");
     const backBtn = document.getElementById("back");

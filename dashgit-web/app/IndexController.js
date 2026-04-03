@@ -1,4 +1,5 @@
 import { config } from "./Config.js"
+import { login } from "./Login.js"
 import { wiView } from "./WiView.js"
 import { wiController } from "./WiController.js"
 import { wiControllerUpdate } from "./WiControllerUpdate.js" // NOSONAR to install jquery events
@@ -77,9 +78,10 @@ $(document).on('search', '.wi-view-filter-input', async function () { // clearin
 const indexController = {
 
   // Initial configuration to be run by jquery on document ready
-  load: function() {
+  load: async function() {
     config.loadFeatureFlags();
     config.load();
+    await login.loginAllOauthProviders(); //TODO what happen when encryption is enabled? should we try to login now?
     $("#appVersion").text(config.appVersion);
     if (config.data.encrypted) {
       indexController.loginMode();

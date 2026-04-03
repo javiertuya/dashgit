@@ -4,6 +4,7 @@ import { gitHubAdapter } from "./GitHubAdapter.js"
 import { gitStoreApi } from "./GitStoreApi.js"
 import { wiController } from "./WiController.js"
 import { config } from "./Config.js"
+import { login } from "./Login.js"
 
 /**
  * Core interface with the provider api (GitHub).
@@ -21,7 +22,7 @@ const gitHubApi = {
   userAgent: config.getGitHubUserAgent(),
 
   getWorkItems: async function (target, provider, sorting) {
-    const token = config.decrypt(provider.token);
+    const token = login.getProviderToken(provider);
     const octokit = new Octokit({ userAgent: this.userAgent, auth: token });
     // issue #116 set sorting criteria to match the selected in the UI
     const sort = (sorting??"").includes("updated") ? "updated" : "created";
@@ -139,7 +140,7 @@ const gitHubApi = {
       return;
     }
     this.log(provider.uid, "ASYNC Get Notifications from the REST api");
-    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(provider.token), });
+    const octokit = new Octokit({ userAgent: this.userAgent, auth: login.getProviderToken(provider), });
     // Issue #44: According the api doc a call using Last-Modified header should be done. 
     // This works well when a notification appears, But when the notification is read, the browser still gets not modified (when using cache).
     // Therefore, this approach can't be used and overrides the cache using If-None-Match header.
@@ -251,7 +252,7 @@ const gitHubApi = {
   getGraphQlApi: function (provider) {
     return graphql.defaults({
       headers: {
-        authorization: `token ${config.decrypt(provider.token)}`,
+        authorization: `token ${login.getProviderToken(provider)}`,
       },
     });
   },

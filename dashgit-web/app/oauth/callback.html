@@ -5,41 +5,46 @@
   <title>OAuth Callback</title>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script type="module">
-    import { exchangeCodeForToken, initOctokit } from "./auth.js";
-    import { login } from "../Login.js";
+    import { exchangeCodeForToken, initOctokit, getProviderId, successfulLogin } from "./auth.js";
 
     async function main() {
+      const providerId = getProviderId();
+      console.log("callback.html: Opening OAuth callback window with provider " + providerId);
       const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
 
       if (!code) {
-        $("#output").text("No se recibió 'code'.");
+        console.error("callback.html: Did not receive 'code'");
+        $("#output").text("Did not receive 'code'.");
         return;
       }
 
       const tokenResponse = await exchangeCodeForToken(code);
 
       if (tokenResponse.error) {
+        console.error("callback.html: Error exchanging code for token:", tokenResponse);
         $("#output").text("Error: " + JSON.stringify(tokenResponse, null, 2));
         return;
       }
 
       const token = tokenResponse.access_token;
-      //login.saveOAuthToken(token, providerId);
+      successfulLogin(token, providerId);
       const octokit = initOctokit(token);
 
       const user = await octokit.rest.users.getAuthenticated();
       $("#output").text(JSON.stringify(user.data, null, 2));
+      window.location.href = "../"; // Redirect back to main app after successful login
     }
 
     main().catch(err => {
-      console.error(err);
-      $("#output").text("Error inesperado: " + err);
+      console.error("callback.html: Unexpected error:", err);
+      $("#output").text("Unexpected error: " + err);
     });
   </script>
 </head>
 <body>
-  <h2>Procesando autenticación…</h2>
+  <h2>Processing authentication…</h2>
+  <input type="button" value="Back" onclick="window.location.href='../';">
   <pre id="output"></pre>
 </body>
 </html>
