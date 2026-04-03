@@ -28,6 +28,12 @@ $(document).on('click', '.config-btn-add-github', function (e) {
 $(document).on('click', '.config-btn-add-gitlab', function (e) {
   configView.addProvider(config.setProviderDefaults({ provider: "GitLab" }));
 });
+$(document).on('click', '.config-btn-oauth-submit', function (e) {
+  const key = $(this).closest(".config-provider-panel").attr("key");
+  console.log("Switch to OAuth for provider " + key);
+  $(location).attr('href', `./oauth/?key=${key}`);
+  e.preventDefault();
+});
 $(document).on('click', '.config-btn-provider-remove', function (e) {
   configView.removeProvider($(this));
 });

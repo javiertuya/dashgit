@@ -9,13 +9,19 @@ app.use(cors());
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 
+const log = (message) => {
+  console.log(`[${new Date().toISOString()}] ${message}`);
+}
+
 app.get("/healthcheck", async (req, res) => {
+  log("Health check requested");
   res.status(200).send("OK");
 });
 
 app.post("/exchange", async (req, res) => {
   try {
     const { code, code_verifier, redirect_uri } = req.body;
+    log(`Received exchange request with code: ${code}, redirect_uri: ${redirect_uri}, code_verifier: ${code_verifier}`);
 
     const response = await fetch("https://github.com/login/oauth/access_token", {
       method: "POST",

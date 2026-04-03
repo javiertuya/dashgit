@@ -6,6 +6,7 @@
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script type="module">
     import { exchangeCodeForToken, initOctokit } from "./auth.js";
+    import { login } from "../Login.js";
 
     async function main() {
       const params = new URLSearchParams(window.location.search);
@@ -24,6 +25,7 @@
       }
 
       const token = tokenResponse.access_token;
+      //login.saveOAuthToken(token, providerId);
       const octokit = initOctokit(token);
 
       const user = await octokit.rest.users.getAuthenticated();
