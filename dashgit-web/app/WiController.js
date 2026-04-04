@@ -69,7 +69,7 @@ const wiController = {
         if (this.tokenIsValid(prov))
           promises.push(this.getPromise(target, prov, sorting));
         else
-          wiView.renderAlert("danger", `The OAuth2 token for provider ${prov.uid} is not set or is invalid. Ignoring this provider.`);
+          wiView.renderAlert("danger", `The OAuth2 token for provider ${prov.uid} is not set or is invalid. It will be hidden in the view.`);
       }
     if (promises.length == 0)
       wiView.renderAlert("warning", "No providers have been configured, please, complete the setup in the Configure tab");

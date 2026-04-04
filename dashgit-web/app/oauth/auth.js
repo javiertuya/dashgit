@@ -11,7 +11,7 @@ export async function startLogin() {
 
   // Localhost is not a valid host for OAuth2 callbacks, simulates the callback
   if (window.location.host === "localhost") {
-    await new Promise(r => setTimeout(r, 5000));
+    await new Promise(r => setTimeout(r, 500));
     window.location.href = "http://localhost/dashgit/oauth/callback.html";
     return;
   }

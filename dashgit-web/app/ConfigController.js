@@ -30,9 +30,18 @@ $(document).on('click', '.config-btn-add-gitlab', function (e) {
 });
 $(document).on('click', '.config-btn-oauth-submit', function (e) {
   const key = $(this).closest(".config-provider-panel").attr("key");
-  console.log("Switch to OAuth2 for provider " + key);
-  config.save(); // there could be some unsaved data
-  $(location).attr('href', `./oauth/?key=${key}`);
+  console.log("Switch to OAuth2 authentication for provider " + key);
+  config.data.providers[key].oauth = true;
+  config.save();
+  configView.refreshAuthenticationMethods();
+  e.preventDefault();
+});
+$(document).on('click', '.config-btn-pat-submit', function (e) {
+  const key = $(this).closest(".config-provider-panel").attr("key");
+  console.log("Switch to PAT authentication for provider " + key);
+  config.data.providers[key].oauth = false;
+  config.save();
+  configView.refreshAuthenticationMethods();
   e.preventDefault();
 });
 $(document).on('click', '.config-btn-provider-remove', function (e) {
