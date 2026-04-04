@@ -6,16 +6,17 @@ import { storeProviderId, startLogin } from "./oauth/auth.js"
  */
 const login = {
 
-  saveOAuthToken: function(token, providerId) {
-    //save the token in the config of the first provider, if there is any, otherwise, creates a new provider with the token
-    sessionStorage.setItem(`token_${providerId}`, token);
+  // Saving token is done from the callback.html, that does know about the config, we use the number of the provider (id), not the uid
+  saveOAuthTokenById: function(token, providerId) {
+    config.load();
+    const uid = config.data.providers[providerId].uid;
+    sessionStorage.setItem(`token_${uid}`, token);
   },
-  getOAuthToken: function(providerId) {
-    //retrieve the token from sessionStorage
-    return sessionStorage.getItem(`token_${providerId}`);
-  },
+  // Getting token is done from dashgit, by provider
   getProviderToken: function(provider) {
-    return config.decrypt(provider.token);
+    let token = provider.oauth ? sessionStorage.getItem(`token_${provider.uid}`) : config.decrypt(provider.token);
+    //console.log(`Login.js: Authorization for provider ${provider.uid}: ${token ? token.substring(0, 4) + "..." : "not found"}`);
+    return token;
   },
 
   loginAllOauthProviders: async function () {
@@ -28,7 +29,7 @@ const login = {
 
         if (provider.oauth) {
           console.log("Login.js: Provider " + provider.uid + " is configured for OAuth2, checking token");
-          const token = this.getOAuthToken(providerId);
+          const token = this.getProviderToken(provider);
 
           if (token) {
             if (token === "failed") {
@@ -48,6 +49,7 @@ const login = {
     return failedProviders;
   },
   getOAuthAppConfig: function(providerId) {
+    //    alert(window.location.protocol + " " + window.location.host + " " + window.location.pathname );
     return {
       appId: "github",
       clientId: "Ov23liF8QHJgpfMvHfDx",

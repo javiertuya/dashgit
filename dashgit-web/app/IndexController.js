@@ -82,28 +82,38 @@ const indexController = {
     config.loadFeatureFlags();
     config.load();
 
-    let failedProviders = await login.loginAllOauthProviders(); //TODO what happen when encryption is enabled? should we try to login now?
-
     $("#appVersion").text(config.appVersion);
-    if (config.data.encrypted) {
-      indexController.loginMode();
-    } else {
-      indexController.start();
+    if (config.data.encrypted) { 
+      // A simpler view to set the password before entering de application
+      indexController.patLoginMode();
+      return;
+    } else { 
+      // Continue with all tabs hidden until the OAuth login process is completed, TODO only for 1 oauth provider
+      indexController.oauthLoginMode();
     }
-    $('[data-toggle="tooltip"]').tooltip({trigger:"hover", delay:600});
+
+    // Try OAuth login when necessary. In this case, the page will be reentered from the callback.html
+    let failedProviders = await login.loginAllOauthProviders(); //TODO what happen when encryption is enabled? should we try to login now?
+//TODO tras esto, el startLogin ha devuelto el control, pero al menos simulando en localhost con un timeout para los procesos,
+//no ha finalizado, por lo que continua con start sin que haya terminado el login y se sepa que hay token valido o con fallo.
+//Posiblemente haya que lanzar el startLogin desde otra pagina (callback.html con un parametro?), y finalizar esta pagina si se ha hecho algun startLogin
+//Pospuesto para cuando se prueben multiples providers
+
+    indexController.start();
 
     // If there are failed providers, show an alert to inform the user and suggest actions
     // this must be done now that the view is rendered, otherwise the alert will be lost when rendering
     if (failedProviders.length > 0) {
       console.log("Login.js: The following OAuth2 providers failed to log in: " + failedProviders.join(", "));
-      wiView.renderAlert("danger", `Login failed for the following providers: ${failedProviders.join(", ")}. `
+      wiView.renderAlert("danger", `OAuth2 authentication failed for the following provider(s): ${failedProviders.join(", ")}. `
         + " Please retry login from the configuration tab or switch back to PAT authentication.");
     }
-
+    $('[data-toggle="tooltip"]').tooltip({trigger:"hover", delay:600});
   },
   start: function() {
     wiController.reset(true);
     indexController.workMode();
+    //$("#config-tab").trigger("involved"); // este click ya consigue invocar el render, no es necesario llamarlo explícitamente
     indexController.render();
   },
   reload: function() {
@@ -129,10 +139,17 @@ const indexController = {
     $("#tab-headers").show();
     $("#tab-content").show();
   },
-  loginMode: function () {
+  patLoginMode: function () {
     $("#header-content").hide();
     $("#header-authentication").show();
     $("#inputPassword").focus();
+    $("#tab-headers").hide();
+    $("#tab-content").hide();
+  },
+  oauthLoginMode: function () {
+    $("#header-content").hide();
+    $("#header-authentication").hide();
+    $("#inputPassword").hide();
     $("#tab-headers").hide();
     $("#tab-content").hide();
   },

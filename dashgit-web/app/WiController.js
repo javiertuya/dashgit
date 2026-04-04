@@ -4,6 +4,7 @@ import { wiView } from "./WiView.js"
 import { Model } from "./Model.js"
 import { cache } from "./Cache.js"
 import { config } from "./Config.js"
+import { login } from "./Login.js"
 
 /**
  * Manages the calls to different APIs (GitHub or GitLab) receiving the transformed provider-independent
@@ -64,11 +65,22 @@ const wiController = {
     // General case for the rest of targets, create the promises to get the work items and then update the notifications and statuses asynchronously
     let promises = [];
     for (let prov of config.data.providers)
-      if (prov.enabled)
-        promises.push(this.getPromise(target, prov, sorting));
+      if (prov.enabled) { // if token not set or failed, skip the provider and inform to the user
+        if (this.tokenIsValid(prov))
+          promises.push(this.getPromise(target, prov, sorting));
+        else
+          wiView.renderAlert("danger", `The OAuth2 token for provider ${prov.uid} is not set or is invalid. Ignoring this provider.`);
+      }
     if (promises.length == 0)
       wiView.renderAlert("warning", "No providers have been configured, please, complete the setup in the Configure tab");
     this.dispatchPromises(target, promises, sorting);
+  },
+  tokenIsValid: function (provider) {
+    if (!provider.oauth) // PAT token is always considered valid for path authentication (even if emtpy)
+      return true;
+    const token = login.getProviderToken(provider);
+    console.log(`Check OAuth token for provider ${provider.uid}: ${token ? token.substring(0, 4) + "..." : "not found"}`);
+    return token && token !== "failed"; // OAuth must have a valid value
   },
 
   getPromise: function (target, provider, sorting) {
@@ -123,7 +135,7 @@ const wiController = {
 
   dispatchNotifications: function (target) {
     for (let provider of config.data.providers)
-      if (provider.enabled && provider.enableNotifications) {
+      if (provider.enabled && provider.enableNotifications && this.tokenIsValid(provider)) {
         if (provider.provider.toLowerCase() == "github")
           gitHubApi.updateNotificationsAsync(target, provider);
         else if (provider.provider.toLowerCase() == "gitlab")
@@ -132,7 +144,7 @@ const wiController = {
   },
   dispatchStatuses: function (target) {
       for (let provider of config.data.providers)
-        if (provider.enabled) {
+        if (provider.enabled && this.tokenIsValid(provider)) {
           this.dispatchProviderStatuses(provider);
         }
   },

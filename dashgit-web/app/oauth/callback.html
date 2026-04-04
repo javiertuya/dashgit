@@ -10,7 +10,20 @@
     async function main() {
       const providerId = getProviderId();
       console.log("callback.html: Opening OAuth2 callback window with provider " + providerId);
+      if (!providerId) {
+        console.log("callback.html: Return");
+        return;
+      }
       $("#output").text("Provider ID: " + providerId);
+      // Localhost is not a valid host for OAuth2 callbacks, fails immediately 
+      // (nevertheless we can use 127.0.0.1 to test the real failure)
+      if (window.location.host === "localhost") {
+        await new Promise(r => setTimeout(r, 5000));
+        $("#output").text("Invalid host: " + window.location.host);
+        failedLogin(providerId);
+        return;
+      }
+
       const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
 

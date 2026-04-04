@@ -95,9 +95,10 @@ const gitHubApi = {
   issuesAndPullRequests: function (octokit, token, query) {
     // Issue #129 Although documentation says that search query returns both issues and prs if no 'is:*' is specified,
     // this is not true when using fine grained tokens, that requires separate queries for issues and prs.
-    if (token == "" || token.startsWith("ghp_")) { // single query for no token or fine grained token
+    if (token == "" || token.startsWith("ghp_") || token.startsWith("gho_")) { // single query for no token or fine grained token
       return [this.octokitSearchIssues(octokit, query)];
     } else { // separated queries to find issues and prs
+      // TODO necesito probar esto con fine grained tokens, al ejecutar con un gho_ ha dado un error indicando que pr no estaba definido
       console.log("Assuming fine grained token, using separated queries for issues and PRs");
       let qissue = JSON.parse(JSON.stringify(query));
       let qpr = JSON.parse(JSON.stringify(query));

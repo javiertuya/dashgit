@@ -9,6 +9,14 @@ export async function startLogin() {
   const oaconfig = login.getOAuthAppConfig(getProviderId());
   console.log("auth.js: Init startLogin with provider " + getProviderId());
 
+  // Localhost is not a valid host for OAuth2 callbacks, simulates the callback
+  if (window.location.host === "localhost") {
+    await new Promise(r => setTimeout(r, 5000));
+    window.location.href = "http://localhost/dashgit/oauth/callback.html";
+    return;
+  }
+
+
   const { code_verifier, code_challenge } = await generatePKCE();
   localStorage.setItem("pkce_verifier", code_verifier);
 
@@ -74,11 +82,11 @@ export function successfulLogin(token, providerId) {
   config.load();
   config.data.providers[providerId].oauth = true;
   config.save();
-  login.saveOAuthToken(token, providerId);
+  login.saveOAuthTokenById(token, providerId);
 }
 // Called from callback.html when the login fails to ensure a special value in the token to avoid autentication loops
 export function failedLogin(providerId) {
-  login.saveOAuthToken("failed", providerId);
+  login.saveOAuthTokenById("failed", providerId);
 }
 
 export function initOctokit(token) {
