@@ -1,6 +1,6 @@
 import { config } from "./Config.js"
 import { oaconfig } from "./oauth/OAConfig.js"
-import { startLogin, startCallback, logError } from "./oauth/auth.js"
+import { startLogin, handleCallback } from "./oauth/auth.js"
 
 /**
  * Manges the login of the providers and returns the appropriate token when requested.
@@ -47,7 +47,7 @@ const login = {
     return { unsetProviders: unset, failedProviders: failed };
   },
 
-  // Interface with the auth module to initiate the login an the callback
+  // Interface with the auth module to initiate the login and the callback
   startLoginForProvider: async function (providerId) {
     console.log("Login.js: Starting login for provider " + providerId);
     let conf = this.getOAuthProviderConfig(providerId);
@@ -55,29 +55,55 @@ const login = {
     // if the configuration was found, using the error display mechanisms in the auth.js module
     // and marking it as failed
     if (Object.keys(conf).length ===0) {
-      logError("Login", "Can't find a default configuration for the provider " + providerId);
-      this.failedLogin(providerId);
+      await this.failedLogin("Can't find a default configuration for the provider " + providerId);
     } else {
-      await startLogin(providerId, conf);
+      sessionStorage.setItem("providerKey", providerId)
+      await this.logDebug("Login with provider " + providerId + ", requesting...");
+
+      // Localhost is not a valid host for OAuth2 callbacks, simulates the callback (that will fail)
+      if (window.location.host === "localhost") {
+        await new Promise(r => setTimeout(r, 2000));
+        window.location.href = "http://localhost/dashgit/?oapp=github";
+        return;
+      }
+
+      await startLogin(conf);
     }
   },
-  callbackFromApp: async function (app) {
+  handleCallbackFromApp: async function (app) {
+    const providerId = sessionStorage.getItem("providerKey");
     console.log("Login.js: Callback received from " + app + ", starting login procedure");
-    await startCallback();
-    //}
+    await this.logDebug("Login with provider " + providerId + ", authorizing...");
+    // Localhost is not a valid host for OAuth2 callbacks, fails immediately 
+    // (nevertheless we can use 127.0.0.1 to test the real failure)
+    if (window.location.host === "localhost") {
+      await new Promise(r => setTimeout(r, 2000));
+      await this.failedLogin("Invalid host: " + window.location.host);
+      return;
+    }
+    if (!providerId) {
+      await this.logError("Provider ID is undefined");
+      return;
+    }
+
+    await handleCallback();
+    sessionStorage.removeItem("providerKey"); // not needed anymore
   },
 
   // Invoked from the auth module at the end of the callback to notify the status:
   // - when the login is successful to save the token and ensure the the provider is marked as oauth
   // - when the login fails to ensure a special value in the token to avoid autentication loops
 
-  successfulLogin: function (token, providerId) {
+  successfulLogin: async function (token) {
+    const providerId = sessionStorage.getItem("providerKey");
     config.load();
     config.data.providers[providerId].oauth = true;
     config.save();
     login.saveOAuthTokenById(token, providerId);
   },
-  failedLogin: function (providerId) {
+  failedLogin: async function (message) {
+    await this.logError(message);
+    const providerId = sessionStorage.getItem("providerKey");
     login.saveOAuthTokenById("failed", providerId);
   },
   saveOAuthTokenById: function (token, providerId) {
@@ -85,6 +111,20 @@ const login = {
     const uid = config.data.providers[providerId].uid;
     sessionStorage.setItem(`token_${uid}`, token);
   },
+
+  // Logging messages and failures are also shown in the user interface
+  logDebug: async function (message) {
+    console.log(`OAuth: ${message}`);
+    $("#callback-provider").text(message);
+    //await new Promise(r => setTimeout(r, 2000));
+  },
+  logError: async function (message) {
+    console.error(`OAuth: ${message}`);
+    $("#callback-error").text(message);
+    $("#callback-continue-btn").show();
+    //await new Promise(r => setTimeout(r, 2000));
+  },
+
 
   getOAuthProviderConfig: function (providerId) {
     const thisUrl = window.location.protocol + "//" + window.location.host  + window.location.pathname

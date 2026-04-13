@@ -88,7 +88,7 @@ const indexController = {
     if (app) {
       console.log("IndexController: App parameter found in url, running as callback to login " + app);
       indexController.oauthLoginMode(); // to show how the callback process is going on
-      await login.callbackFromApp(app);
+      await login.handleCallbackFromApp(app);
       return;
     }
 

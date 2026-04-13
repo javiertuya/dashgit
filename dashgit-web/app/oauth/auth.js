@@ -15,17 +15,8 @@ import { login } from "../Login.js";
  *  so they are stored in sessionStorage (providerKey and oaconfig) and cleared when they are no longer needed.
  * - When DashGit runs in localhost, it is not possible to use real OAuth2 callbacks, so the flow is simulated (with a failure)
  */
-export async function startLogin(providerId, oaconfig) {
-  sessionStorage.setItem("providerKey", providerId)
+export async function startLogin(oaconfig) {
   sessionStorage.setItem("oaconfig", JSON.stringify(oaconfig))
-  await logDebug("startLogin", "OAuth2 login with provider " + providerId + ", requesting...");
-
-  // Localhost is not a valid host for OAuth2 callbacks, simulates the callback (that will fail)
-  if (window.location.host === "localhost") {
-    await new Promise(r => setTimeout(r, 2000));
-    window.location.href = "http://localhost/dashgit/?oapp=github";
-    return;
-  }
 
   const { code_verifier, code_challenge } = await generatePKCE();
   localStorage.setItem("pkce_verifier", code_verifier);
@@ -42,52 +33,31 @@ export async function startLogin(providerId, oaconfig) {
   window.location = url;
 }
 
-export async function startCallback() {
-  const providerId = sessionStorage.getItem("providerKey");
+export async function handleCallback() {
   const oaconfig = JSON.parse(sessionStorage.getItem("oaconfig"));
-  sessionStorage.removeItem("providerKey");
-  sessionStorage.removeItem("oaconfig");
+  sessionStorage.removeItem("oaconfig"); // not needed anymore in storage
   try {
-    await logDebug("startCallback", "OAuth2 login with provider " + providerId + ", authorizing...");
-
-    // Localhost is not a valid host for OAuth2 callbacks, fails immediately 
-    // (nevertheless we can use 127.0.0.1 to test the real failure)
-    if (window.location.host === "localhost") {
-      await new Promise(r => setTimeout(r, 2000));
-      await logError("startCallback", "Invalid host: " + window.location.host);
-      login.failedLogin(providerId);
-      return;
-    }
-
-    if (!providerId) {
-      await logError("startCallback", "Provider ID is undefined");
-      return;
-    }
-
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
 
     if (!code) {
-      await logError("startCallback", "Did not receive 'code' in callback parameters");
-      login.failedLogin(providerId);
+      await login.failedLogin("Did not receive 'code' in callback parameters");
       return;
     }
 
     const tokenResponse = await exchangeCodeForToken(code, oaconfig);
 
     if (tokenResponse.error) {
-      await logError("startCallback", "Error exchanging code for token: " + JSON.stringify(tokenResponse, null, 2))
-      login.failedLogin(providerId);
+      await login.failedLogin("Error exchanging code for token: " + JSON.stringify(tokenResponse, null, 2));
       return;
     }
 
     const token = tokenResponse.access_token;
-    login.successfulLogin(token, providerId);
+    await login.successfulLogin(token);
     window.location.href = "./"; // Redirect back to main app after successful login
   }
   catch (err) {
-    await logError("startCallback", "Unexpected error: " + err);
-    login.failedLogin(providerId);
+    await login.failedLogin("Unexpected error: " + err);
   }
 };
 
@@ -112,17 +82,4 @@ export async function exchangeCodeForToken(code, oaconfig) {
   });
 
   return res.json();
-}
-
-// Logging messages and failures are also shown in the user interface
-export async function logDebug(method, message) {
-  console.log(`auth.${method}: ${message}`);
-  $("#callback-provider").text(message);
-  //await new Promise(r => setTimeout(r, 2000));
-}
-export async function logError(method, message) {
-  console.error(`auth.${method}: ${message}`);
-  $("#callback-error").text(message);
-  $("#callback-continue-btn").show();
-  //await new Promise(r => setTimeout(r, 2000));
 }
