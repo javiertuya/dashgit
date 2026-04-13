@@ -78,7 +78,7 @@ const wiRender = {
   },
 
   updateCheck2html: function (target, providerId, repoName, iid) {
-    if (config.data.enableManagerRepo && target == "dependabot") {
+    if (config.data.managerRepo.enabled && target == "dependabot") {
       // console.log(`${providerId} ${repoName} ${iid}`)
       return `<input class="form-check-input wi-update-check" type="checkbox" value="" aria-label="..."
           provider="${providerId}" repo="${repoName}" iid="${iid}"></input>&nbsp;`;

@@ -65,15 +65,15 @@ const wiControllerUpdate = {
     const branch = "dashgit/manage/update-" + currentDate.toISOString().replaceAll("-", "").replaceAll("T", "-").replaceAll(":", "").replaceAll(".", "-");
     const message = `DashGit combined updates for ${itemsToUpdate.length} dependencies at ${currentDate.toString()}`;
     const path = `.dashgit/manage-update/${config.appVersion}`;
-    const ownerRepo = config.data.managerRepoName.split("/");
-    const model = this.getModel(itemsToUpdate, config.data.managerRepoName, branch, dryRun);
+    const ownerRepo = config.data.managerRepo.name.split("/");
+    const model = this.getModel(itemsToUpdate, config.data.managerRepo.name, branch, dryRun);
     const content = JSON.stringify(model, null, 2);
     console.log("Push combined updates, model: " + JSON.stringify(model, null, 2));
     // Creates the dedicated branch and json file in the update repository manager,
     // this will trigger the GitHub Actions that perform the required tasks
-    gitStoreApi.createBranchAndContent(config.data.managerRepoToken, ownerRepo[0], ownerRepo[1], branch, path, btoa(content), message)
+    gitStoreApi.createBranchAndContent(config.data.managerRepo.token, ownerRepo[0], ownerRepo[1], branch, path, btoa(content), message)
     .then(async function(responseUrl) {
-      wiView.confirmUpdateEnd(`https://github.com/${config.data.managerRepoName}/actions`, responseUrl);
+      wiView.confirmUpdateEnd(`https://github.com/${config.data.managerRepo.name}/actions`, responseUrl);
     }).catch(async function(error) {
       wiView.confirmUpdateClear();
       wiView.renderAlert("danger", error);

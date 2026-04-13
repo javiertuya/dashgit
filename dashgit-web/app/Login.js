@@ -46,29 +46,44 @@ const login = {
     }
     return { unsetProviders: unset, failedProviders: failed };
   },
+  getOAuthEnabledProviders: function() {
+    let providers = [];
+    for (const providerId in config.data.providers) {
+      const provider = config.data.providers[providerId];
+      if (provider.enabled && provider.oauth) {
+        providers.push(provider);
+      }
+    }
+    return providers;
+  },
 
   // Interface with the auth module to initiate the login and the callback
   startLoginForProvider: async function (providerId) {
     console.log("Login.js: Starting login for provider " + providerId);
     let conf = this.getOAuthProviderConfig(providerId);
-    // To prevent the startLogin transfer control to a non existent url, check first
-    // if the configuration was found, using the error display mechanisms in the auth.js module
-    // and marking it as failed
-    if (Object.keys(conf).length ===0) {
-      await this.failedLogin("Can't find a default configuration for the provider " + providerId);
-    } else {
-      sessionStorage.setItem("providerKey", providerId)
-      await this.logDebug("Login with provider " + providerId + ", requesting...");
 
-      // Localhost is not a valid host for OAuth2 callbacks, simulates the callback (that will fail)
-      if (window.location.host === "localhost") {
-        await new Promise(r => setTimeout(r, 2000));
-        window.location.href = "http://localhost/dashgit/?oapp=github";
-        return;
-      }
+    sessionStorage.setItem("providerKey", providerId)
+    await this.logDebug("Login with provider " + providerId + ", requesting...");
 
-      await startLogin(conf);
+    // To prevent the startLogin transfer control to a non existent url because a bad configuration,
+    // check first if the configuration was found, using the error display mechanisms in the auth.js module
+    // that mark it as failed and notify the user
+    if (Object.keys(conf).length === 0) {
+      const customAppName = config.data.providers[providerId].oacustom.enabled ? config.data.providers[providerId].oacustom.appName : "";
+      if (customAppName == "") // the default was not found, this should never happen
+        await this.failedLogin(`The default app could not be found, provider ${providerId}."`);
+      else // The user specified a wrong custom app
+        await this.failedLogin(`The custom app "${customAppName}" could not be found, provider ${providerId}. Please, review your OAuth custom settings"`);
+      return;
     }
+    // Localhost is not a valid host for OAuth2 callbacks, simulates the callback (that will fail)
+    if (window.location.host === "localhost") {
+      await new Promise(r => setTimeout(r, 2000));
+      window.location.href = "http://localhost/dashgit/?oapp=github";
+      return;
+    }
+
+    await startLogin(conf);
   },
   handleCallbackFromApp: async function (app) {
     const providerId = sessionStorage.getItem("providerKey");
@@ -111,6 +126,18 @@ const login = {
     const uid = config.data.providers[providerId].uid;
     sessionStorage.setItem(`token_${uid}`, token);
   },
+  retryOAuth: function () {
+    const providers = this.getOAuthEnabledProviders();
+    for (const provider of providers) {
+      console.log("Check provider for retry: " + provider.uid);
+      const token = this.getProviderToken(provider);
+      if (token == "failed") {
+        console.log("Reset failed token for provider: " + provider.uid);
+        sessionStorage.removeItem(`token_${provider.uid}`);
+      }
+    }
+    window.location.href = "./"
+  },
 
   // Logging messages and failures are also shown in the user interface
   logDebug: async function (message) {
@@ -139,8 +166,10 @@ const login = {
   // - Overridden by the custom configuration that is set in the provider config.
   getOAuthAppConfig: function (platform, platformUrl, thisUrl, oadefaults, oacustom) {
     const exchangeUrl = "https://giis.uniovi.es/desarrollo/oauth/exchange";
+    const customAppName = oacustom.enabled ? oacustom.appName : "";
+    const customClientId = oacustom.enabled ? oacustom.clientId : "";
     // appName can be modified by custom config, by default is platform to lowercase
-    const appName = ((oacustom.appName ?? "") == "") ? platform.toLowerCase() : oacustom.appName;
+    const appName = ((customAppName ?? "") == "") ? platform.toLowerCase() : customAppName;
 
     // Using appName and platform makes a lookup to get the defaults and then apply the rest of customizations
     const oadefault = oadefaults[platform]?.[appName] ?? {};
@@ -149,7 +178,7 @@ const login = {
     else if (platform == "GitHub") {
       const oatarget = {
         appName: appName,
-        clientId: ((oacustom.clientId ?? "") == "") ? oadefault.clientId : oacustom.clientId,
+        clientId: ((customClientId ?? "") == "") ? oadefault.clientId : customClientId,
         callbackUrl: thisUrl + "?oapp=" + appName,
         authorizeUrl: platformUrl + "/login/oauth/authorize",
         scopes: oadefault.scopes,

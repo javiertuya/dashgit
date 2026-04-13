@@ -2,6 +2,8 @@ import { config } from "./Config.js"
 import { login } from "./Login.js"
 import { wiView } from "./WiView.js"
 import { wiController } from "./WiController.js"
+import { wiControllerUpdate } from "./WiControllerUpdate.js" // NOSONAR to install jquery events
+import { wiControllerFollowUp } from "./WiControllerFollowUp.js" // NOSONAR to install jquery events
 import { configController } from "./ConfigController.js"
 
 /**
@@ -58,6 +60,9 @@ $(document).on('change', '#checkGroup', async function () {
 $(document).on('change', '#inputStatus', async function () {
   wiView.updateStatusVisibility();
 });
+$(document).on('click', '#oauth-reset-btn', async function () {
+  login.retryOAuth();
+});
 $(document).on('click', '.accordion-button', function () {
   wiView.saveStatePanel($(this).attr('id'), $(this).attr('aria-expanded'))
 });
@@ -103,7 +108,7 @@ const indexController = {
       return;
     }
 
-    // Checks all unset providers that require OAuth, if there are any, starts the login of the first one.
+    // Checks all unset providers that require OAuth, if there are any, starts the OAuth login of the first one.
     // The rest will be started after receiving the callback.
     const loginResult = await login.getLoginStatusForAllProviders();
     if (loginResult.unsetProviders.length > 0) {
@@ -112,14 +117,18 @@ const indexController = {
       return;
     }
 
-    //Login procedure is finished, starts anything in work mode
+    //Login procedure is finished, starts everything in work mode
     indexController.start();
 
     // The view is rendered, now we can finishs some pending chores related to the login process
     if (loginResult.failedProviders.length > 0) {
       console.log("Login.js: The following OAuth2 providers failed to log in: " + loginResult.failedProviders.join(", "));
-      wiView.renderAlert("danger", `OAuth2 authentication failed for the following provider(s): ${loginResult.  failedProviders.join(", ")}. `
-        + " Please retry login from the configuration tab or switch back to PAT authentication.");
+      $("#oauth-reset-message").text( `OAuth2 authentication failed for the provider(s) ${loginResult.  failedProviders.join(", ")}. `
+        + " Please check the configuration or switch back to PAT authentication and retry.");
+      $("#oauth-reset").show();
+    } else {
+      $("#oauth-reset-message").text("");
+      $("#oauth-reset").hide();
     }
     $('[data-toggle="tooltip"]').tooltip({trigger:"hover", delay:600});
   },
@@ -180,6 +189,7 @@ const indexController = {
     $("#header-content").hide();
     $("#header-authentication").hide();
     $("#inputPassword").hide();
+    $("#oauth-reset").hide();
     $("#oauth-content").hide();
     $("#tab-headers").hide();
     $("#tab-content").hide();

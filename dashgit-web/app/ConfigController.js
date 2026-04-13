@@ -41,7 +41,7 @@ $(document).on('click', '.config-btn-provider-up', function (e) {
 });
 
 //Events that are particular to some items in the configuration
-$(document).on('change', '#config-common-enableManagerRepo', function (e) {
+$(document).on('change', '#config-providers-enabled-mgrepo', function (e) {
   configView.refreshAll();
 });
 $(document).on('change', '[id^="config-providers-auth-select-"]', function (e) {

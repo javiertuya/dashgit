@@ -75,18 +75,15 @@ const configView = {
         </div>
 
         <div class="card-subtitle h6 mb-1 mt-1 text-body-secondary">
-          ${this.check2html(`config-common-enableManagerRepo`, 
+          ${this.check2html(`config-providers-enabled-mgrepo`, 
             `Enable a Manager Repository for advanced functions <a href="${config.param.readmeManagerRepo}" target="_blank">[learn more]</a>`, 
-            data.enableManagerRepo,
-            "Manager repository set up is requred to automatically create and merge combined dependency updates and for follow-up management")}
+            data.managerRepo.enabled,
+            "Manager repository set up is requred to automatically create and merge combined dependency updates and for follow-up management", true)}
         </div>
-        <div class="row">
-          ${this.input2html(`config-common-managerRepoName`, "text", "Manager Repository", data.managerRepoName, 'required', "200", "200",
-            "The full name (OWNER/REPO) of a dedicated private GitHub repository where the combined updates will be pushed and merged and where work item follow-ups are stored")}
-          ${this.input2html(`config-common-managerRepoToken`, "password", "Access token", data.managerRepoToken, '', "150", "225",
-            "An API access token with write permission to the Manager Repository")}
+        <div id="config-providers-all-mgrepo">
+          <!-- authentication config, like the providers -->
+          ${this.authprovider2html(data.managerRepo, "mgrepo")}
         </div>
-
         <div class="row">
           ${this.button2html("", "submit", "Save configuration", "config-btn-provider-submit btn-primary")}
           ${this.button2html("", "button", `${this.provider2icon("GitHub")} Add GitHub provider`, "config-btn-add-github btn-success")}
@@ -105,10 +102,10 @@ const configView = {
             <p class="card-title h5">${this.provider2icon(provider.provider)} ${provider.provider}</p>
           </div>
           <div class="col-auto" style="width:22px"></div>
-          ${this.check2html(`config-providers-enabled-${key}`, "Enabled", provider.enabled)}
+          ${this.check2html(`config-providers-enabled-${key}`, "Enabled", provider.enabled, "", true)}
         </div>
         
-        ${this.repoconfig2html(provider, key)}
+        ${this.authprovider2html(provider, key)}
         
         <div class="row">  
           ${this.input2html(`config-providers-filterIfLabel-${key}`, "text", "Filter if label", provider.filterIfLabel, '', "150", "150",
@@ -177,22 +174,28 @@ const configView = {
     </div>
     `;
   },
-  repoconfig2html: function (provider, key) {
+  authprovider2html: function (provider, key) {
     return `
         <div class="row">
-          ${this.input2html(`config-providers-url-${key}`, "url", "Repository url", provider.url, 'required', "150", "225", "The URL of the repository server.")}
-          ${this.input2html(`config-providers-user-${key}`, "text", "Username", provider.user, 'required', "150", "150",
-            "The reference user for whom the work items are displayed (assigned to, created by, etc.)")}
+        <!-- regular providers and manager repo have some additional properties that are different -->
+        ${key == "mgrepo"
+          ? this.input2html(`config-providers-name-mgrepo`, "text", "Manager Repository", provider.name, 'required', "200", "200",
+              "The full name (OWNER/REPO) of a dedicated private GitHub repository where the combined updates will be pushed and merged and where work item follow-ups are stored")
+          : this.input2html(`config-providers-url-${key}`, "url", "Repository url", provider.url, 'required', "150", "225", "The URL of the repository server.")
+            + this.input2html(`config-providers-user-${key}`, "text", "Username", provider.user, 'required', "150", "150",
+              "The reference user for whom the work items are displayed (assigned to, created by, etc.)")
+        }
           ${this.check2html(`config-providers-auth-select-${key}`,
                 `Use OAuth2 to authenticate <a href="" target="_blank">[learn more]</a>`,
                 provider.oauth,
                 "If checked, the authentication is done with OAuth2+PKCS instead of using a Personal Access Token (PAT). After saving the configuration and browsing to other view, you will be redirected to the provider login page to complete the authentication.")}
           ${this.input2html(`config-providers-token-${key}`, "password", "Access token (PAT)", provider.token, '', "150", "225",
-              "An API access token with read permission to the repository, used to authenticate the repository API requests for this provider.")}
+              "An Personal Access Token (PAT) with read permission to the repository, used to authenticate the repository API requests for this provider.")}
+          ${" &nbsp; "}
           ${this.check2html(`config-providers-oauth-customize-${key}`,
                 `Customize OAuth2`,
-                Object.keys(provider.oacustom).length != 0,
-                "The default configuration is enough authenticate using OAuth2 against github.com. Customize only if you need a second GitHub identity or you use your own resources for OAuth2 authentication.")}
+                provider.oacustom.enabled,
+                "The default configuration is enough authenticate using OAuth2 against github.com. Customize only if you need a second GitHub identity or you use your own resources for OAuth2 authentication.", true)}
         </div>
         <div class="row">
           ${this.input2html(`config-providers-oauth-appName-${key}`, "text", "OAuth App Name", provider.oacustom.appName, '', "150", "150",
@@ -224,24 +227,28 @@ const configView = {
     data.maxAge = age == "" ? 0 : age;
     data.statusCacheUpdateTime = $("#config-common-statusCacheUpdateTime").val().trim();
     data.statusCacheRefreshTime = $("#config-common-statusCacheRefreshTime").val().trim();
-    data.enableManagerRepo = $("#config-common-enableManagerRepo").is(':checked');
-    data.managerRepoName = $("#config-common-managerRepoName").val().trim();
-    data.managerRepoToken = $("#config-common-managerRepoToken").val().trim();
+    data.managerRepo.enabled = $("#config-providers-enabled-mgrepo").is(':checked');
+    data.managerRepo.name = $("#config-providers-name-mgrepo").val().trim();
+    this.html2authprovider(data.managerRepo, "mgrepo")
     return data;
+  },
+
+  html2authprovider: function(provider, id) {
+    provider.oauth = $(`#config-providers-auth-select-${id}`).is(':checked');
+    provider.token = $(`#config-providers-token-${id}`).val().trim();
+    provider.oacustom.enabled = $(`#config-providers-oauth-customize-${id}`).is(':checked');
+    provider.oacustom.appName = $(`#config-providers-oauth-appName-${id}`).val().trim();
+    provider.oacustom.clientId = $(`#config-providers-oauth-clientId-${id}`).val().trim();
   },
 
   html2provider: function (provider, id) {
     provider.enabled = $(`#config-providers-enabled-${id}`).is(':checked');
     provider.user = $(`#config-providers-user-${id}`).val().trim();
-    provider.oauth = $(`#config-providers-auth-select-${id}`).is(':checked');
-    provider.token = $(`#config-providers-token-${id}`).val().trim();
     if (provider.provider == "GitLab")
       provider.url = $(`#config-providers-url-${id}`).val().trim();
+    // authentication data (method and parameters)
+    this.html2authprovider(provider, id);
 
-    // Empty values of OAuth customization must not be included as attributes
-    this.setAttributeOrRemove(provider.oacustom, "appName", $(`#config-providers-oauth-appName-${id}`).val().trim());
-    this.setAttributeOrRemove(provider.oacustom, "clientId", $(`#config-providers-oauth-clientId-${id}`).val().trim());
-$(`#config-providers-oauth-appName-${id}`).hide();
     provider.filterIfLabel = $(`#config-providers-filterIfLabel-${id}`).val().trim();
     provider.unassignedAdditionalOwner = this.str2array($(`#config-providers-unassignedAdditionalOwner-${id}`).val());
     provider.dependabotAdditionalOwner = this.str2array($(`#config-providers-dependabotAdditionalOwner-${id}`).val());
@@ -287,24 +294,29 @@ $(`#config-providers-oauth-appName-${id}`).hide();
   },
   // refresh for changes on the enabled states of the manager repository
   refreshUpdateManagerRepo: function () {
-    if ($(`#config-common-enableManagerRepo`).is(':checked')) {
-      $(`#config-common-managerRepoName-div-container`).show();
-      $(`#config-common-managerRepoName`).attr('required', 'required');
-      $(`#config-common-managerRepoToken-div-container`).show();
-      $(`#config-common-managerRepoToken`).attr('required', 'required');
+    if ($(`#config-providers-enabled-mgrepo`).is(':checked')) {
+      $(`#config-providers-all-mgrepo`).show();
+      $(`#config-providers-name-mgrepo`).attr('required', 'required');
+      $(`#config-providers-name-mgrepo-div-container`).show();
       $(`.config-provider-updates-div-container`).show();
     } else {
-      $(`#config-common-managerRepoName-div-container`).hide();
-      $(`#config-common-managerRepoName`).removeAttr('required');
-      $(`#config-common-managerRepoToken-div-container`).hide();
-      $(`#config-common-managerRepoToken`).removeAttr('required');
+      $(`#config-providers-all-mgrepo`).hide();
+      $(`#config-providers-name-mgrepo`).removeAttr('required');
+      $(`#config-providers-name-mgrepo-div-container`).hide();
       $(`.config-provider-updates-div-container`).hide();
     }
   },
   // Toggle between authentication with PAT and OAuth2
-  refreshAuthenticationMethods: function () {//config-providers-auth
+  refreshAuthenticationMethods: function () {
     let cards = $(document).find(".config-provider-card");
     for (let card of cards) {
+      this.refreshAuthenticationMethod(card);
+    }
+    // Manager repository has the same structure but is inside the common parameters card
+    let rpmgrCard = $(document).find("#config-providers-common");
+    this.refreshAuthenticationMethod(rpmgrCard);
+  },
+  refreshAuthenticationMethod: function (card) {
       let auth = $(card).find('input[id^="config-providers-auth-select-"]');
       let token = $(card).find('input[id^="config-providers-token-"]');
       let customize = $(card).find('input[id^="config-providers-oauth-customize-"]');
@@ -325,7 +337,6 @@ $(`#config-providers-oauth-appName-${id}`).hide();
         $(customize).closest(".col-auto").hide();
         $(appName).closest(".col-auto").hide();
         $(clientId).closest(".col-auto").hide();
-      }
     }
   },
 
@@ -504,10 +515,10 @@ $(`#config-providers-oauth-appName-${id}`).hide();
     `;
   },
 
-  check2html: function (id, label, checked, info) {
+  check2html: function (id, label, checked, info, isSwitch) {
     return `
       <div class="col-auto" id="${id}-div-container">
-        <div class="form-check">
+        <div class="form-check${isSwitch ? " form-switch" : ""}">
           <input class="form-check-input" type="checkbox" value="" ${checked ? "checked" : ""} id="${id}">
           <label class="form-check-label" for="${id}">${label}${this.infoIcon(info)}</label>
         </div>

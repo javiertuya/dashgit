@@ -15,7 +15,7 @@ import { cache } from "../app/Cache.js"
 describe("TestConfig - Sanitizing config data", async function () {
 
     it("Set default config attributes when reading empty", function () {
-        let expected = { version: 2, encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 30, maxAge: 0, 
+        let expected = { version: 3, encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 30, maxAge: 0, 
             viewFilter: { 
                 involved: {authorMe: true, authorOthers: true, exclude: ""},
                 created: {exclude: ""},
@@ -24,7 +24,7 @@ describe("TestConfig - Sanitizing config data", async function () {
                 dependabot: {exclude: ""},
             },      
             appLastVersion: "", 
-            enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
+            managerRepo: { enabled: false, name: "", token: "", oauth: false, oacustom: { enabled: false, clientId: '', appName: '' } },
             providers: [] };
         assert.deepEqual(expected, config.parseAndSanitizeData(""));
         assert.deepEqual(expected, config.parseAndSanitizeData(null));
@@ -33,7 +33,7 @@ describe("TestConfig - Sanitizing config data", async function () {
 
     it("Set default config attributes to GitHub provider", function () {
         let expected = {
-            version: 2,
+            version: 3,
             appLastVersion: "",
             encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 60, maxAge: 0,
             viewFilter: { 
@@ -43,10 +43,10 @@ describe("TestConfig - Sanitizing config data", async function () {
                 statuses: {compact: false, exclude: ""},
                 dependabot: {exclude: ""},
             },
-            enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
+            managerRepo: { enabled: false, name: "", token: "", oauth: false, oacustom: { enabled: false, clientId: '', appName: '' } },
             providers: [{
                 provider: 'GitHub', uid: '', user: '', token: '', enabled: true,
-                oauth: false, oacustom: {},
+                oauth: false, oacustom: { enabled: false, clientId: '', appName: '' },
                 url: 'https://github.com', api: 'https://api.github.com',
                 enableNotifications: true,
                 statusSurrogateUser: "",
@@ -63,7 +63,7 @@ describe("TestConfig - Sanitizing config data", async function () {
 
     it("No attributes are overriden by defaults if already set", function () {
         let expected = {
-            version: 2,
+            version: 3,
             appLastVersion: "",
             encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 30, maxAge: 0,
             viewFilter: { 
@@ -73,10 +73,10 @@ describe("TestConfig - Sanitizing config data", async function () {
                 statuses: {compact: false, exclude: ""},
                 dependabot: {exclude: ""},
             },      
-            enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
+            managerRepo: { enabled: false, name: "", token: "", oauth: false, oacustom: { enabled: false, clientId: '', appName: '' } },
             providers: [{
                 provider: 'GitHub', uid: 'repo_user_id', user: 'user', token: 'XXXXXXXXXXXX', enabled: false,
-                oauth: false, oacustom: {},
+                oauth: false, oacustom: { enabled: false, clientId: '', appName: '' },
                 url: 'https://github.com', api: 'https://api.github.com',
                 enableNotifications: true,
                 statusSurrogateUser: "",

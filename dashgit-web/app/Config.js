@@ -9,7 +9,7 @@ const config = {
   appVersion: "main",
 
   //Configuration data version number, to keep track of changes of data structure and migrations
-  dataVersion: 2,
+  dataVersion: 3,
 
   //Feature flags, keeps boolean flags activated from the querystring ?ff=flag1,flag2...
   ff: {},
@@ -44,7 +44,7 @@ const config = {
     localStorage.setItem("dashgit-config", JSON.stringify(config.data));
   },
   encryptTokens: function () {
-    config.data.managerRepoToken=this.encrypt(config.data.managerRepoToken, config.xtoken);
+    config.data.managerRepo.token=this.encrypt(config.data.managerRepo.token, config.xtoken);
     for (let provider of config.data.providers)
       provider.token = this.encrypt(provider.token, config.xtoken);
   },
@@ -84,6 +84,8 @@ const config = {
       console.log(`Migrating from version ${data.version} to ${this.dataVersion}`);
       if (data.version == 1)
         this.migrateV1toV2(data);
+      if (data.version == 2)
+        this.migrateV2toV3(data);
     }
     data = this.setAllDefaults(data);
     return data;
@@ -95,9 +97,11 @@ const config = {
     this.setDefault(data, "statusCacheUpdateTime", 30);
     this.setDefault(data, "statusCacheRefreshTime", 3600);
     this.setDefault(data, "maxAge", 0);
-    this.setDefault(data, "enableManagerRepo", false)
-    this.setDefault(data, "managerRepoName", "")
-    this.setDefault(data, "managerRepoToken", "")
+    this.setDefault(data, "managerRepo", {});
+    this.setDefault(data.managerRepo, "enabled", false);
+    this.setDefault(data.managerRepo, "name", "");
+    // authentication related properties with the same name than in the providers
+    this.setAuthProviderDefaults(data.managerRepo);
     this.setDefault(data, "providers", []);
     for (const provider of data.providers)
       this.setProviderDefaults(provider);
@@ -106,13 +110,19 @@ const config = {
     this.setViewFilterDefaults(data);
     return data;
   },
+  setAuthProviderDefaults: function(element) {
+    this.setDefault(element, "token", "");
+    this.setDefault(element, "oauth", false);
+    this.setDefault(element, "oacustom", {}); // can have a variable number of attributes
+    this.setDefault(element.oacustom, "enabled", false);
+    this.setDefault(element.oacustom, "appName", "");
+    this.setDefault(element.oacustom, "clientId", "");
+  },
   setProviderDefaults: function(element) {
     this.setDefault(element, "provider", "");
     this.setDefault(element, "uid", "");
     this.setDefault(element, "user", "");
-    this.setDefault(element, "oauth", false);
-    this.setDefault(element, "oacustom", {}); // can have a variable number of attributes
-    this.setDefault(element, "token", "");
+    this.setAuthProviderDefaults(element);
     this.setDefault(element, "enabled", true);
     this.setDefault(element, "enableNotifications", true);
     this.setDefault(element, "filterIfLabel", "");
@@ -172,6 +182,19 @@ const config = {
     this.renameProperty(configData, "updateManagerToken", configData, "managerRepoToken");
     configData.version = 2;
   },
+  migrateV2toV3: function(configData) {
+    // Manager repo properties are all inside a new object, copy and delte old properties
+    configData["managerRepo"] = {
+      enabled: configData.enableManagerRepo,
+      name: configData.managerRepoName,
+      token: configData.managerRepoToken
+    }
+    delete configData["enableManagerRepo"];
+    delete configData["managerRepoName"];
+    delete configData["managerRepoToken"];
+    configData.version = 3;
+  },
+
   renameProperty: function(fromParent, fromName, toParent, toName) {
     if (fromParent[fromName] != undefined) {
       toParent[toName] = fromParent[fromName];

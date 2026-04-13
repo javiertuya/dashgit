@@ -13,26 +13,47 @@ const oaconfig = {
 }
 
 describe("TestOAConfig - Creating cofigurations por OAuth", async function () {
-    it("Get GitHub valid configurations with/without customization", function () {
-        assert.deepEqual(login.getOAuthAppConfig("GitHub", "https://github.com", "https://domain/path", oaconfig, {}), {
+    it("Get GitHub valid default configurations with/without custom data", function () {
+        assert.deepEqual(login.getOAuthAppConfig("GitHub", "https://github.com", "https://domain/path", 
+            oaconfig, {}), {
             appName: 'github', authorizeUrl: 'https://github.com/login/oauth/authorize', callbackUrl: 'https://domain/path?oapp=github',
             clientId: 'client', exchangeUrl: 'https://giis.uniovi.es/desarrollo/oauth/exchange', scopes: 'repo read:user notifications'
         });
-        
-        assert.deepEqual(login.getOAuthAppConfig("GitHub", "https://github.com", "https://domain/path/", oaconfig, {appName: "github3"}), {
+        assert.deepEqual(login.getOAuthAppConfig("GitHub", "https://github.com", "https://domain/path", 
+            oaconfig, {enabled:false}), {
+            appName: 'github', authorizeUrl: 'https://github.com/login/oauth/authorize', callbackUrl: 'https://domain/path?oapp=github',
+            clientId: 'client', exchangeUrl: 'https://giis.uniovi.es/desarrollo/oauth/exchange', scopes: 'repo read:user notifications'
+        });
+        assert.deepEqual(login.getOAuthAppConfig("GitHub", "https://github.com", "https://domain/path", 
+            oaconfig, {enabled:true}), {
+            appName: 'github', authorizeUrl: 'https://github.com/login/oauth/authorize', callbackUrl: 'https://domain/path?oapp=github',
+            clientId: 'client', exchangeUrl: 'https://giis.uniovi.es/desarrollo/oauth/exchange', scopes: 'repo read:user notifications'
+        });
+        assert.deepEqual(login.getOAuthAppConfig("GitHub", "https://github.com", "https://domain/path", 
+            oaconfig, {enabled:false, appName: "aaa", clientName:"ccc" }), {
+            appName: 'github', authorizeUrl: 'https://github.com/login/oauth/authorize', callbackUrl: 'https://domain/path?oapp=github',
+            clientId: 'client', exchangeUrl: 'https://giis.uniovi.es/desarrollo/oauth/exchange', scopes: 'repo read:user notifications'
+        });
+    });
+    it("Get GitHub valid custom configurations with/without custom data", function () {
+        assert.deepEqual(login.getOAuthAppConfig("GitHub", "https://github.com", "https://domain/path/", 
+            oaconfig, {enabled:true, appName: "github3"}), {
             appName: 'github3', authorizeUrl: 'https://github.com/login/oauth/authorize', callbackUrl: 'https://domain/path/?oapp=github3',
             clientId: 'client3', exchangeUrl: 'https://giis.uniovi.es/desarrollo/oauth/exchange', scopes: 'repo notifications'
-        });
+        });        
         
-        assert.deepEqual(login.getOAuthAppConfig("GitHub", "https://github.com", "https://domain/path", oaconfig, {clientId: "otherclient"}), {
+        assert.deepEqual(login.getOAuthAppConfig("GitHub", "https://github.com", "https://domain/path", 
+            oaconfig, {enabled:true, clientId: "otherclient"}), {
             appName: 'github', authorizeUrl: 'https://github.com/login/oauth/authorize', callbackUrl: 'https://domain/path?oapp=github',
             clientId: 'otherclient', exchangeUrl: 'https://giis.uniovi.es/desarrollo/oauth/exchange', scopes: 'repo read:user notifications'
         });
+
     });
 
     it("Get empty configuration if it does not exist in OAConfig.js", function () {
         assert.deepEqual(login.getOAuthAppConfig("XXXX", "https://github.com", "https://domain/path", oaconfig, {}), {});
-        assert.deepEqual(login.getOAuthAppConfig("GitHub", "https://github.com", "https://domain/path/", oaconfig, {appName: "yyyy"}), {});
+        assert.deepEqual(login.getOAuthAppConfig("XXXX", "https://github.com", "https://domain/path", oaconfig, {enabled:false}), {});
+        assert.deepEqual(login.getOAuthAppConfig("GitHub", "https://github.com", "https://domain/path/", oaconfig, {enabled:true, appName: "yyyy"}), {});
     });
 
 });

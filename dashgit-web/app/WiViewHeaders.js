@@ -16,7 +16,7 @@ const wiHeaders = {
   },
 
   providerHeader2html: function (target, provider) {
-    if (config.data.enableManagerRepo && target == "dependabot")
+    if (config.data.managerRepo.enabled && target == "dependabot")
       return `
       <div>
         <p class="mb-0">The manager repository will access this provider with the token stored in the secret:
@@ -29,7 +29,7 @@ const wiHeaders = {
   },
 
   updateHeader2html: function () {
-    if (!config.data.enableManagerRepo)
+    if (!config.data.managerRepo.enabled)
       return `
       <div style="padding-left:8px">
         <p class="mb-3 mt-2">
@@ -48,7 +48,7 @@ const wiHeaders = {
       return `
       <div style="padding-left:8px">
         <p class="mb-3 mt-0">
-          To set up your manager repository <code>${config.data.managerRepoName}</code>,
+          To set up your manager repository <code>${config.data.managerRepo.name}</code>,
           you need to add a workflow file at <code>.github/workflows/manage-updates.yml</code>.<br/>
           <a href="#" id="wi-update-workflow-file-show">Click here to get the required content and copy it to the workflow file</a>.<br/>
           Since no token is ever transmitted out of the browser, you also need to create the secrets indicated below in each provider
@@ -89,7 +89,7 @@ const wiHeaders = {
        </p>
      </div>
      `;
-   if (!config.data.enableManagerRepo)
+   if (!config.data.managerRepo.enabled)
      html += `
      <div style="padding-left:8px">
        <p class="mb-3 mt-2 text-danger">

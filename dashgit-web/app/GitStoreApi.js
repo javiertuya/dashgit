@@ -14,12 +14,12 @@ const gitStoreApi = {
 
   // Gets all follow-ups stored in a given server url
   followUpAll: async function (provider, onlyExpired) {
-    if (!config.data.enableManagerRepo)
+    if (!config.data.managerRepo.enabled)
       return this.emptyFollowUpContent;
     const fileName = config.getProviderFollowUpFileName(provider.url, provider.user);
-    const ownerRepo = config.data.managerRepoName.split("/");
+    const ownerRepo = config.data.managerRepo.name.split("/");
     console.log(`Read follow up json file: ${fileName}`)
-    return this.getContent(config.data.managerRepoToken, ownerRepo[0], ownerRepo[1], config.param.followUpBranch, fileName)
+    return this.getContent(config.data.managerRepo.token, ownerRepo[0], ownerRepo[1], config.param.followUpBranch, fileName)
       .then(async function (response) {
         let content = JSON.parse(atob(response.data.content));
         return onlyExpired ? gitStoreApi.filterExpiredFollowUps(content) : content;
