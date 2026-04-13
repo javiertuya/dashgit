@@ -1,5 +1,6 @@
 import { Octokit } from "octokit/rest"
 import { config } from "./Config.js"
+import { login } from "./Login.js"
 
 /**
  * Secondary interface with the GitHub api to manage stored files
@@ -19,7 +20,8 @@ const gitStoreApi = {
     const fileName = config.getProviderFollowUpFileName(provider.url, provider.user);
     const ownerRepo = config.data.managerRepo.name.split("/");
     console.log(`Read follow up json file: ${fileName}`)
-    return this.getContent(config.data.managerRepo.token, ownerRepo[0], ownerRepo[1], config.param.followUpBranch, fileName)
+    const managerProvider = login.getManagerRepoProvider();
+    return this.getContent(managerProvider, ownerRepo[0], ownerRepo[1], config.param.followUpBranch, fileName)
       .then(async function (response) {
         let content = JSON.parse(atob(response.data.content));
         return onlyExpired ? gitStoreApi.filterExpiredFollowUps(content) : content;
@@ -39,15 +41,16 @@ const gitStoreApi = {
   },
 
   // Creates a new branch and a new file specified by path
-  createBranchAndContent: async function (token, owner, repo, branch, path, content, message) {
-    const branchResponse = await this.createBranch(token, owner, repo, branch);
-    const response = await this.setContent(token, owner, repo, branch, path, branchResponse.data.object.sha, content, message);
+  createBranchAndContent: async function (managerProvider, owner, repo, branch, path, content, message) {
+     const branchResponse = await this.createBranch(managerProvider, owner, repo, branch);
+    const response = await this.setContent(managerProvider, owner, repo, branch, path, branchResponse.data.object.sha, content, message);
     return response.data.content.download_url;
   },
 
   // Creates a new branch starting from the latest commit of the default branch
-  createBranch: async function (token, owner, repo, branch) {
-    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(token), });
+  createBranch: async function (managerProvider, owner, repo, branch) {
+    const token = login.getProviderToken(managerProvider);
+    const octokit = new Octokit({ userAgent: this.userAgent, auth: token, });
 
     console.log("Get default branch, sha, and create branch")
     const repoResponse = await octokit.request("GET /repos/{owner}/{repo}", { owner: owner, repo: repo });
@@ -65,8 +68,9 @@ const gitStoreApi = {
 
   // Creates or updates a file at the speciied branch.
   // If file is new, requires the sha of the old content that must be obtained with getContent
-  setContent: async function (token, owner, repo, branch, path, sha, content, message) { // NOSONAR
-    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(token), });
+  setContent: async function (managerProvider, owner, repo, branch, path, sha, content, message) { // NOSONAR
+    const token = login.getProviderToken(managerProvider);
+    const octokit = new Octokit({ userAgent: this.userAgent, auth: token, });
     const response = await octokit.rest.repos.createOrUpdateFileContents({
       owner: owner, repo: repo, branch: branch, path: path, sha: sha, content: content, message: message
     });
@@ -77,8 +81,9 @@ const gitStoreApi = {
 
   // Gets a file from the specified branch
   // Avoids using cache to overcome error 409: https://github.com/octokit/octokit.js/issues/890
-  getContent: async function (token, owner, repo, branch, path) {
-    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(token), });
+  getContent: async function (managerProvider, owner, repo, branch, path) {
+    const token = login.getProviderToken(managerProvider);
+    const octokit = new Octokit({ userAgent: this.userAgent, auth: token, });
     const response = await octokit.rest.repos.getContent({
       owner: owner, repo: repo, ref: branch, path: path, headers: { 'If-None-Match': '' }
     });

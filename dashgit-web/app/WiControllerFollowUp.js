@@ -2,6 +2,7 @@ import { gitStoreApi } from "./GitStoreApi.js"
 import { wiView } from "./WiView.js"
 import { wiServices } from "./WiServices.js"
 import { config } from "./Config.js"
+import { login } from "./Login.js"
 import { indexController } from "./IndexController.js"
 
 /**
@@ -110,9 +111,10 @@ const wiControllerFollowUp = {
   read: async function (params) {
     const fileName = config.getProviderFollowUpFileName(params.server, params.user);
     const ownerRepo = config.data.managerRepo.name.split("/");
+    const managerProvider = login.getManagerRepoProvider();
     try {
       console.log(`Read follow up json file: ${fileName}`)
-      const response = await gitStoreApi.getContent(config.data.managerRepo.token, ownerRepo[0], ownerRepo[1], config.param.followUpBranch, fileName);
+      const response = await gitStoreApi.getContent(managerProvider, ownerRepo[0], ownerRepo[1], config.param.followUpBranch, fileName);
       return { sha: response.data.sha, content: JSON.parse(atob(response.data.content)) };
     } catch (error) {
       console.log(`Can't get follow up json file, returned status ${error.status}`);
@@ -120,7 +122,7 @@ const wiControllerFollowUp = {
         console.log(`Branch or json file was not initialized. Try to create branch`);
         try {
           // create the branch to store the follow up json files, ignore failure if already exists
-          await gitStoreApi.createBranch(config.data.managerRepo.token, ownerRepo[0], ownerRepo[1], config.param.followUpBranch);
+          await gitStoreApi.createBranch(managerProvider, ownerRepo[0], ownerRepo[1], config.param.followUpBranch);
         } catch (error2) {
           console.log(`Can't create branch, returned status ${error.status}`);
           if (error2.status == 422) {
@@ -147,7 +149,8 @@ const wiControllerFollowUp = {
     // returns 409 error with some frequency. This has been reported elsewhere, eg. https://github.com/mavoweb/mavo/issues/215
     // Method gitStoreApi.setContent now removes the cache in all cases
     try {
-      let response = await gitStoreApi.setContent(config.data.managerRepo.token, ownerRepo[0], ownerRepo[1],
+      const managerProvider = login.getManagerRepoProvider();
+      let response = await gitStoreApi.setContent(managerProvider, ownerRepo[0], ownerRepo[1],
         config.param.followUpBranch, fileName,
         sha, btoa(JSON.stringify(content, null, 2)), commitMessage);
         console.log(response)

@@ -12,73 +12,101 @@ const login = {
     let token = provider.oauth ? sessionStorage.getItem(`token_${provider.uid}`) : config.decrypt(provider.token);
     return token;
   },
+  setProviderTokenByUid: function (uid, token) {
+    sessionStorage.setItem(`token_${uid}`, token);
+  },
 
   // Determines the providers that use OAuth and if they require a new login or they failed login
-  getLoginStatusForAllProviders: async function () {
-    let failed = []; // uids of providers that failed to login, to inform the user
-    let unset = []; // ids of providers that are not logged yet, decide when the login process is finished
-    for (const providerId in config.data.providers) {
-      const provider = config.data.providers[providerId];
+  getLoginStatusForAllProviders: async function () { // NOSONAR
+    let status = {
+      unsetProviders: [], // providers that are not logged yet, to decide when the login process is finished
+      failedProviders: [], // providers that failed to login, to inform the user
+      alreadySetByApp: {}, // map app-provider that are already set, to do not repeat login in others using same app
+    }
+    const providers = this.getOAuthEnabledProviders();
+    for (const provider of providers) {
+      console.log("Login.js: Provider " + provider.uid + " is configured for OAuth2, checking token and status");
+      const token = this.getProviderToken(provider);
 
-      if (provider.enabled) {
-        console.log("Login.js: Checking login mode for enabled provider " + provider.uid);
+      const providerConfig = this.getOAuthProviderConfig(provider);
+      console.log(`- Applicable configuration: ${JSON.stringify(providerConfig, null, 2)}`);
 
-        if (provider.oauth) {
-          console.log("Login.js: Provider " + provider.uid + " is configured for OAuth2, checking token and status");
-          const token = this.getProviderToken(provider);
-
-          const providerConfig = this.getOAuthProviderConfig(providerId);
-          console.log(`- Applicable configuration: ${JSON.stringify(providerConfig, null, 2)}`);
-
-          if (token) {
-            if (token === "failed") {
-              console.log("- Previous login attempt failed, skip login");
-              failed.push(provider.uid);
-            } else {
-              console.log("- Already logged");
-            }
-          } else {
-            console.log("- Requires login");
-            unset.push(providerId);
-          }
+      if (token) {
+        if (token === "failed") {
+          console.log("- Previous login attempt failed, skip login");
+          status.failedProviders.push(provider);
+        } else {
+          console.log("- Already logged");
+        }
+        status.alreadySetByApp[providerConfig.appName] = provider;
+      } else {
+        const providerWithMyApp = status.alreadySetByApp[providerConfig.appName];
+        if (providerWithMyApp) {
+          console.log(`- Provider ${provider.uid} authenticates with the same app than ${providerWithMyApp.uid}, which is known to be logged or failed, set this token`);
+          const token = this.getProviderToken(providerWithMyApp);
+          this.setProviderTokenByUid(provider.uid, token);
+          if (token == "failed")
+            status.failedProviders.push(provider);
+        } else {
+          console.log("- Requires login");
+          status.unsetProviders.push(provider);
         }
       }
     }
-    return { unsetProviders: unset, failedProviders: failed };
+    return status;
   },
   getOAuthEnabledProviders: function() {
     let providers = [];
-    for (const providerId in config.data.providers) {
-      const provider = config.data.providers[providerId];
+    for (const provider of config.data.providers) {
       if (provider.enabled && provider.oauth) {
         providers.push(provider);
       }
     }
+    // Adds the manager repo if it is also configured for oauth
+    const managerProvider = this.getManagerRepoProvider();
+    if (managerProvider.enabled && managerProvider.oauth)
+      providers.push(managerProvider);
     return providers;
+  },
+  
+  // The manager repo (in config.data) has properties related to authentication with the same names than providers,
+  // but they lack some others to allow manage its OAuth authentication like the other providers
+  getManagerRepoProvider: function() {
+    const manager = config.data.managerRepo;
+    const provider = {
+      provider: "GitHub",
+      uid: "manager-repo-github",
+      token: manager.token,
+      oauth: manager.oauth,
+      oacustom: manager.oacustom,
+      enabled: manager.enabled,
+      url: "https://github.com"
+    };
+    return provider;
   },
 
   // Interface with the auth module to initiate the login and the callback
-  startLoginForProvider: async function (providerId) {
-    console.log("Login.js: Starting login for provider " + providerId);
-    let conf = this.getOAuthProviderConfig(providerId);
+  startLoginForProvider: async function (provider) {
+    console.log("Login.js: Starting login for provider " + provider.uid);
+    let conf = this.getOAuthProviderConfig(provider);
 
-    sessionStorage.setItem("providerKey", providerId)
-    await this.logDebug("Login with provider " + providerId + ", requesting...");
+    sessionStorage.setItem("providerKey", provider.uid)
+    await this.logDebug("Login with provider " + provider.uid + ", requesting...");
 
     // To prevent the startLogin transfer control to a non existent url because a bad configuration,
     // check first if the configuration was found, using the error display mechanisms in the auth.js module
     // that mark it as failed and notify the user
     if (Object.keys(conf).length === 0) {
-      const customAppName = config.data.providers[providerId].oacustom.enabled ? config.data.providers[providerId].oacustom.appName : "";
+      const customAppName = provider.oacustom.enabled ? provider.oacustom.appName : "";
       if (customAppName == "") // the default was not found, this should never happen
-        await this.failedLogin(`The default app could not be found, provider ${providerId}."`);
+        await this.failedLogin(`The default app could not be found, provider ${provider.uid}."`);
       else // The user specified a wrong custom app
-        await this.failedLogin(`The custom app "${customAppName}" could not be found, provider ${providerId}. Please, review your OAuth custom settings"`);
+        await this.failedLogin(`The custom app "${customAppName}" could not be found, provider ${provider.uid}. Please, review your OAuth custom settings"`);
       return;
     }
     // Localhost is not a valid host for OAuth2 callbacks, simulates the callback (that will fail)
     if (window.location.host === "localhost") {
-      await new Promise(r => setTimeout(r, 2000));
+      //await new Promise(r => setTimeout(r, 2000));
       window.location.href = "http://localhost/dashgit/?oapp=github";
       return;
     }
@@ -86,17 +114,17 @@ const login = {
     await startLogin(conf);
   },
   handleCallbackFromApp: async function (app) {
-    const providerId = sessionStorage.getItem("providerKey");
+    const providerUid = sessionStorage.getItem("providerKey");
     console.log("Login.js: Callback received from " + app + ", starting login procedure");
-    await this.logDebug("Login with provider " + providerId + ", authorizing...");
+    await this.logDebug("Login with provider " + providerUid + ", authorizing...");
     // Localhost is not a valid host for OAuth2 callbacks, fails immediately 
     // (nevertheless we can use 127.0.0.1 to test the real failure)
     if (window.location.host === "localhost") {
-      await new Promise(r => setTimeout(r, 2000));
+      //await new Promise(r => setTimeout(r, 2000));
       await this.failedLogin("Invalid host: " + window.location.host);
       return;
     }
-    if (!providerId) {
+    if (!providerUid) {
       await this.logError("Provider ID is undefined");
       return;
     }
@@ -106,25 +134,17 @@ const login = {
   },
 
   // Invoked from the auth module at the end of the callback to notify the status:
-  // - when the login is successful to save the token and ensure the the provider is marked as oauth
+  // - when the login is successful to save the token
   // - when the login fails to ensure a special value in the token to avoid autentication loops
 
   successfulLogin: async function (token) {
-    const providerId = sessionStorage.getItem("providerKey");
-    config.load();
-    config.data.providers[providerId].oauth = true;
-    config.save();
-    login.saveOAuthTokenById(token, providerId);
+    const providerUid = sessionStorage.getItem("providerKey");
+    this.setProviderTokenByUid(providerUid, token);
   },
   failedLogin: async function (message) {
     await this.logError(message);
-    const providerId = sessionStorage.getItem("providerKey");
-    login.saveOAuthTokenById("failed", providerId);
-  },
-  saveOAuthTokenById: function (token, providerId) {
-    config.load();
-    const uid = config.data.providers[providerId].uid;
-    sessionStorage.setItem(`token_${uid}`, token);
+    const providerUid = sessionStorage.getItem("providerKey");
+    this.setProviderTokenByUid(providerUid, "failed");
   },
   retryOAuth: function () {
     const providers = this.getOAuthEnabledProviders();
@@ -153,9 +173,8 @@ const login = {
   },
 
 
-  getOAuthProviderConfig: function (providerId) {
+  getOAuthProviderConfig: function (provider) {
     const thisUrl = window.location.protocol + "//" + window.location.host  + window.location.pathname
-    const provider = config.data.providers[providerId];
     return this.getOAuthAppConfig(provider.provider, provider.url, thisUrl, oaconfig, provider.oacustom);
   },
 

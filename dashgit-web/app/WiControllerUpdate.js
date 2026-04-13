@@ -1,6 +1,7 @@
 import { gitStoreApi } from "./GitStoreApi.js"
 import { wiView } from "./WiView.js"
 import { config } from "./Config.js"
+import { login } from "./Login.js"
 
 /**
  * Additional work item controller to manage the combined updates 
@@ -71,7 +72,8 @@ const wiControllerUpdate = {
     console.log("Push combined updates, model: " + JSON.stringify(model, null, 2));
     // Creates the dedicated branch and json file in the update repository manager,
     // this will trigger the GitHub Actions that perform the required tasks
-    gitStoreApi.createBranchAndContent(config.data.managerRepo.token, ownerRepo[0], ownerRepo[1], branch, path, btoa(content), message)
+    const managerProvider = login.getManagerRepoProvider();
+    gitStoreApi.createBranchAndContent(managerProvider, ownerRepo[0], ownerRepo[1], branch, path, btoa(content), message)
     .then(async function(responseUrl) {
       wiView.confirmUpdateEnd(`https://github.com/${config.data.managerRepo.name}/actions`, responseUrl);
     }).catch(async function(error) {

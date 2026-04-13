@@ -122,8 +122,9 @@ const indexController = {
 
     // The view is rendered, now we can finishs some pending chores related to the login process
     if (loginResult.failedProviders.length > 0) {
-      console.log("Login.js: The following OAuth2 providers failed to log in: " + loginResult.failedProviders.join(", "));
-      $("#oauth-reset-message").text( `OAuth2 authentication failed for the provider(s) ${loginResult.  failedProviders.join(", ")}. `
+      const uids = loginResult.failedProviders.map(a => a.uid);
+      console.log("Login.js: The following OAuth2 providers failed to log in: " + uids.join(", "));
+      $("#oauth-reset-message").text( `OAuth2 authentication failed for the provider(s) ${uids.join(", ")}. `
         + " Please check the configuration or switch back to PAT authentication and retry.");
       $("#oauth-reset").show();
     } else {

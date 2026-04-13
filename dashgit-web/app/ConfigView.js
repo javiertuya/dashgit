@@ -207,7 +207,7 @@ const configView = {
   },
   anyGitHubWithoutToken: function (data) {
     for (let provider of data.providers)
-      if (provider.provider == "GitHub" && provider.token == "")
+      if (provider.provider == "GitHub" && !provider.oauth && provider.token == "")
         return true;
     return false;
   },
