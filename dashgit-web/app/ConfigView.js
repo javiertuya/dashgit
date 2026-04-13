@@ -10,7 +10,7 @@ const configView = {
     <ul class="nav nav-underline">
       <li class="nav-item"><a class="nav-link config-nav-link active" id="config-providers" aria-current="page" href="#">Configure providers</a></li>
       <li class="nav-item"><a class="nav-link config-nav-link" id="config-import-export" href="#">Import and export</a></li>
-      <li class="nav-item"><a class="nav-link config-nav-link" id="config-encrypt" href="#">Encrypt API access tokens</a></li>
+      <li class="nav-item"><a class="nav-link config-nav-link" id="config-encrypt" href="#">Encrypt personal access tokens</a></li>
       <li class="nav-item"><a class="nav-link config-nav-link" id="config-reset" href="#">Reset password and tokens</a></li>
     </ul>
     <form class="config-form" id="config-form"></form>
@@ -46,23 +46,25 @@ const configView = {
     return `
     <div class="card mt-2 text-bg-light" id="config-providers-common">
       <div class="card-body pt-2 pb-2">
-        ${data.providers.length == 0
-        ? `<p class="card-text mb-1 text-danger">To start using DashGit you have to add a GitHub or GitLab provider and set the username that is accessing the repository. `
-          + `This will give you access to the public repositories at github.com or gitlab.com, respectively.</p>`
-          + `<p class="card-text mb-1 text-danger">It is recommended to set up an API Access Token because unauthenticated providers are subject to lower rate limits and do not allow you to view branches, build statuses and notifications.</p>`
-        : ""}
-
-        <p class="card-text mb-1">
-          ${data.encrypted
-        ? "API access tokens in this configuration will be saved encrypted. If you forget your password you will have to reset both password and tokens."
-        : "This configuration is stored in the browser local memory. You can set up a password to encrypt the API access tokens."
-        }
+        <p class="card-text mb-1" style="display: none">
+This configuration is stored in the browser local storage. For any change to take effect, click the Save configuration button.
         </p>
-
-        ${this.anyGitHubWithoutToken(data)
-        ? `<p class="card-text mb-1 text-danger">GitHub unauthenticated providers are subject to lower rate limits and do not allow you to view branches, build statuses and notifications. `
-          + `It is recommended to set up an API Access Token.</p>`
-        : ""}
+        <p id="stauts-no-providers" class="card-text mb-1 text-danger style="display: none"">
+To start using DashGit you have to add a GitHub or GitLab provider and set the username that is accessing the repository. 
+This will give you access to the public repositories at github.com, gitlab.com or GitLab on-premises.
+        </p>
+        <p id="status-without-auth" class="card-text mb-1 text-danger style="display: none"">
+It is recommended to enable OAuth2 or set up a Personal Access Token (PAT) in all providers because unauthenticated API calls are subject to lower rate limits and do not allow you to view branches, build statuses and notifications.
+        </p>
+        <p id="status-with-unencrypted-pat" class="card-text mb-1 style="display: none"">
+You should set up a password to encrypt the Personal Access Tokens (PAT) or use OAuth2 and remove all PATs to protect sensitive information.
+        </p>
+        <p id="status-with-encrypted-pat" class="card-text mb-1 style="display: none"">
+Personal access tokens in this configuration will be saved encrypted. If you forget your password you will have to reset both password and tokens.
+        </p>
+        <p id="status-with-oauth-and-pat" class="card-text mb-1 style="display: none"">
+Some providers use OAuth but also store a PAT. This PAT should be removed.
+        </p>
 
         <h6 class="card-subtitle mb-1 mt-1 text-body-secondary">Common parameters:</h6>
         <div class="row">
@@ -111,9 +113,9 @@ const configView = {
           ${this.input2html(`config-providers-filterIfLabel-${key}`, "text", "Filter if label", provider.filterIfLabel, '', "150", "150",
             "Filters out work items that contain the specified label.")}
           ${this.array2html(`config-providers-unassignedAdditionalOwner-${key}`, "text", "Add owners to unassigned", provider.unassignedAdditionalOwner, '', "225", "150",
-            "The default scope of Unassigned view is restricted to the repository of the token owner. Here you can include other users or organizations (separated by spaces)")}
+            "The default scope of Unassigned view is restricted to the repository of the authenticated user. Here you can include other users or organizations (separated by spaces)")}
           ${this.array2html(`config-providers-dependabotAdditionalOwner-${key}`, "text", "Add owners to dependabot", provider.dependabotAdditionalOwner, '', "225", "150",
-            "The default scope of Dependabot view is restricted to the repository of the token owner. Here you can include other users or organizations (separated by spaces)")}
+            "The default scope of Dependabot view is restricted to the repository of the authenticated user. Here you can include other users or organizations (separated by spaces)")}
           ${this.check2html(`config-providers-enableNotifications-${key}`, "Show notifications/mentions", provider.enableNotifications)}
         </div>
 
@@ -158,7 +160,7 @@ const configView = {
         <div class="row">
           ${this.input2html(`config-updates-tokenSecret-${key}`, "text", "Secret Name to store the token", 
             provider.updates.tokenSecret, provider.user == "" ? "disabled" : "", "250", "300",
-            "The name of a GitHub secret to store the API access token used to access from the manager repository to other repositories")}
+            "The name of a GitHub secret to store the personal access token used to access from the manager repository to other repositories")}
           ${this.input2html(`config-updates-userEmail-${key}`, "email", "User identified by this email", provider.updates.userEmail, '', "250", "300",
             "Optional email used to identify who creates the combined pull request and commits (if not set, some commits may not be identified as done by you)")}
         </div>
@@ -188,8 +190,8 @@ const configView = {
           ${this.check2html(`config-providers-auth-select-${key}`,
                 `Use OAuth2 to authenticate <a href="" target="_blank">[learn more]</a>`,
                 provider.oauth,
-                "If checked, the authentication is done with OAuth2+PKCS instead of using a Personal Access Token (PAT). After saving the configuration and browsing to other view, you will be redirected to the provider login page to complete the authentication.")}
-          ${this.input2html(`config-providers-token-${key}`, "password", "Access token (PAT)", provider.token, '', "150", "225",
+                "If checked, the authentication is done with OAuth2+PKCS instead of using a Personal Access Token (PAT). After saving the configuration and browsing to other view, you will be redirected to the provider login page to complete the authentication.", true)}
+          ${this.input2html(`config-providers-token-${key}`, "password", "Personal Access token (PAT)", provider.token, '', "225", "150",
               "An Personal Access Token (PAT) with read permission to the repository, used to authenticate the repository API requests for this provider.")}
           ${" &nbsp; "}
           ${this.check2html(`config-providers-oauth-customize-${key}`,
@@ -204,12 +206,6 @@ const configView = {
             "The client ID of the GitHub OAuth App. Leave empty if you use github2 as the app name.")}
         </div>
     `;
-  },
-  anyGitHubWithoutToken: function (data) {
-    for (let provider of data.providers)
-      if (provider.provider == "GitHub" && !provider.oauth && provider.token == "")
-        return true;
-    return false;
   },
 
   // Retrieve the info in the ui and returns a config data structure to the controller
@@ -291,6 +287,7 @@ const configView = {
     this.refreshProviderDefaults();
     this.refreshProviderSurrogates();
     this.refreshMoveStatus();
+    this.refreshAuthenticationStatus();
   },
   // refresh for changes on the enabled states of the manager repository
   refreshUpdateManagerRepo: function () {
@@ -409,6 +406,33 @@ const configView = {
     }
   },
 
+  refreshAuthenticationStatus: function () { // NOSONAR
+    $("#stauts-no-providers").hide();
+    $("#status-without-auth").hide();
+    $("#status-with-unencrypted-pat").hide();
+    $("#status-with-encrypted-pat").hide();
+    $("#status-with-oauth-and-pat").hide();
+    $("#status-all-without-pat").hide();
+    const data = config.data;
+    if (data.providers.length == 0) {
+      $("#stauts-no-providers").show();
+      return;
+    }
+    let oauthWithoutPat = 0;
+    for (let provider of data.providers) {
+      if (provider.token == "" && !provider.oauth)
+        $("#status-without-auth").show();
+      if (!data.encrypted && provider.token != "")
+        $("#status-with-unencrypted-pat").show();
+      if (data.encrypted && provider.token != "")
+        $("#status-with-encrypted-pat").show();
+      if (provider.oauth && provider.token != "")
+        $("#status-with-oauth-and-pat").show();
+      if (data.encrypted && provider.oauth && provider.token == "")
+        oauthWithoutPat++;
+    }
+  },
+
   // View manipulation
 
   addProvider: function (provider) {
@@ -448,9 +472,9 @@ const configView = {
   renderEncrypt: function (target, encrypted) {
     this.renderHeaderState($(target), encrypted);
     $("#config-form").html(this.encloseInsideCard(`
-  <p>This configuration is stored in your browser's local storage. You can set a password to encrypt the API access tokens.</p>
+  <p>This configuration is stored in your browser's local storage. You can set a password to encrypt the personal access tokens.</p>
       <div class="row">
-  ${this.inputSimple2html("inputEncryptPassword", "password", "Enter a password to encrypt the API access tokens:", "Required")}
+  ${this.inputSimple2html("inputEncryptPassword", "password", "Enter a password to encrypt the Personal Access Tokens (PAT):", "Required")}
       ${this.button2html("inputEncryptButton", "submit", "Encrypt")}
       </div>
     `));
@@ -458,8 +482,8 @@ const configView = {
   renderDecrypt: function (target, encrypted) {
     this.renderHeaderState($(target), encrypted);
     $("#config-form").html(this.encloseInsideCard(`
-  <p>The API access tokens in this configuration are encrypted. If you forgot your password, you must reset both the password and the tokens.</p>
-      <div class="row">${this.button2html("inputDecryptButton", "submit", "Reset password and access tokens", "btn-danger")}</div>
+  <p>The personal access tokens in this configuration are encrypted. If you forgot your password, you must reset both the password and the tokens.</p>
+      <div class="row">${this.button2html("inputDecryptButton", "submit", "Reset password and tokens", "btn-danger")}</div>
     `));
   },
   renderImportExport: function (target, data) {
@@ -475,7 +499,7 @@ const configView = {
   login2html: function () { //this is used from the index to set the decrypt password
     return `
     <form id="config-encrypt" class="form-group row" novalidate>
-  <p>Enter the password used to encrypt the access tokens. If you forgot your password, click Skip and go to the configuration page to reset it.</p>
+  <p>Enter the password used to encrypt the personal access tokens. If you forgot your password, click Skip and go to the configuration page to reset it.</p>
   ${this.inputSimple2html("inputPassword", "password", "Enter your password:", "Required")}
       ${this.button2html("inputPasswordButton", "submit", "Submit")}
       ${this.button2html("inputSkipButton", "submit", "Skip")}

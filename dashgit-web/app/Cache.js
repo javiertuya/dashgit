@@ -162,9 +162,10 @@ const cache = {
     for (let provider of providers) { // ensure that surrogated and surrogate are linked and enabled
       if (provider.enabled && provider.statusSurrogateUser != "") {
         for (let surrogate of providers) { // surrogate is the first enabled that match url and user
-          if (provider.uid != surrogate.uid && surrogate.enabled
+          if (provider.uid != surrogate.uid && surrogate.enabled && surrogate.statusSurrogateUser == ""
             && provider.provider == surrogate.provider && provider.url == surrogate.url && provider.statusSurrogateUser == surrogate.user) {
             surrogates[provider.uid] = surrogate.uid;
+            console.log(`Surrogate relation: ${provider.uid} -> ${surrogate.uid}`);
             break;
           }
         }

@@ -17,6 +17,7 @@
 
 This dashboard offers:
 - A unified view of multiple GitHub and GitLab repositories.
+- Authentication using OAuth2 or Personal Access Tokens (PAT)
 - Multiple perspectives on your work items, including:
   - Open issues and pull requests
   - Review requests and requests for changes
@@ -36,25 +37,32 @@ Below is an example view of DashGit configured to manage two GitHub and one GitL
 ## Quick Start
 
 To get started, go to [https://javiertuya.github.io/dashgit](https://javiertuya.github.io/dashgit),
-open the Configure tab, and specify a GitHub provider by entering your username and an access token:
-- Use a personal access token (classic) with `repo` and `notifications` permissions
-  (see below for how to narrow the scope of tokens or use fine-grained tokens).
+open the Configure tab, add a GitHub provider:
+- Enter your username
+- Set the authentication method:
+  - Select the OAuth2 authentication switch
+  - Or set a Personal Access Token (classic) with `repo` and `notifications` permissions
+    (see below for how to narrow the scope of tokens or use fine-grained tokens).
 - Leave other parameters at their default values.
-- You can omit the token, but this will subject you to lower rate limits and will not allow you to view the branches tab, build statuses, or notifications.
+- You can access without authentication, but this will subject you to lower rate limits and will not allow you to view the branches tab, build statuses, or notifications.
 
-The configuration is stored in your browser's local memory.
-To protect your tokens, you can encrypt them with a password, which will be requested when you open a new DashGit browser tab.
+The configuration is stored in your browser's local storage.
+If you authenticate using Personal Access Tokens (PAT) you can encrypt them with a password, which will be requested when you open a new DashGit browser tab.
 
 ## Features and Configuration
 
 The different *views* (tabs) in the UI display open *work items* (issues, pull requests, etc.) in a collapsible panel for each *provider*.
-A provider is defined by a repository type (GitHub, GitLab), a *user*, and an access *token* to authenticate requests.
-You can define any combination (e.g., providers with the same username but different tokens, or different usernames but the same token).
+A provider is defined by a repository type (GitHub, GitLab), a *user*, and an method (OAuth or PAT) to authenticate requests.
+You can define any combination (e.g., providers with the same username but different authentication, or different usernames but the same authentication).
 
-### API access token permissions
+### OAuth authentication
+
+TODO
+
+### PAT token permissions
 Each tab in DashGit issues different API calls to the repository APIs to get issues, pull requests, notifications, branches, and build statuses,
 which require different permission levels.
-Below, the token permissions are described for different scenarios:
+Below, required token permissions are described for different scenarios when using PAT:
 
 - **GitHub authenticated with personal access tokens (classic):**
   - To access public and private repositories: `repo` and `notifications` permissions (recommended).
@@ -75,9 +83,9 @@ Below, the token permissions are described for different scenarios:
     (and `Notifications` when available).
 - **GitLab:** Set a personal access token with `api` permission.
 
-### API access token encryption
-As mentioned above, the configuration is stored in the browser's local memory and all processing occurs in the browser.
-To protect sensitive information (the access tokens), the user is given the option to encrypt the tokens using a password.
+### PAT token encryption
+As mentioned above, the configuration is stored in the browser's local storage and all processing occurs in the browser.
+To protect sensitive information (the PATs), the user is given the option to encrypt them using a password.
 If you set a password, the next time you open DashGit you will be asked for it.
 
 If you forget the password, you are given the option to skip. In that case, you may notice that API calls fail: you should go
@@ -91,11 +99,11 @@ These settings are not stored in the configuration.
 
 ### Scope configuration
 The *username* is the reference user for whom the work items are displayed (assigned to, created by, etc.),
-and the token defines the scope of the request that determines what items are displayed.
-Note that the username can be someone other than the token owner.
+and the authenticated user (OAuth or PAT owner) defines the scope of the request that determines what items are displayed.
+Note that the username can be someone other than the authenticated user.
 
-- The scope of Assigned, Involved, and Created views is any repository visible to the token.
-- The scope of Triage (unassigned) and Dependabot views is restricted to the repository of the token owner.
+- The scope of Assigned, Involved, and Created views is any repository visible to the authenticated user.
+- The scope of Triage (unassigned) and Dependabot views is restricted to the repository of the authenticated user.
   If you need to include other users or organizations, you must set them in the `Add owners to unassigned`
   or `Add owners to dependabot` parameters, respectively.
 - The scope of the Branches view is handled differently, as data is obtained by GraphQL API requests instead of the REST API.
@@ -131,7 +139,7 @@ These features require a bit more configuration:
 Because DashGit works entirely in the browser without a backend server, you must set up a dedicated (private) repository—called the *manager repository*—before using these features:
 - Create the manager repository in GitHub: It is recommended to keep it private, since although no token is sent to it, the logs may contain sensitive information such as URLs or usernames when accessing private or on-premises repositories.
 - Enable the manager repository: Go to the Configure tab and check *Enable a Manager Repository for advanced functions*.
-  Provide the name of the manager repository (OWNER/REPO) and the token used to push the combined updates or follow-up payload.
+  Provide the name of the manager repository (OWNER/REPO) and the authentication method (OAuth or PAT) used to push the combined updates or follow-up payload.
 
 ### Combined Dependabot Updates
 
@@ -143,7 +151,7 @@ The combined PR will be merged if the build is successful.
 
 This requires the previous setup of the manager repository (see above) and a bit of additional configuration:
 - Configure the workflow: Go to the Dependabot tab and follow the instructions to obtain the content of `.github/workflows/manage-updates.yml`. Add this file to the manager repository.
-- Set the API access tokens: In each provider on the Dependabot view, you will see the name of a token. Create these tokens in the manager repository. Their stored value must be a token used to create the combined PRs.
+- Set the API access tokens: In each provider on the Dependabot view, you will see the name of a token. Create the secrets with the indicated name and and the token as value in the manager repository. Their stored value will be used to create the combined PRs.
 
 Notes:
 - On GitLab, projects have automerge enabled by default, but on GitHub you need to explicitly enable it per repository from Settings > General. It is recommended to activate the automatic deletion of head branches when PRs are merged.

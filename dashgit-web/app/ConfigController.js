@@ -46,20 +46,25 @@ $(document).on('change', '#config-providers-enabled-mgrepo', function (e) {
 });
 $(document).on('change', '[id^="config-providers-auth-select-"]', function (e) {
   configView.refreshAll();
+  e.stopPropagation();
 });
 $(document).on('change', '[id^="config-providers-oauth-customize-"]', function (e) {
   configView.refreshAll();
+  e.stopPropagation();
 });
 $(document).on('change', '[id^="config-providers-surrogate-enabled-"]', function (e) {
   configView.refreshProviderSurrogate(this, $(this).is(':checked'));
+  e.stopPropagation();
 });
 
 // Only one of these checkboxes can be checked
 $(document).on('change', '[id^="config-graphql-include-forks-"]', function (e) {
   configView.refreshGraphqlIncludeForks(this, $(this).is(':checked'));
+  e.stopPropagation();
 });
 $(document).on('change', '[id^="config-graphql-only-forks-"]', function (e) {
   configView.refreshGraphqlOnlyForks(this, $(this).is(':checked'));
+  e.stopPropagation();
 });
 
 // Data update events

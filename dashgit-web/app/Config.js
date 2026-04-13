@@ -3,6 +3,8 @@ import { encryption } from "./Encryption.js"
 /**
  * Shared persitent data: configuration of parameters, providers, etc. 
  */
+const DASHGIT_CONFIG = "dashgit-config"; // Store: all configuration
+const LAST_VISITED_DATES = "dashgit-config-visited"; // Store: to highlight recent items
 const config = {
 
   //App version number, do not push any change of it, this is set during deploy
@@ -35,13 +37,13 @@ const config = {
 
   // Load and save config data from browser storage
   load: function () {
-    let configStr = localStorage.getItem("dashgit-config");
+    let configStr = localStorage.getItem(DASHGIT_CONFIG);
     config.data = this.parseAndSanitizeData(configStr);
     // save to storage (data could be changed by santization or migration)
     config.save();
   },
   save: function () {
-    localStorage.setItem("dashgit-config", JSON.stringify(config.data));
+    localStorage.setItem(DASHGIT_CONFIG, JSON.stringify(config.data));
   },
   encryptTokens: function () {
     config.data.managerRepo.token=this.encrypt(config.data.managerRepo.token, config.xtoken);
@@ -243,10 +245,10 @@ const config = {
     // this means that some item may be highlighted twice if updated during this period
     // but avoids and item not to be highlighted when it should
     visited[target] = new Date(currentDate-4000);
-    localStorage.setItem("dashgit-config-visited", JSON.stringify(visited));
+    localStorage.setItem(LAST_VISITED_DATES, JSON.stringify(visited));
   },
   getVisitedDates: function() {
-    let value = localStorage.getItem("dashgit-config-visited");
+    let value = localStorage.getItem(LAST_VISITED_DATES);
     if (value == undefined || value == null)
       value = "{}";
     return JSON.parse(value);

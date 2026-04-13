@@ -6,20 +6,24 @@ import { login } from "../Login.js";
  * This module handles the OAuth2 login flow, including PKCE generation and token exchange.
  * Information flow:
  * - startLogin() is called when there is a provider that needs OAuth2 login. It calls the OAuth2 app.
- * - startCalback() is called in response to the OAuth2 app callback. The authentcation is completed.
- * - Logging functions logDebug and logError are used to display messages in the UI and console.
- * - The final result is communicated to the Login module, which will update the UI and store the token for future use.
+ * - handleCalback() is called in response to the OAuth2 app callback. The authentcation is completed.
+ * - The final result is communicated to the Login module by callin successfulLogin and failedLogin, 
+ *   which will update the UI and store the token for future use.
  *
  * Remarks:
- * - Both start* methods need to share parameters that are not passed through the URL, 
- *  so they are stored in sessionStorage (providerKey and oaconfig) and cleared when they are no longer needed.
- * - When DashGit runs in localhost, it is not possible to use real OAuth2 callbacks, so the flow is simulated (with a failure)
+ * - The startLogin receives oaconfig, which contains all configuration parameters related to the endpoints, client id, etc.
+ * - handleCallback needs the oaconfig parameters that are not passed through the URL, 
+ *  so they are stored in sessionStorage and cleared when they are no longer needed.
  */
+
+const OACONFIG = "dashgit-oauth-oaconfig"; // Store: configuration for oauth authentication
+const PKCE_VERIFIER = "dashgit-pkce-verifier";
+
 export async function startLogin(oaconfig) {
-  sessionStorage.setItem("oaconfig", JSON.stringify(oaconfig))
+  sessionStorage.setItem(OACONFIG, JSON.stringify(oaconfig))
 
   const { code_verifier, code_challenge } = await generatePKCE();
-  localStorage.setItem("pkce_verifier", code_verifier);
+  localStorage.setItem(PKCE_VERIFIER, code_verifier);
 
   const url =
     oaconfig.authorizeUrl +
@@ -34,8 +38,8 @@ export async function startLogin(oaconfig) {
 }
 
 export async function handleCallback() {
-  const oaconfig = JSON.parse(sessionStorage.getItem("oaconfig"));
-  sessionStorage.removeItem("oaconfig"); // not needed anymore in storage
+  const oaconfig = JSON.parse(sessionStorage.getItem(OACONFIG));
+  sessionStorage.removeItem(OACONFIG); // not needed anymore in storage
   try {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
@@ -62,7 +66,7 @@ export async function handleCallback() {
 };
 
 export async function exchangeCodeForToken(code, oaconfig) {
-  const code_verifier = localStorage.getItem("pkce_verifier");
+  const code_verifier = localStorage.getItem(PKCE_VERIFIER);
 
   const body = {
     client_id: oaconfig.clientId,

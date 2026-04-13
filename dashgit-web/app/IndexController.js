@@ -83,6 +83,7 @@ $(document).on('search', '.wi-view-filter-input', async function () { // clearin
   wiView.saveViewFilterState();
 });
 
+const LAST_TAB = "dashgit-config-last-selected-tab"; // Store: last selected tab in the UI
 const indexController = {
 
   // Main entry point invoked from index.html
@@ -149,16 +150,16 @@ const indexController = {
   // Stores in the tab name in session to allow restoring it after a reload, and performs the rendering of the target tab
   tabControlEntering: function (target) {
     console.log("*** Entering tab " + target);
-    const lastTarget = sessionStorage.getItem("selectedTab");
+    const lastTarget = sessionStorage.getItem(LAST_TAB);
     // Target is rendered with one exception: when last selected tab is config, we need to update everything because
     // the configuration may have changed authentication or provider settings.
     if (lastTarget == "config" && target != "config") {
-      sessionStorage.setItem("selectedTab", target); // to reload the target tab, not the last target
+      sessionStorage.setItem(LAST_TAB, target); // to reload the target tab, not the last target
       window.location.reload();
     } else {
       indexController.render();
     }
-    sessionStorage.setItem("selectedTab", target);
+    sessionStorage.setItem(LAST_TAB, target);
   },
   // Select a tab programmatically, this triggers tabControlEntering
   tabControlSelect: async function (target) {
@@ -168,7 +169,7 @@ const indexController = {
   },
   // if there is a lastTarget stored, select it, otherwise select the default target
   tabControlSelectLastOrDefault: async function (defaultTarget) {
-    const lastTarget = sessionStorage.getItem("selectedTab");
+    const lastTarget = sessionStorage.getItem(LAST_TAB);
     console.log("*** Selecting last tab, default " + defaultTarget + " last target " + lastTarget);
     this.tabControlSelect(lastTarget || defaultTarget);
   },
@@ -204,6 +205,7 @@ const indexController = {
   patLoginMode: function () {
     this.clearMode();
     $("#header-authentication").show();
+    $("#inputPassword").show();
     $("#inputPassword").focus();
   },
   oauthLoginMode: function () {
