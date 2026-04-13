@@ -3,8 +3,8 @@ import { login } from "../app/Login.js"
 
 const oaconfig = {
     GitHub: {
-        github1: { clientId: "client1", scopes: "repo:read read:user notifications", },
-        github2: { clientId: "client2", scopes: "repo:read notifications", },
+        github: { clientId: "client", scopes: "repo read:user notifications", },
+        github2: { clientId: "client2", scopes: "repo notifications", },
         github3: { clientId: "client3", scopes: "repo notifications", },
     },
     //GitLab: {
@@ -13,20 +13,26 @@ const oaconfig = {
 }
 
 describe("TestOAConfig - Creating cofigurations por OAuth", async function () {
-    it("Get GitHub valid configurations", function () {
-        assert.deepEqual(login.getOAuthAppConfig(oaconfig, "GitHub", "github1", "https://domain/path"), {
-            appName: 'github1', authorizeUrl: 'https://github.com/login/oauth/authorize', callbackUrl: 'https://domain/path?oapp=github1',
-            clientId: 'client1', exchangeUrl: 'https://giis.uniovi.es/desarrollo/oauth/exchange', scopes: 'repo:read read:user notifications'
+    it("Get GitHub valid configurations with/without customization", function () {
+        assert.deepEqual(login.getOAuthAppConfig("GitHub", "https://github.com", "https://domain/path", oaconfig, {}), {
+            appName: 'github', authorizeUrl: 'https://github.com/login/oauth/authorize', callbackUrl: 'https://domain/path?oapp=github',
+            clientId: 'client', exchangeUrl: 'https://giis.uniovi.es/desarrollo/oauth/exchange', scopes: 'repo read:user notifications'
         });
-        assert.deepEqual(login.getOAuthAppConfig(oaconfig, "GitHub", "github3", "https://domain/path/"), {
+        
+        assert.deepEqual(login.getOAuthAppConfig("GitHub", "https://github.com", "https://domain/path/", oaconfig, {appName: "github3"}), {
             appName: 'github3', authorizeUrl: 'https://github.com/login/oauth/authorize', callbackUrl: 'https://domain/path/?oapp=github3',
             clientId: 'client3', exchangeUrl: 'https://giis.uniovi.es/desarrollo/oauth/exchange', scopes: 'repo notifications'
         });
+        
+        assert.deepEqual(login.getOAuthAppConfig("GitHub", "https://github.com", "https://domain/path", oaconfig, {clientId: "otherclient"}), {
+            appName: 'github', authorizeUrl: 'https://github.com/login/oauth/authorize', callbackUrl: 'https://domain/path?oapp=github',
+            clientId: 'otherclient', exchangeUrl: 'https://giis.uniovi.es/desarrollo/oauth/exchange', scopes: 'repo read:user notifications'
+        });
     });
 
-    it("Get empty configuration does not exist", function () {
-        assert.deepEqual(login.getOAuthAppConfig(oaconfig, "XXXX", "github1", "https://domain/path"), {});
-        assert.deepEqual(login.getOAuthAppConfig(oaconfig, "GitHub", "xxxx", "https://domain/path/"), {});
+    it("Get empty configuration if it does not exist in OAConfig.js", function () {
+        assert.deepEqual(login.getOAuthAppConfig("XXXX", "https://github.com", "https://domain/path", oaconfig, {}), {});
+        assert.deepEqual(login.getOAuthAppConfig("GitHub", "https://github.com", "https://domain/path/", oaconfig, {appName: "yyyy"}), {});
     });
 
 });

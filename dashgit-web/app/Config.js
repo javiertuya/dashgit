@@ -111,7 +111,7 @@ const config = {
     this.setDefault(element, "uid", "");
     this.setDefault(element, "user", "");
     this.setDefault(element, "oauth", false);
-    this.setDefault(element, "oacustom", {}); // can havr a variable number of attributes
+    this.setDefault(element, "oacustom", {}); // can have a variable number of attributes
     this.setDefault(element, "token", "");
     this.setDefault(element, "enabled", true);
     this.setDefault(element, "enableNotifications", true);

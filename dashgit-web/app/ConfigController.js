@@ -24,9 +24,11 @@ $(document).on('click', '#config-reset', function (e) {
 // actions on events
 $(document).on('click', '.config-btn-add-github', function (e) {
   configView.addProvider(config.setProviderDefaults({ provider: "GitHub" }));
+  //configView.refreshAll();
 });
 $(document).on('click', '.config-btn-add-gitlab', function (e) {
   configView.addProvider(config.setProviderDefaults({ provider: "GitLab" }));
+  //configView.refreshAll();
 });
 $(document).on('click', '.config-btn-provider-remove', function (e) {
   configView.removeProvider($(this));
@@ -42,7 +44,10 @@ $(document).on('click', '.config-btn-provider-up', function (e) {
 $(document).on('change', '#config-common-enableManagerRepo', function (e) {
   configView.refreshAll();
 });
-$(document).on('change', '[id^="config-providers-auth-"]', function (e) {
+$(document).on('change', '[id^="config-providers-auth-select-"]', function (e) {
+  configView.refreshAll();
+});
+$(document).on('change', '[id^="config-providers-oauth-customize-"]', function (e) {
   configView.refreshAll();
 });
 $(document).on('change', '[id^="config-providers-surrogate-enabled-"]', function (e) {

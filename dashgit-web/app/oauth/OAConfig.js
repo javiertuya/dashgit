@@ -14,11 +14,11 @@ const oaconfig = {
   GitHub: {
     github: {
       clientId: "Ov23liF8QHJgpfMvHfDx",
-      scopes: "repo:read read:user notifications",
+      scopes: "repo notifications",
     },
     github2: {
       clientId: "Ov23liX99oNsXeNScNCS",
-      scopes: "repo:read read:user notifications",
+      scopes: "repo notifications",
     },
   }
 }

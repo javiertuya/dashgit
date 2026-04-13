@@ -24,18 +24,21 @@ const login = {
         console.log("Login.js: Checking login mode for enabled provider " + provider.uid);
 
         if (provider.oauth) {
-          console.log("Login.js: Provider " + provider.uid + " is configured for OAuth2, checking token");
+          console.log("Login.js: Provider " + provider.uid + " is configured for OAuth2, checking token and status");
           const token = this.getProviderToken(provider);
+
+          const providerConfig = this.getOAuthProviderConfig(providerId);
+          console.log(`- Applicable configuration: ${JSON.stringify(providerConfig, null, 2)}`);
 
           if (token) {
             if (token === "failed") {
-              console.log("Login.js: Previous login attempt for provider " + provider.uid + " failed, skipp login");
+              console.log("- Previous login attempt failed, skip login");
               failed.push(provider.uid);
             } else {
-              console.log("Login.js: Provider " + provider.uid + " already logged");
+              console.log("- Already logged");
             }
           } else {
-            console.log("Login.js: Provider " + provider.uid + " requires login");
+            console.log("- Requires login");
             unset.push(providerId);
           }
         }
@@ -59,10 +62,8 @@ const login = {
     }
   },
   callbackFromApp: async function (app) {
-    //TODO check the apps allowed?
-    //if (app === "github") {
-      console.log("Login.js: Callback received from " + app + ", starting login procedure");
-      await startCallback();
+    console.log("Login.js: Callback received from " + app + ", starting login procedure");
+    await startCallback();
     //}
   },
 
@@ -87,39 +88,36 @@ const login = {
 
   getOAuthProviderConfig: function (providerId) {
     const thisUrl = window.location.protocol + "//" + window.location.host  + window.location.pathname
-    //const provider = config.data.providers[providerId];
-    // TODO use config from provider
-    if (providerId==0)
-      return this.getOAuthAppConfig(oaconfig, "GitHub", "github", thisUrl);
-    else if (providerId==1)
-      return this.getOAuthAppConfig(oaconfig, "GitHub", "github2", thisUrl);
-    else
-      return null;
+    const provider = config.data.providers[providerId];
+    return this.getOAuthAppConfig(provider.provider, provider.url, thisUrl, oaconfig, provider.oacustom);
   },
 
   // Creates the configuration required for 
-  // - a given platform (named .provider in the DashGit config)
-  // - an app name as known by DashGit (should be egistered in the platform)
-  getOAuthAppConfig: function (oadefaults, platform, app, thisUrl) {
+  // - a given platform (named .provider in the DashGit config) and url
+  // - the current url where this is running
+  // - Applying the defaults that are harcoded in OAConfig module
+  // - Overridden by the custom configuration that is set in the provider config.
+  getOAuthAppConfig: function (platform, platformUrl, thisUrl, oadefaults, oacustom) {
     const exchangeUrl = "https://giis.uniovi.es/desarrollo/oauth/exchange";
-    //const dashgitUrl = window.location.protocol + "//" + window.location.host + "/" + window.location.pathname
-    //todo revisar como se hace el join, hay que dejar una / sin poner, hacer ut
-    const oadefault = oadefaults[platform]?.[app] ?? {};
-    if (Object.keys(oadefault).length ===0)
+    // appName can be modified by custom config, by default is platform to lowercase
+    const appName = ((oacustom.appName ?? "") == "") ? platform.toLowerCase() : oacustom.appName;
+
+    // Using appName and platform makes a lookup to get the defaults and then apply the rest of customizations
+    const oadefault = oadefaults[platform]?.[appName] ?? {};
+    if (Object.keys(oadefault).length === 0) // wrong configuration
       return {};
     else if (platform == "GitHub") {
       const oatarget = {
-        appName: app,
-        clientId: oadefault.clientId,
-        callbackUrl: thisUrl + "?oapp=" + app,
-        authorizeUrl: "https://github.com/login/oauth/authorize",
+        appName: appName,
+        clientId: ((oacustom.clientId ?? "") == "") ? oadefault.clientId : oacustom.clientId,
+        callbackUrl: thisUrl + "?oapp=" + appName,
+        authorizeUrl: platformUrl + "/login/oauth/authorize",
         scopes: oadefault.scopes,
         exchangeUrl: exchangeUrl
       };
-      //console.log(targetConfig);
       return oatarget;
     } else {
-      return {}; //TODO check config errors
+      return {};
     }
   }
 

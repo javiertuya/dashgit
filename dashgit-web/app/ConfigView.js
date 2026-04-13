@@ -107,19 +107,9 @@ const configView = {
           <div class="col-auto" style="width:22px"></div>
           ${this.check2html(`config-providers-enabled-${key}`, "Enabled", provider.enabled)}
         </div>
-        <div class="row">
-          ${this.input2html(`config-providers-user-${key}`, "text", "Username", provider.user, 'required', "150", "150",
-            "The reference user for whom the work items are displayed (assigned to, created by, etc.)")}
-          ${this.check2html(`config-providers-auth-${key}`, 
-            `Use OAuth2 to authenticate <a href="" target="_blank">[learn more]</a>`, 
-            provider.oauth,
-            "If checked, the authentication is done with OAuth2+PKCS instead of using a Personal Access Token (PAT). After saving the configuration and browsing to other view, you will be redirected to the provider login page to complete the authentication.")}
-          ${this.input2html(`config-providers-token-${key}`, "password", "Access token (PAT)", provider.token, '', "150", "225",
-            "An API access token with read permission to the repository, used to authenticate the repository API requests for this provider.")}
-          ${this.input2html(`config-providers-url-${key}`, "url", "Repository url", provider.url, 'required', "150", "225", "The URL of the repository server.")}
-          <!--${this.button2html(`config-providers-oauth-${key}`, "submit", "Switch to OAuth2 authentication", "config-btn-oauth-submit btn-success")} 
-          ${this.button2html(`config-providers-pat-${key}`, "submit", "Switch to PAT authentication", "config-btn-pat-submit btn-success")} -->
-        </div>
+        
+        ${this.repoconfig2html(provider, key)}
+        
         <div class="row">  
           ${this.input2html(`config-providers-filterIfLabel-${key}`, "text", "Filter if label", provider.filterIfLabel, '', "150", "150",
             "Filters out work items that contain the specified label.")}
@@ -152,7 +142,7 @@ const configView = {
               "Maximum number of pipeline runs that are retrieved for each repository/project to get the branches and build statuses")
             : this.check2html(`config-graphql-include-forks-${key}`, "Include Forks", provider.graphql.includeForks)
               + this.check2html(`config-graphql-only-forks-${key}`, "Only Forks", provider.graphql.onlyForks)
-              + (this.raw2html(" - API scope:", "Specifies the scope of the GitHub GraphQL API requests that get the branches and build statuses") + " &nbsp; "
+              + (this.raw2html(" - GraphQL scope:", "Specifies the scope of the GitHub GraphQL API requests that get the branches and build statuses") + " &nbsp; "
               + this.check2html(`config-graphql-scope-owner-${key}`, "Owner", provider.graphql.ownerAffiliations.includes("OWNER"))
               + this.check2html(`config-graphql-scope-organization-${key}`, "Organization member", provider.graphql.ownerAffiliations.includes("ORGANIZATION_MEMBER"))
               + this.check2html(`config-graphql-scope-collaborator-${key}`, "Collaborator", provider.graphql.ownerAffiliations.includes("COLLABORATOR"))
@@ -187,6 +177,31 @@ const configView = {
     </div>
     `;
   },
+  repoconfig2html: function (provider, key) {
+    return `
+        <div class="row">
+          ${this.input2html(`config-providers-url-${key}`, "url", "Repository url", provider.url, 'required', "150", "225", "The URL of the repository server.")}
+          ${this.input2html(`config-providers-user-${key}`, "text", "Username", provider.user, 'required', "150", "150",
+            "The reference user for whom the work items are displayed (assigned to, created by, etc.)")}
+          ${this.check2html(`config-providers-auth-select-${key}`,
+                `Use OAuth2 to authenticate <a href="" target="_blank">[learn more]</a>`,
+                provider.oauth,
+                "If checked, the authentication is done with OAuth2+PKCS instead of using a Personal Access Token (PAT). After saving the configuration and browsing to other view, you will be redirected to the provider login page to complete the authentication.")}
+          ${this.input2html(`config-providers-token-${key}`, "password", "Access token (PAT)", provider.token, '', "150", "225",
+              "An API access token with read permission to the repository, used to authenticate the repository API requests for this provider.")}
+          ${this.check2html(`config-providers-oauth-customize-${key}`,
+                `Customize OAuth2`,
+                Object.keys(provider.oacustom).length != 0,
+                "The default configuration is enough authenticate using OAuth2 against github.com. Customize only if you need a second GitHub identity or you use your own resources for OAuth2 authentication.")}
+        </div>
+        <div class="row">
+          ${this.input2html(`config-providers-oauth-appName-${key}`, "text", "OAuth App Name", provider.oacustom.appName, '', "150", "150",
+            "The name that DashGit uses to identify the GitHub OAuth App. If you need to configure a second identity, use 'github2'")}
+          ${this.input2html(`config-providers-oauth-clientId-${key}`, "text", "OAuth Client ID", provider.oacustom.clientId, '', "150", "150",
+            "The client ID of the GitHub OAuth App. Leave empty if you use github2 as the app name.")}
+        </div>
+    `;
+  },
   anyGitHubWithoutToken: function (data) {
     for (let provider of data.providers)
       if (provider.provider == "GitHub" && provider.token == "")
@@ -218,11 +233,15 @@ const configView = {
   html2provider: function (provider, id) {
     provider.enabled = $(`#config-providers-enabled-${id}`).is(':checked');
     provider.user = $(`#config-providers-user-${id}`).val().trim();
-    provider.oauth = $(`#config-providers-auth-${id}`).is(':checked');
+    provider.oauth = $(`#config-providers-auth-select-${id}`).is(':checked');
     provider.token = $(`#config-providers-token-${id}`).val().trim();
     if (provider.provider == "GitLab")
       provider.url = $(`#config-providers-url-${id}`).val().trim();
 
+    // Empty values of OAuth customization must not be included as attributes
+    this.setAttributeOrRemove(provider.oacustom, "appName", $(`#config-providers-oauth-appName-${id}`).val().trim());
+    this.setAttributeOrRemove(provider.oacustom, "clientId", $(`#config-providers-oauth-clientId-${id}`).val().trim());
+$(`#config-providers-oauth-appName-${id}`).hide();
     provider.filterIfLabel = $(`#config-providers-filterIfLabel-${id}`).val().trim();
     provider.unassignedAdditionalOwner = this.str2array($(`#config-providers-unassignedAdditionalOwner-${id}`).val());
     provider.dependabotAdditionalOwner = this.str2array($(`#config-providers-dependabotAdditionalOwner-${id}`).val());
@@ -284,11 +303,28 @@ const configView = {
   },
   // Toggle between authentication with PAT and OAuth2
   refreshAuthenticationMethods: function () {//config-providers-auth
-    for (let i = 0; i < config.data.providers.length; i++) {
-      if ($(`#config-providers-auth-${i}`).is(':checked')) {
-        $(`#config-providers-token-${i}-div-container`).hide();
+    let cards = $(document).find(".config-provider-card");
+    for (let card of cards) {
+      let auth = $(card).find('input[id^="config-providers-auth-select-"]');
+      let token = $(card).find('input[id^="config-providers-token-"]');
+      let customize = $(card).find('input[id^="config-providers-oauth-customize-"]');
+      let appName = $(card).find('input[id^="config-providers-oauth-appName-"]');
+      let clientId = $(card).find('input[id^="config-providers-oauth-clientId-"]');
+      if ($(auth).is(':checked')) {
+        $(token).closest(".col-auto").hide();
+        $(customize).closest(".col-auto").show();
+        if ($(customize).is(':checked')) {
+          $(appName).closest(".col-auto").show();
+          $(clientId).closest(".col-auto").show();
+        } else {
+          $(appName).closest(".col-auto").hide();
+          $(clientId).closest(".col-auto").hide();
+        }
       } else {
-        $(`#config-providers-token-${i}-div-container`).show();
+        $(token).closest(".col-auto").show();
+        $(customize).closest(".col-auto").hide();
+        $(appName).closest(".col-auto").hide();
+        $(clientId).closest(".col-auto").hide();
       }
     }
   },
@@ -445,7 +481,7 @@ const configView = {
     <div class="col-auto" id="${id}-div-container">
       <div class="input-group input-group-sm">
         <span class="input-group-text" id="${id}-label" ${labelStyle}>${label}${this.infoIcon(info)}</span>
-        <input id="${id}" type="${type}" value="${value}" ${validation} ${valueStyle}
+        <input id="${id}" type="${type}" value="${value ?? ''}" ${validation} ${valueStyle}
           class="form-control ${label == 'Username' ? ' fw-bold' : ''}" aria-label="${label}" aria-describedby="${id}-label">
       </div>
     </div>
@@ -470,7 +506,7 @@ const configView = {
 
   check2html: function (id, label, checked, info) {
     return `
-      <div class="col-auto">
+      <div class="col-auto" id="${id}-div-container">
         <div class="form-check">
           <input class="form-check-input" type="checkbox" value="" ${checked ? "checked" : ""} id="${id}">
           <label class="form-check-label" for="${id}">${label}${this.infoIcon(info)}</label>
@@ -514,6 +550,14 @@ const configView = {
 
   str2array: function (value) {
     return value.trim() == "" ? [] : value.trim().split(/\s+/);
+  },
+
+  setAttributeOrRemove: function (object, attribute, value) {
+    if (!value || value == "")
+      delete object[attribute];
+    else
+      object[attribute] = value;
+    return object;
   },
 
 }
