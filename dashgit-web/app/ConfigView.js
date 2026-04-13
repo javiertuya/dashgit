@@ -110,9 +110,15 @@ const configView = {
         <div class="row">
           ${this.input2html(`config-providers-user-${key}`, "text", "Username", provider.user, 'required', "150", "150",
             "The reference user for whom the work items are displayed (assigned to, created by, etc.)")}
-          ${this.input2html(`config-providers-token-${key}`, "password", "Access token", provider.token, '', "150", "225",
+          ${this.check2html(`config-providers-auth-${key}`, 
+            `Use OAuth2 to authenticate <a href="" target="_blank">[learn more]</a>`, 
+            provider.oauth,
+            "If checked, the authentication is done with OAuth2+PKCS instead of using a Personal Access Token (PAT). After saving the configuration and browsing to other view, you will be redirected to the provider login page to complete the authentication.")}
+          ${this.input2html(`config-providers-token-${key}`, "password", "Access token (PAT)", provider.token, '', "150", "225",
             "An API access token with read permission to the repository, used to authenticate the repository API requests for this provider.")}
           ${this.input2html(`config-providers-url-${key}`, "url", "Repository url", provider.url, 'required', "150", "225", "The URL of the repository server.")}
+          <!--${this.button2html(`config-providers-oauth-${key}`, "submit", "Switch to OAuth2 authentication", "config-btn-oauth-submit btn-success")} 
+          ${this.button2html(`config-providers-pat-${key}`, "submit", "Switch to PAT authentication", "config-btn-pat-submit btn-success")} -->
         </div>
         <div class="row">  
           ${this.input2html(`config-providers-filterIfLabel-${key}`, "text", "Filter if label", provider.filterIfLabel, '', "150", "150",
@@ -212,6 +218,7 @@ const configView = {
   html2provider: function (provider, id) {
     provider.enabled = $(`#config-providers-enabled-${id}`).is(':checked');
     provider.user = $(`#config-providers-user-${id}`).val().trim();
+    provider.oauth = $(`#config-providers-auth-${id}`).is(':checked');
     provider.token = $(`#config-providers-token-${id}`).val().trim();
     if (provider.provider == "GitLab")
       provider.url = $(`#config-providers-url-${id}`).val().trim();
@@ -253,6 +260,7 @@ const configView = {
 
   //Sets the appropriate view state for elements that have dependent inputs that must be hidden or shown
   refreshAll: function () {
+    this.refreshAuthenticationMethods();
     this.refreshUpdateManagerRepo();
     this.refreshProviderDefaults();
     this.refreshProviderSurrogates();
@@ -274,6 +282,17 @@ const configView = {
       $(`.config-provider-updates-div-container`).hide();
     }
   },
+  // Toggle between authentication with PAT and OAuth2
+  refreshAuthenticationMethods: function () {//config-providers-auth
+    for (let i = 0; i < config.data.providers.length; i++) {
+      if ($(`#config-providers-auth-${i}`).is(':checked')) {
+        $(`#config-providers-token-${i}-div-container`).hide();
+      } else {
+        $(`#config-providers-token-${i}-div-container`).show();
+      }
+    }
+  },
+
   // hide GitHub urls
   refreshProviderDefaults: function () {
     let urls = $('input[id^="config-providers-url-"]');

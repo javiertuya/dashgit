@@ -1,20 +1,22 @@
 import { config } from "./Config.js"
+import { login } from "./Login.js"
 import { wiView } from "./WiView.js"
 import { wiController } from "./WiController.js"
-import { wiControllerUpdate } from "./WiControllerUpdate.js" // NOSONAR to install jquery events
-import { wiControllerFollowUp } from "./WiControllerFollowUp.js" // NOSONAR to install jquery events
 import { configController } from "./ConfigController.js"
 
 /**
  * Manages the top level elements visibility and actions (header and tabs).
- * Enters one of two modes depending on the token encription configuration.
+ * Enters sequentially in one of three modes (that acctivate/deactivate elements in the UI depending on the authentication for configuration.
+ * - patLoginMode: a simpler view to set the password before entering de application, used when the access tokens are encrypted with a password
+ * - oauthLoginMode: to control the authentication of providers that require OAuth2 login and view the progress.
+ *   If there is a provider that needs login, it calls the Login module, which will call the auth module to complete the login process.
+ *   The callback of the login process will cause entering again in this module to login the next provider
+ * - workMode: the main mode, with all elements visible. Performs the initial rendering of all work items.
  * 
- * Note: The index.html cannot import this module with src, on chromium causes this error:
- * Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'interest-cohort'.
- * Solution is to define an inline module in index.html that initializes jquery and imports this controller
+ * The main page also acts as the OAuth2 callback page when it receives a querystring parameter (oapp)
  */
 
-//In login mode, enter and validate password
+//In patLoginMode mode, enter and validate password
 $(document).on('click', '#inputPasswordButton', function (e) {
   if ($('#inputPassword').val().length > 0) {
     config.xtoken = $("#inputPassword").val();
@@ -38,8 +40,10 @@ $(document).on('click', '#inputSkipButton', function (e) {
   e.preventDefault()
 });
 
+// click on a tab to change view
 $('button[data-bs-toggle="tab"]').on('shown.bs.tab', async function (e) {
-  indexController.render();
+  const target = $(this).attr("aria-controls");
+  indexController.tabControlEntering(target);
 });
 
 $(document).on('click', '#reloadIcon', async function () {
@@ -76,26 +80,87 @@ $(document).on('search', '.wi-view-filter-input', async function () { // clearin
 
 const indexController = {
 
-  // Initial configuration to be run by jquery on document ready
-  load: function() {
+  // Main entry point invoked from index.html
+  load: async function() {
+    // Main page has been invoked as a callback of the OAuth2 login process
+    const params = new URLSearchParams(window.location.search);
+    const app = params.get("oapp")
+    if (app) {
+      console.log("IndexController: App parameter found in url, running as callback to login " + app);
+      indexController.oauthLoginMode(); // to show how the callback process is going on
+      await login.callbackFromApp(app);
+      return;
+    }
+
+    // Start normal flow 
     config.loadFeatureFlags();
     config.load();
+
     $("#appVersion").text(config.appVersion);
-    if (config.data.encrypted) {
-      indexController.loginMode();
-    } else {
-      indexController.start();
+    if (config.data.encrypted) { 
+      // A simpler view to set the password before entering the application
+      indexController.patLoginMode();
+      return;
+    }
+
+    // Checks all unset providers that require OAuth, if there are any, starts the login of the first one.
+    // The rest will be started after receiving the callback.
+    const loginResult = await login.getLoginStatusForAllProviders();
+    if (loginResult.unsetProviders.length > 0) {
+      indexController.oauthLoginMode(); // to show how the login process is going on
+      await login.startLoginForProvider(loginResult.unsetProviders[0]);
+      return;
+    }
+
+    //Login procedure is finished, starts anything in work mode
+    indexController.start();
+
+    // The view is rendered, now we can finishs some pending chores related to the login process
+    if (loginResult.failedProviders.length > 0) {
+      console.log("Login.js: The following OAuth2 providers failed to log in: " + loginResult.failedProviders.join(", "));
+      wiView.renderAlert("danger", `OAuth2 authentication failed for the following provider(s): ${loginResult.  failedProviders.join(", ")}. `
+        + " Please retry login from the configuration tab or switch back to PAT authentication.");
     }
     $('[data-toggle="tooltip"]').tooltip({trigger:"hover", delay:600});
   },
+
   start: function() {
     wiController.reset(true);
     indexController.workMode();
-    indexController.render();
+    indexController.tabControlSelectLastOrDefault("assigned");
+    // Do not need render because the entry event in the target tab already does it
   },
   reload: function() {
     wiController.reset(false);
     indexController.render();
+  },
+
+  // Entering event executes when tab changes, either by user click or programmatically
+  // Stores in the tab name in session to allow restoring it after a reload, and performs the rendering of the target tab
+  tabControlEntering: function (target) {
+    console.log("*** Entering tab " + target);
+    const lastTarget = sessionStorage.getItem("selectedTab");
+    // Target is rendered with one exception: when last selected tab is config, we need to update everything because
+    // the configuration may have changed authentication or provider settings.
+    if (lastTarget == "config" && target != "config") {
+      sessionStorage.setItem("selectedTab", target); // to reload the target tab, not the last target
+      window.location.reload();
+    } else {
+      indexController.render();
+    }
+    sessionStorage.setItem("selectedTab", target);
+  },
+  // Select a tab programmatically, this triggers tabControlEntering
+  tabControlSelect: async function (target) {
+    console.log("*** Selecting tab " + target);
+    const bsTab = new bootstrap.Tab("#" + target + "-tab");
+    bsTab.show()
+  },
+  // if there is a lastTarget stored, select it, otherwise select the default target
+  tabControlSelectLastOrDefault: async function (defaultTarget) {
+    const lastTarget = sessionStorage.getItem("selectedTab");
+    console.log("*** Selecting last tab, default " + defaultTarget + " last target " + lastTarget);
+    this.tabControlSelect(lastTarget || defaultTarget);
   },
 
   //Rendering depends on the selected tab, calls the appropriate controller to update the UI
@@ -110,18 +175,29 @@ const indexController = {
     else
       wiController.updateTarget(target, $("#inputSort").val()); //display work items for the indicated target, with sort criterion
   },
-  workMode: function () {
-    $("#header-content").show();
+
+  clearMode: function () {
+    $("#header-content").hide();
     $("#header-authentication").hide();
+    $("#inputPassword").hide();
+    $("#oauth-content").hide();
+    $("#tab-headers").hide();
+    $("#tab-content").hide();
+  },
+  workMode: function () {
+    this.clearMode();
+    $("#header-content").show();
     $("#tab-headers").show();
     $("#tab-content").show();
   },
-  loginMode: function () {
-    $("#header-content").hide();
+  patLoginMode: function () {
+    this.clearMode();
     $("#header-authentication").show();
     $("#inputPassword").focus();
-    $("#tab-headers").hide();
-    $("#tab-content").hide();
+  },
+  oauthLoginMode: function () {
+    this.clearMode();
+    $("#oauth-content").show();
   },
 
 }

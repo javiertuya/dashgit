@@ -4,6 +4,7 @@ import { gitStoreApi } from "./GitStoreApi.js"
 import { wiController } from "./WiController.js"
 import { config } from "./Config.js"
 import { cache } from "./Cache.js"
+import { login } from "./Login.js"
 
 /**
  * Core interface with the provider api (GitLab). See doc at Controller.js
@@ -19,7 +20,7 @@ const gitLabApi = {
   },
 
   getWorkItems: async function (target, provider, sorting) { // NOSONAR
-    const api = new Gitlab({ host: provider.url, token: config.decrypt(provider.token), });
+    const api = new Gitlab({ host: provider.url, token: login.getProviderToken(provider), });
     // issue #116 set sorting criteria to match the selected in the UI
     const sort = (sorting??"").includes("updated") ? "updated_at" : "created_at";
     const order = (sorting??"").includes("descending") ? "desc" : "asc";
@@ -117,7 +118,7 @@ const gitLabApi = {
 
   updateNotificationsAsync: async function (target, provider) {
     this.log(provider.uid, "ASYNC Get Notifications from the REST api");
-    const api = new Gitlab({ host: provider.url, token: config.decrypt(provider.token), });
+    const api = new Gitlab({ host: provider.url, token: login.getProviderToken(provider), });
     api.TodoLists.all({ state: "pending", perPage: 100, maxPages: 1 }).then(async function (response) {
       gitLabApi.log(provider.uid, "ASYNC Notifications response:", response);
       let model = gitLabAdapter.notifications2model(response);
@@ -224,7 +225,7 @@ const gitLabApi = {
       url: `${provider.url}/api/graphql`,
       type: 'post',
       data: { query },
-      headers: { Authorization: `Bearer ${config.decrypt(provider.token)}` },
+      headers: { Authorization: `Bearer ${login.getProviderToken(provider)}` },
       dataType: 'json',
     });
     if (result.errors != undefined) {

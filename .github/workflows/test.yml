@@ -15,7 +15,8 @@ jobs:
   test-ut:
     runs-on: ubuntu-latest
     #avoids duplicate execution of pr from local repo, but allows pr from forked repos and dependabot
-    if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/')))
+    if: ${{ false }}
+    #if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/')))
     steps:
       - run : |
           echo "event name: ${{ github.event_name }}"

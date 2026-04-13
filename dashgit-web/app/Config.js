@@ -110,6 +110,7 @@ const config = {
     this.setDefault(element, "provider", "");
     this.setDefault(element, "uid", "");
     this.setDefault(element, "user", "");
+    this.setDefault(element, "oauth", false);
     this.setDefault(element, "token", "");
     this.setDefault(element, "enabled", true);
     this.setDefault(element, "enableNotifications", true);

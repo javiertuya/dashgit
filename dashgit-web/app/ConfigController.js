@@ -42,6 +42,9 @@ $(document).on('click', '.config-btn-provider-up', function (e) {
 $(document).on('change', '#config-common-enableManagerRepo', function (e) {
   configView.refreshAll();
 });
+$(document).on('change', '[id^="config-providers-auth-"]', function (e) {
+  configView.refreshAll();
+});
 $(document).on('change', '[id^="config-providers-surrogate-enabled-"]', function (e) {
   configView.refreshProviderSurrogate(this, $(this).is(':checked'));
 });

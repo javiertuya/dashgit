@@ -4,6 +4,7 @@ import { gitHubAdapter } from "./GitHubAdapter.js"
 import { gitStoreApi } from "./GitStoreApi.js"
 import { wiController } from "./WiController.js"
 import { config } from "./Config.js"
+import { login } from "./Login.js"
 
 /**
  * Core interface with the provider api (GitHub).
@@ -21,7 +22,7 @@ const gitHubApi = {
   userAgent: config.getGitHubUserAgent(),
 
   getWorkItems: async function (target, provider, sorting) {
-    const token = config.decrypt(provider.token);
+    const token = login.getProviderToken(provider);
     const octokit = new Octokit({ userAgent: this.userAgent, auth: token });
     // issue #116 set sorting criteria to match the selected in the UI
     const sort = (sorting??"").includes("updated") ? "updated" : "created";
@@ -94,9 +95,10 @@ const gitHubApi = {
   issuesAndPullRequests: function (octokit, token, query) {
     // Issue #129 Although documentation says that search query returns both issues and prs if no 'is:*' is specified,
     // this is not true when using fine grained tokens, that requires separate queries for issues and prs.
-    if (token == "" || token.startsWith("ghp_")) { // single query for no token or fine grained token
+    if (token == "" || token.startsWith("ghp_") || token.startsWith("gho_")) { // single query for no token or fine grained token
       return [this.octokitSearchIssues(octokit, query)];
     } else { // separated queries to find issues and prs
+      // TODO necesito probar esto con fine grained tokens, al ejecutar con un gho_ ha dado un error indicando que pr no estaba definido
       console.log("Assuming fine grained token, using separated queries for issues and PRs");
       let qissue = JSON.parse(JSON.stringify(query));
       let qpr = JSON.parse(JSON.stringify(query));
@@ -129,7 +131,8 @@ const gitHubApi = {
   notifLastModified: undefined,
   notifPollInterval: undefined,
   updateNotificationsAsync: function (target, provider) {
-    if (provider.token == "") //skip if no token provider to avoid api call errors
+    const token = login.getProviderToken(provider);
+    if (token == "") //skip if no token provider to avoid api call errors
       return;
     // Poll interval control, if inside the interval, do not call the api, but update notifications
     let currentTime = Math.floor(new Date().getTime()/1000);
@@ -139,7 +142,7 @@ const gitHubApi = {
       return;
     }
     this.log(provider.uid, "ASYNC Get Notifications from the REST api");
-    const octokit = new Octokit({ userAgent: this.userAgent, auth: config.decrypt(provider.token), });
+    const octokit = new Octokit({ userAgent: this.userAgent, auth: token, });
     // Issue #44: According the api doc a call using Last-Modified header should be done. 
     // This works well when a notification appears, But when the notification is read, the browser still gets not modified (when using cache).
     // Therefore, this approach can't be used and overrides the cache using If-None-Match header.
@@ -156,7 +159,8 @@ const gitHubApi = {
   getStatusesRequest: async function (provider, updateSince) {
     const graphqlV2 = !provider.graphql.deprecatedGraphqlV1;
     let userSpecRepos = graphqlV2 ? provider.graphql.userSpecRepos : "";
-    if (provider.token == "") //returns empty model if no token provider to avoid api call errors
+    const token = login.getProviderToken(provider);
+    if (token == "") //returns empty model if no token provider to avoid api call errors
       return gitHubAdapter.statuses2model(provider, {}, graphqlV2);
     let gqlresponse = {};
     try {
@@ -251,7 +255,7 @@ const gitHubApi = {
   getGraphQlApi: function (provider) {
     return graphql.defaults({
       headers: {
-        authorization: `token ${config.decrypt(provider.token)}`,
+        authorization: `token ${login.getProviderToken(provider)}`,
       },
     });
   },
