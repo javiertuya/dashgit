@@ -48,9 +48,11 @@ const login = {
         } else {
           console.log("- Already logged");
         }
-        status.alreadySetByApp[providerConfig.appName] = provider;
+        // to avoid repeat login if already logged in the same app, platform and url,
+        // eg. other providers using GitLab and gitlab.com or the same GitLab on premises
+        status.alreadySetByApp[providerConfig.appName + "-" + provider.provider + "-" + provider.url] = provider;
       } else {
-        const providerWithMyApp = status.alreadySetByApp[providerConfig.appName];
+        const providerWithMyApp = status.alreadySetByApp[providerConfig.appName + "-" + provider.provider + "-" + provider.url];
         if (providerWithMyApp) {
           console.log(`- Provider ${provider.uid} authenticates with the same app than ${providerWithMyApp.uid}, which is known to be logged or failed, set this token`);
           const token = this.getProviderToken(providerWithMyApp);
@@ -202,31 +204,42 @@ const login = {
   // - a given platform (named .provider in the DashGit config) and url
   // - the current url where this is running
   // - Applying the defaults that are harcoded in OAConfig module
-  // - Overridden by the custom configuration that is set in the provider config.
+  // - Overridden by platform specific configuration
+  // - And the custom configuration that is set in the provider config.
   getOAuthAppConfig: function (platform, platformUrl, thisUrl, oadefaults, oacustom) {
-    const exchangeUrl = "https://giis.uniovi.es/desarrollo/oauth/exchange";
     const customAppName = oacustom.enabled ? oacustom.appName : "";
     const customClientId = oacustom.enabled ? oacustom.clientId : "";
     // appName can be modified by custom config, by default is platform to lowercase
     const appName = ((customAppName ?? "") == "") ? platform.toLowerCase() : customAppName;
 
-    // Using appName and platform makes a lookup to get the defaults and then apply the rest of customizations
+    // Using appName and platform makes a lookup to get the defaults
     const oadefault = oadefaults[platform]?.[appName] ?? {};
     if (Object.keys(oadefault).length === 0) // wrong configuration
       return {};
-    else if (platform == "GitHub") {
-      const oatarget = {
-        appName: appName,
-        clientId: ((customClientId ?? "") == "") ? oadefault.clientId : customClientId,
-        callbackUrl: thisUrl + "?oapp=" + appName,
-        authorizeUrl: platformUrl + "/login/oauth/authorize",
-        scopes: oadefault.scopes,
-        exchangeUrl: exchangeUrl
-      };
-      return oatarget;
+    
+    // Finally, other platform specific configuration and other overrides
+    let callbackUrl = thisUrl + "?oapp=" + appName;
+    let authorizeUrl = "";
+    let exchangeUrl = ""; 
+    if (platform == "GitHub") {
+      authorizeUrl = platformUrl + "/login/oauth/authorize";
+      exchangeUrl = platformUrl + "/login/oauth/access_token"; 
+    } else if (platform == "GitLab") {
+      authorizeUrl = platformUrl + "/oauth/authorize";
+      exchangeUrl = platformUrl + "/oauth/token"; 
     } else {
       return {};
     }
+
+    const oatarget = {
+        appName: appName,
+        clientId: ((customClientId ?? "") == "") ? oadefault.clientId : customClientId,
+        callbackUrl: callbackUrl,
+        authorizeUrl: authorizeUrl,
+        scopes: oadefault.scopes,
+        exchangeUrl: ((oadefault.exchangeUrl ?? "") == "") ? exchangeUrl : oadefault.exchangeUrl,
+    };
+    return oatarget;
   },
 
   ////////////////////////////////////////////////////////////////////////////

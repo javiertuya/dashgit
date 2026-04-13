@@ -19,8 +19,15 @@ const gitLabApi = {
       console.log(model);
   },
 
+  // OAuth tokens require different call (only for REST API, not for GraphQL)
+  getGitLabApi: async function (provider) {
+    return provider.oauth
+      ? new Gitlab({ host: provider.url, oauthToken: login.getProviderToken(provider), })
+      : new Gitlab({ host: provider.url, token: login.getProviderToken(provider), });
+  },
+
   getWorkItems: async function (target, provider, sorting) { // NOSONAR
-    const api = new Gitlab({ host: provider.url, token: login.getProviderToken(provider), });
+    const api = await this.getGitLabApi(provider);
     // issue #116 set sorting criteria to match the selected in the UI
     const sort = (sorting??"").includes("updated") ? "updated_at" : "created_at";
     const order = (sorting??"").includes("descending") ? "desc" : "asc";
@@ -118,7 +125,7 @@ const gitLabApi = {
 
   updateNotificationsAsync: async function (target, provider) {
     this.log(provider.uid, "ASYNC Get Notifications from the REST api");
-    const api = new Gitlab({ host: provider.url, token: login.getProviderToken(provider), });
+    const api = await this.getGitLabApi(provider);
     api.TodoLists.all({ state: "pending", perPage: 100, maxPages: 1 }).then(async function (response) {
       gitLabApi.log(provider.uid, "ASYNC Notifications response:", response);
       let model = gitLabAdapter.notifications2model(response);

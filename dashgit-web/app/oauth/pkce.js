@@ -1,5 +1,5 @@
 // pkce.js
-function generateRandomString(length = 64) {
+export function generateRandomString(length = 64) {
   const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
   let result = "";
   const randomValues = crypto.getRandomValues(new Uint8Array(length));

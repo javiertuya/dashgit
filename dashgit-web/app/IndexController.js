@@ -112,8 +112,9 @@ const indexController = {
 
     // Checks all unset providers that require OAuth, if there are any, starts the OAuth login of the first one.
     // The rest will be started after receiving the callback.
-    const loginResult = await login.getLoginStatusForAllProviders();
-    if (loginResult.unsetProviders.length > 0) {
+    // Ignore if the feature flag 'disableoa' is enabled to have the posibility to enter into the configuration tab to correct wrong configs
+    const loginResult = await login.getLoginStatusForAllProviders(config.ff["disableoa"]);
+    if (loginResult.unsetProviders.length > 0 && !config.ff["disableoa"]) {
       indexController.oauthLoginMode(); // to show how the login process is going on
       await login.startLoginForProvider(loginResult.unsetProviders[0]);
       return;
@@ -122,8 +123,8 @@ const indexController = {
     //Login procedure is finished, starts everything in work mode
     indexController.start();
 
-    // The view is rendered, now we can finishs some pending chores related to the login process
-    if (loginResult.failedProviders.length > 0) {
+    // The view is rendered, now we can finishsh some pending chores related to the login process
+    if (loginResult.failedProviders.length > 0 && !config.ff["disableoa"]) {
       const uids = loginResult.failedProviders.map(a => a.uid);
       console.log("Login.js: The following OAuth2 providers failed to log in: " + uids.join(", "));
       $("#oauth-reset-message").text( `OAuth2 authentication failed for the provider(s) ${uids.join(", ")}. `

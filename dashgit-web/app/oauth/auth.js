@@ -1,9 +1,9 @@
-import { generatePKCE } from "./pkce.js";
+import { generatePKCE, generateRandomString } from "./pkce.js";
 import { login } from "../Login.js";
 
 /**
  * OAuth2+PKCSE implementation for DashGit
- * This module handles the OAuth2 login flow, including PKCE generation and token exchange.
+ * This module handles the OAuth2 authorization code with PKCE generation and token exchange.
  * Information flow:
  * - startLogin() is called when there is a provider that needs OAuth2 login. It calls the OAuth2 app.
  * - handleCalback() is called in response to the OAuth2 app callback. The authentcation is completed.
@@ -17,7 +17,8 @@ import { login } from "../Login.js";
  */
 
 const OACONFIG = "dashgit-oauth-oaconfig"; // Store: configuration for oauth authentication
-const PKCE_VERIFIER = "dashgit-pkce-verifier";
+const PKCE_VERIFIER = "dashgit-oauth-pkce-verifier";
+const STATE = "dashgit-oauth-state";
 
 export async function startLogin(oaconfig) {
   sessionStorage.setItem(OACONFIG, JSON.stringify(oaconfig))
@@ -25,11 +26,15 @@ export async function startLogin(oaconfig) {
   const { code_verifier, code_challenge } = await generatePKCE();
   localStorage.setItem(PKCE_VERIFIER, code_verifier);
 
+  const state = generateRandomString(32);
+  localStorage.setItem(STATE, state);
+
   const url =
     oaconfig.authorizeUrl +
     `?client_id=${oaconfig.clientId}` +
     `&redirect_uri=${encodeURIComponent(oaconfig.callbackUrl)}` +
     `&scope=${encodeURIComponent(oaconfig.scopes)}` +
+    `&state=${state}` +
     `&response_type=code` +
     `&code_challenge=${code_challenge}` +
     `&code_challenge_method=S256`;
@@ -43,9 +48,14 @@ export async function handleCallback() {
   try {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
+    const state = params.get("state");
 
     if (!code) {
       await login.failedLogin("Did not receive 'code' in callback parameters");
+      return;
+    }
+    if (state != localStorage.getItem(STATE)) {
+      await login.failedLogin("State does not match the request");
       return;
     }
 
@@ -79,9 +89,7 @@ export async function exchangeCodeForToken(code, oaconfig) {
     code_verifier
   };
 
-  // To do not use the exchange service proxy, set the addres of the GitHub endpoint
-  //const res = await fetch("https://github.com/login/oauth/access_token", {
-  // NOTE: This fails with GitHub because CORS. See this:
+  // NOTE: GitHub reqires a proxy for exchange, if not, it fails because of CORS. See this:
   // https://github.com/getsentry/sentry/pull/107731
   // In summary: the url of DashGit should be in a registered server, and this address be the homepage url the OAuth App
   const res = await fetch(oaconfig.exchangeUrl, {
