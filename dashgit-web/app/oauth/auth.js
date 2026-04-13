@@ -18,7 +18,7 @@ import { login } from "../Login.js";
 export async function startLogin(providerId, oaconfig) {
   sessionStorage.setItem("providerKey", providerId)
   sessionStorage.setItem("oaconfig", JSON.stringify(oaconfig))
-  await logDebug("startLogin", "OAuth2 login with provider " + providerId);
+  await logDebug("startLogin", "OAuth2 login with provider " + providerId + ", requesting...");
 
   // Localhost is not a valid host for OAuth2 callbacks, simulates the callback (that will fail)
   if (window.location.host === "localhost") {
@@ -115,12 +115,12 @@ export async function exchangeCodeForToken(code, oaconfig) {
 }
 
 // Logging messages and failures are also shown in the user interface
-async function logDebug(method, message) {
+export async function logDebug(method, message) {
   console.log(`auth.${method}: ${message}`);
   $("#callback-provider").text(message);
   //await new Promise(r => setTimeout(r, 2000));
 }
-async function logError(method, message) {
+export async function logError(method, message) {
   console.error(`auth.${method}: ${message}`);
   $("#callback-error").text(message);
   $("#callback-continue-btn").show();

@@ -1,5 +1,6 @@
 import { config } from "./Config.js"
-import { startLogin, startCallback } from "./oauth/auth.js"
+import { oaconfig } from "./oauth/OAConfig.js"
+import { startLogin, startCallback, logError } from "./oauth/auth.js"
 
 /**
  * Manges the login of the providers and returns the appropriate token when requested.
@@ -46,13 +47,23 @@ const login = {
   // Interface with the auth module to initiate the login an the callback
   startLoginForProvider: async function (providerId) {
     console.log("Login.js: Starting login for provider " + providerId);
-    await startLogin(providerId, this.getOAuthAppConfig(providerId));
+    let conf = this.getOAuthProviderConfig(providerId);
+    // To prevent the startLogin transfer control to a non existent url, check first
+    // if the configuration was found, using the error display mechanisms in the auth.js module
+    // and marking it as failed
+    if (Object.keys(conf).length ===0) {
+      logError("Login", "Can't find a default configuration for the provider " + providerId);
+      this.failedLogin(providerId);
+    } else {
+      await startLogin(providerId, conf);
+    }
   },
   callbackFromApp: async function (app) {
-    if (app === "github") {
-      console.log("Login.js: Callback from app received for github, starting login procedure");
+    //TODO check the apps allowed?
+    //if (app === "github") {
+      console.log("Login.js: Callback received from " + app + ", starting login procedure");
       await startCallback();
-    }
+    //}
   },
 
   // Invoked from the auth module at the end of the callback to notify the status:
@@ -74,17 +85,42 @@ const login = {
     sessionStorage.setItem(`token_${uid}`, token);
   },
 
-  getOAuthAppConfig: function (providerId) {
-    // TODO configure for multiple apps/providers
-    //    alert(window.location.protocol + " " + window.location.host + " " + window.location.pathname );
-    return {
-      appId: "github",
-      clientId: "Ov23liF8QHJgpfMvHfDx",
-      callbackUrl: "https://giis.uniovi.es/desarrollo/dashgit/?oapp=github",
-      authorizeUrl: "https://github.com/login/oauth/authorize",
-      scopes: "repo:read read:user notifications",
-      exchangeUrl: "https://giis.uniovi.es/desarrollo/oauth/exchange"
-    };
+  getOAuthProviderConfig: function (providerId) {
+    const thisUrl = window.location.protocol + "//" + window.location.host  + window.location.pathname
+    //const provider = config.data.providers[providerId];
+    // TODO use config from provider
+    if (providerId==0)
+      return this.getOAuthAppConfig(oaconfig, "GitHub", "github", thisUrl);
+    else if (providerId==1)
+      return this.getOAuthAppConfig(oaconfig, "GitHub", "github2", thisUrl);
+    else
+      return null;
+  },
+
+  // Creates the configuration required for 
+  // - a given platform (named .provider in the DashGit config)
+  // - an app name as known by DashGit (should be egistered in the platform)
+  getOAuthAppConfig: function (oadefaults, platform, app, thisUrl) {
+    const exchangeUrl = "https://giis.uniovi.es/desarrollo/oauth/exchange";
+    //const dashgitUrl = window.location.protocol + "//" + window.location.host + "/" + window.location.pathname
+    //todo revisar como se hace el join, hay que dejar una / sin poner, hacer ut
+    const oadefault = oadefaults[platform]?.[app] ?? {};
+    if (Object.keys(oadefault).length ===0)
+      return {};
+    else if (platform == "GitHub") {
+      const oatarget = {
+        appName: app,
+        clientId: oadefault.clientId,
+        callbackUrl: thisUrl + "?oapp=" + app,
+        authorizeUrl: "https://github.com/login/oauth/authorize",
+        scopes: oadefault.scopes,
+        exchangeUrl: exchangeUrl
+      };
+      //console.log(targetConfig);
+      return oatarget;
+    } else {
+      return {}; //TODO check config errors
+    }
   }
 
 }

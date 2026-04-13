@@ -82,6 +82,11 @@ const indexController = {
 
   // Main entry point invoked from index.html
   load: async function() {
+    //temporal for debug oa configs
+    console.log(login.getOAuthProviderConfig(0));
+    console.log(login.getOAuthProviderConfig(1));
+   
+
     // Main page has been invoked as a callback of the OAuth2 login process
     const params = new URLSearchParams(window.location.search);
     const app = params.get("oapp")

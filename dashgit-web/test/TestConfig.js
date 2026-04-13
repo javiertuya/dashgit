@@ -46,6 +46,7 @@ describe("TestConfig - Sanitizing config data", async function () {
             enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
             providers: [{
                 provider: 'GitHub', uid: '', user: '', token: '', enabled: true,
+                oauth: false, oacustom: {},
                 url: 'https://github.com', api: 'https://api.github.com',
                 enableNotifications: true,
                 statusSurrogateUser: "",
@@ -75,6 +76,7 @@ describe("TestConfig - Sanitizing config data", async function () {
             enableManagerRepo: false, managerRepoName: "", managerRepoToken: "",
             providers: [{
                 provider: 'GitHub', uid: 'repo_user_id', user: 'user', token: 'XXXXXXXXXXXX', enabled: false,
+                oauth: false, oacustom: {},
                 url: 'https://github.com', api: 'https://api.github.com',
                 enableNotifications: true,
                 statusSurrogateUser: "",
