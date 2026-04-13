@@ -38,13 +38,16 @@ const wiServices = {
   },
 
   filter: function (target, providerUid, user, items) {
-    let label = config.getProviderByUid(providerUid).filterIfLabel
-    return this.filterBy(target, user, new Date(), config.data.maxAge, label, config.data.viewFilter[target], items)
+    const provider = config.getProviderByUid(providerUid);
+    const label = provider.filterIfLabel;
+    const match = provider.match;
+    return this.filterBy(target, user, new Date(), config.data.maxAge, label, match, config.data.viewFilter[target], items)
   },
-  filterBy: function (target, user, today, maxAge, labelToFilter, targetViewFilter, items) {
+  filterBy: function (target, user, today, maxAge, labelToFilter, matchCriterion, targetViewFilter, items) { // NOSONAR
     for (let i = items.length - 1; i >= 0; i--) {
       let item = items[i];
-      if (this.filterItem(target, user, today, maxAge, labelToFilter, targetViewFilter, item))
+      if (this.filterItem(target, user, today, maxAge, labelToFilter, targetViewFilter, item)
+        || this.filterMatchItem(matchCriterion, item))
         items.splice(i, 1);
     }
     return items;
@@ -70,6 +73,27 @@ const wiServices = {
           }
       }
     return false;
+  },
+  // filter for match criterion does not depend on the target, although in many cases it will be filtered by the api call
+  filterMatchItem: function (match, item) {
+    if (!match)
+      return false;
+    const ownerAndRepo = item.repo_name.split("/");
+    if (ownerAndRepo < 2) // should have 2 compoments always
+      return false;
+    const owner = ownerAndRepo[0];
+    const allOwners = new Set([...match.user, ...match.org]);
+    return (match.criterion == "exclude" && allOwners.has(owner)
+      || match.criterion == "include" && !allOwners.has(owner));
+  },
+  filterMatchItemSummary: function (providerUid) {
+    const match = config.getProviderByUid(providerUid).match;
+    if (match.user.length != 0 || match.org.length != 0) {
+      let display = " &nbsp; " + (match.criterion == "exclude" ? "!" : "");
+      display += "(" + [...match.user, ...match.org].join(" ") + ")";
+      return display;
+    }
+    return "";
   },
 
   merge: function (items) {

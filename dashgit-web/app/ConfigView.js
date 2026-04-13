@@ -101,10 +101,11 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
       <div class="card-body pt-2 pb-2 config-provider-panel" prov="${provider.provider}" key="${key}">
         <div class="row">
           <div class="col-auto">
-            <p class="card-title h5">${this.provider2icon(provider.provider)} ${provider.provider}</p>
+            <p class="card-title h4">${this.provider2icon(provider.provider)} ${provider.provider}</p>
           </div>
           <div class="col-auto" style="width:22px"></div>
-          ${this.check2html(`config-providers-enabled-${key}`, "Enabled", provider.enabled, "", true)}
+          ${this.check2html(`config-providers-enabled-${key}`, "Enabled", provider.enabled, "", true)}      
+          ${this.input2html(`config-providers-url-${key}`, "url", "Repository url", provider.url, 'required', "150", "225", "The URL of the repository server.")}
         </div>
         
         ${this.authprovider2html(provider, key)}
@@ -112,16 +113,18 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
         <div class="row">  
           ${this.input2html(`config-providers-filterIfLabel-${key}`, "text", "Filter if label", provider.filterIfLabel, '', "150", "150",
             "Filters out work items that contain the specified label.")}
-          ${this.array2html(`config-providers-unassignedAdditionalOwner-${key}`, "text", "Add owners to unassigned", provider.unassignedAdditionalOwner, '', "225", "150",
-            "The default scope of Unassigned view is restricted to the repository of the authenticated user. Here you can include other users or organizations (separated by spaces)")}
+          ${this.array2html(`config-providers-unassignedAdditionalOwner-${key}`, "text", "Add owners to triage", provider.unassignedAdditionalOwner, '', "225", "150",
+            "The default scope of Triage view is restricted to the repository of the authenticated user. Here you can include other users or organizations (separated by spaces)")}
           ${this.array2html(`config-providers-dependabotAdditionalOwner-${key}`, "text", "Add owners to dependabot", provider.dependabotAdditionalOwner, '', "225", "150",
             "The default scope of Dependabot view is restricted to the repository of the authenticated user. Here you can include other users or organizations (separated by spaces)")}
           ${this.check2html(`config-providers-enableNotifications-${key}`, "Show notifications/mentions", provider.enableNotifications)}
         </div>
 
+        ${this.matchCriterion2html(provider, key)}
+
         <div class="row">
-          <div class="col-auto card-subtitle h6 mb-1 mt-1 text-body-secondary">GraphQL API parameters:</div>
-          ${this.check2html(`config-providers-surrogate-enabled-${key}`, "Use a status surrogate", provider.statusSurrogateUser != "")}
+          <div class="col-auto card-subtitle h6 mt-2 text-body-secondary">GraphQL API parameters:</div>
+          ${this.check2html(`config-providers-surrogate-enabled-${key}`, "Use a status surrogate", provider.statusSurrogateUser != "", "", true)}
           ${provider.provider == "GitHub"
             ? this.check2html(`config-providers-deprecated-graphqlV1-${key}`, "Use deprecated GraphQL query (before V1.6)", provider.graphql.deprecatedGraphqlV1)
             : ""}
@@ -183,8 +186,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
         ${key == "mgrepo"
           ? this.input2html(`config-providers-name-mgrepo`, "text", "Manager Repository", provider.name, 'required', "200", "200",
               "The full name (OWNER/REPO) of a dedicated private GitHub repository where the combined updates will be pushed and merged and where work item follow-ups are stored")
-          : this.input2html(`config-providers-url-${key}`, "url", "Repository url", provider.url, 'required', "150", "225", "The URL of the repository server.")
-            + this.input2html(`config-providers-user-${key}`, "text", "Username", provider.user, 'required', "150", "150",
+          : this.input2html(`config-providers-user-${key}`, "text", "Username", provider.user, 'required', "150", "150",
               "The reference user for whom the work items are displayed (assigned to, created by, etc.)")
         }
           ${this.check2html(`config-providers-auth-select-${key}`,
@@ -206,6 +208,31 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
             "The client ID of the GitHub OAuth App. Leave empty if you use github2 as the app name.")}
         </div>
     `;
+  },
+  matchCriterion2html: function (provider, key) {
+    if (provider.provider == "GitHub")
+      return `
+        <div class="row">  
+          <div class="col-auto">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text" style="width: 150px">Match criterion${this.infoIcon(
+                "To include or exclude work items in all repositories owned by certain users or organizations, you can select here the criterion (include or exclude)"
+                + " and then select the users or organizations that must match the crierion."
+              )}</span>
+              <select id="${`config-providers-match-criterion-${key}`}" class="form-select form-select-sm" aria-label="Match" style="width: 150px">
+                <option ${provider.match.criterion == "exclude" ? "selected" : ""} value="exclude">Exclude any</option>
+                <option ${provider.match.criterion == "include" ? "selected" : ""} value="include">Include one</option>
+              </select>
+            </div>
+          </div>
+          ${this.array2html(`config-providers-match-user-${key}`, "text", "match user(s)", provider.match.user, '', "160", "215",
+            "A list of users separated by spaces that will be included/excluded. If the criterion is include, only a single user/organization can be included")}
+          ${this.array2html(`config-providers-match-org-${key}`, "text", "match org(s)", provider.match.org, '', "160", "215",
+            "A list of organizations separated by spaces that will be included/excluded. If the criterion is include, only a single user/organization can be included")}
+         </div>
+    `;
+    else
+      return "";
   },
 
   // Retrieve the info in the ui and returns a config data structure to the controller
@@ -248,6 +275,12 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
     provider.filterIfLabel = $(`#config-providers-filterIfLabel-${id}`).val().trim();
     provider.unassignedAdditionalOwner = this.str2array($(`#config-providers-unassignedAdditionalOwner-${id}`).val());
     provider.dependabotAdditionalOwner = this.str2array($(`#config-providers-dependabotAdditionalOwner-${id}`).val());
+
+    if (provider.provider == "GitHub") {
+      provider.match.criterion = $(`#config-providers-match-criterion-${id}`).val()
+      provider.match.user = this.str2array($(`#config-providers-match-user-${id}`).val());
+      provider.match.org = this.str2array($(`#config-providers-match-org-${id}`).val());
+    }
     provider.enableNotifications = $(`#config-providers-enableNotifications-${id}`).is(':checked');
     provider.statusSurrogateUser = $(`#config-providers-statusSurrogateUser-${id}`).val().trim();
 
@@ -542,7 +575,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
   check2html: function (id, label, checked, info, isSwitch) {
     return `
       <div class="col-auto" id="${id}-div-container">
-        <div class="form-check${isSwitch ? " form-switch" : ""}">
+        <div class="form-check${isSwitch ? " form-switch" : ""} mt-1">
           <input class="form-check-input" type="checkbox" value="" ${checked ? "checked" : ""} id="${id}">
           <label class="form-check-label" for="${id}">${label}${this.infoIcon(info)}</label>
         </div>
@@ -551,7 +584,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
   },
   raw2html: function (label, info) {
     return `
-      <div class="col-auto">
+      <div class="col-auto" style="margin-top:7px">
         ${label}${this.infoIcon(info)}
       </div>
     `;

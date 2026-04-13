@@ -86,7 +86,7 @@ const wiController = {
   getPromise: function (target, provider, sorting) {
     const type = provider.provider.toLowerCase();
     if (type == "github")
-      return gitHubApi.getWorkItems(target, provider, sorting);
+      return gitHubApi.getWorkItems(target, provider, sorting, provider.match);
     else if (type == "gitlab")
       return gitLabApi.getWorkItems(target, provider, sorting);
     else
@@ -191,10 +191,16 @@ const wiController = {
     for (let prov of config.data.providers)
       if (prov.enabled) {
         let model = cache.getModel(prov.uid);
-        if (cache.hasStatusSurrogate(prov.uid))
+        /*if (cache.hasStatusSurrogate(prov.uid))
           model = this.emptyModel(prov, "Branch statuses are shown in the surrogate provider defined in the configuration");
-        else if (model == undefined)
+        else*/ if (model == undefined)
           model = this.emptyModel(prov, "Still loading <span class='spinner-border spinner-border-sm text-secondary'></span>");
+
+        // In the case of surrogates, the same statuses model is shared by different providers,
+        // The match filters applied to display a provider would affect the display of the next provider.
+        // Ensure that in any case each provider has its own model by creating a clone
+        model = JSON.parse(JSON.stringify(model)); // pending: migrate to structuredClone
+        model.header.uid = prov.uid;
         models.push(model);
       }
 

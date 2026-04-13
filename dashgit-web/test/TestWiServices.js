@@ -224,10 +224,11 @@ describe("TestView - Main processing in the view module", function () {
         mod.addItem({ repo_name: "repo2", type: "pr", iid: "006", title: "pr006-filtered" }); //last filtered & label
         mod.addLastItemLabel("lbl1", "ffffff");
         mod.addLastItemLabel("lbl0", "000000");
-        let items = wiServices.filterBy("assigned", "usr", new Date(), 0, "lbl0", undefined, mod.items); //TODO use filter (requires config)
+        let items = wiServices.filterBy("assigned", "usr", new Date(), 0, "lbl0", undefined, undefined, mod.items); //TODO use filter (requires config)
         let actual = items.map(a => a.title);
         assert.deepEqual(['pr002-nofilter', 'pr004-nofilter', 'pr005-nofilter'], actual);
     });
+//  filterBy: function (target, user, today, maxAge, labelToFilter, matchCriterion, targetViewFilter, items) { // NOSONAR
 
     it("Filter model items by age if non zero", function () {
         //age not set/updated<=age/upadted>age/created>age(no filter)
@@ -239,11 +240,11 @@ describe("TestView - Main processing in the view module", function () {
         mod.addItem({ repo_name: "repo1", type: "pr", iid: "003", title: "pr003", updated_at: "2023-08-10", created_at: "2023-08-02" });
         let modStr = JSON.stringify(mod);
 
-        let items = wiServices.filterBy("assigned", "usr", new Date("2023-08-10"), 8, "", undefined, JSON.parse(modStr).items);
+        let items = wiServices.filterBy("assigned", "usr", new Date("2023-08-10"), 8, "", undefined, undefined, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr002', 'pr003'], items.map(a => a.title));
-        items = wiServices.filterBy("assigned", "usr", new Date("2023-08-10"), 7, "", undefined, JSON.parse(modStr).items);
+        items = wiServices.filterBy("assigned", "usr", new Date("2023-08-10"), 7, "", undefined, undefined, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr003'], items.map(a => a.title));
-        items = wiServices.filterBy("assigned", "usr", new Date("2023-08-10"), 0, "", undefined, JSON.parse(modStr).items);
+        items = wiServices.filterBy("assigned", "usr", new Date("2023-08-10"), 0, "", undefined, undefined, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr002', 'pr003'], items.map(a => a.title));
     });
 
@@ -254,13 +255,13 @@ describe("TestView - Main processing in the view module", function () {
         mod.addItem({ repo_name: "repo2", type: "pr", iid: "002", title: "pr002", author: "otheruser" });
         let modStr = JSON.stringify(mod);
 
-        let items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", { authorMe: true, authorOthers: true}, JSON.parse(modStr).items);
+        let items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", undefined, { authorMe: true, authorOthers: true}, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr002'], items.map(a => a.title));
-        items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", { authorMe: true, authorOthers: false}, JSON.parse(modStr).items);
+        items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", undefined, { authorMe: true, authorOthers: false}, JSON.parse(modStr).items);
         assert.deepEqual(['pr001'], items.map(a => a.title));
-        items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", { authorMe: false, authorOthers: true}, JSON.parse(modStr).items);
+        items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", undefined, { authorMe: false, authorOthers: true}, JSON.parse(modStr).items);
         assert.deepEqual(['pr002'], items.map(a => a.title));
-        items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", { authorMe: false, authorOthers: false}, JSON.parse(modStr).items);
+        items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", undefined, { authorMe: false, authorOthers: false}, JSON.parse(modStr).items);
         assert.deepEqual([ ], items.map(a => a.title));
     });
 
@@ -275,15 +276,17 @@ describe("TestView - Main processing in the view module", function () {
         let modStr = JSON.stringify(mod);
 
         let targetViewFilter = { authorMe: true, authorOthers: true }; // attributes are required, checked by filter
-        let items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", targetViewFilter, JSON.parse(modStr).items);
+        let items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", undefined, targetViewFilter, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr003', 'is005'], items.map(a => a.title));
 
-        items = wiServices.filterBy("assigned", "usr", new Date(), 0, "", targetViewFilter, JSON.parse(modStr).items);
+        items = wiServices.filterBy("assigned", "usr", new Date(), 0, "", undefined, targetViewFilter, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr002', 'pr003', 'pr004', 'is005'], items.map(a => a.title));
 
         targetViewFilter = { compact: true };
-        items = wiServices.filterBy("statuses", "usr", new Date(), 0, "", targetViewFilter, JSON.parse(modStr).items);
+        items = wiServices.filterBy("statuses", "usr", new Date(), 0, "", undefined, targetViewFilter, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr002', 'pr003', 'pr004', 'is005'], items.map(a => a.title));
     });
+
+    // TODO filter by match criterion
 
 });

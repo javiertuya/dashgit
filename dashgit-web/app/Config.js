@@ -114,6 +114,11 @@ const config = {
     this.setDefault(element, "enableNotifications", true);
     this.setDefault(element, "filterIfLabel", "");
     this.setDefault(element, "statusSurrogateUser", "");
+    // match filters are only for github, but empty filter is included also in gitlab to handle it in the same way
+    this.setDefault(element, "match", {});
+    this.setDefault(element.match, "criterion", "exclude");
+    this.setDefault(element.match, "user", []);
+    this.setDefault(element.match, "org", []);
     if (element.provider == "GitHub") {
       this.setDefault(element, "url", "https://github.com");
       this.setDefault(element, "api", "https://api.github.com");

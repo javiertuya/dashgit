@@ -21,22 +21,23 @@ const gitHubApi = {
 
   userAgent: config.getGitHubUserAgent(),
 
-  getWorkItems: async function (target, provider, sorting) {
+  getWorkItems: async function (target, provider, sorting, match) {
     const token = login.getProviderToken(provider);
     const octokit = new Octokit({ userAgent: this.userAgent, auth: token });
     // issue #116 set sorting criteria to match the selected in the UI
     const sort = (sorting??"").includes("updated") ? "updated" : "created";
     const order = (sorting??"").includes("descending") ? "desc" : "asc";
     const options = { sort:sort, order:order, advanced_search:true };
+    const matchFilter = this.getMatchSearch(match);
     // issue #184, add advanced_search, check if can be removed after September 2025
-    const assigned = { q:`is:open assignee:${provider.user} archived:false`, ...options };
-    const unassigned = { q:`is:open no:assignee owner:placeholder archived:false`, per_page: 100, ...options };
-    const reviewer = { q:`is:open is:pr user-review-requested:${provider.user} archived:false`, ...options };
-    const revise= { q:`is:open is:pr review:changes_requested author:${provider.user} archived:false`, ...options };
-    const created = { q:`is:open author:${provider.user} archived:false`, ...options };
-    const involved = { q:`is:open involves:${provider.user} archived:false`, ...options };
-    const dependabot = { q:`is:open is:pr author:app/dependabot owner:placeholder archived:false`, per_page: 100, ...options };
-    const dependabotTest = { q:`is:open is:pr author:${provider.user} archived:false in:title "Test pull Request for dependabot/testupdate"`, per_page: 100, ...options };
+    const assigned = { q:`is:open assignee:${provider.user} ${matchFilter} archived:false`, ...options };
+    const unassigned = { q:`is:open no:assignee owner:placeholder ${matchFilter} archived:false`, per_page: 100, ...options };
+    const reviewer = { q:`is:open is:pr user-review-requested:${provider.user} ${matchFilter} archived:false`, ...options };
+    const revise= { q:`is:open is:pr review:changes_requested author:${provider.user} ${matchFilter} archived:false`, ...options };
+    const created = { q:`is:open author:${provider.user} ${matchFilter} archived:false`, ...options };
+    const involved = { q:`is:open involves:${provider.user} ${matchFilter} archived:false`, ...options };
+    const dependabot = { q:`is:open is:pr author:app/dependabot owner:placeholder ${matchFilter} archived:false`, per_page: 100, ...options };
+    const dependabotTest = { q:`is:open is:pr author:${provider.user} ${matchFilter} archived:false in:title "Test pull Request for dependabot/testupdate"`, per_page: 100, ...options };
     let promises = [];
     if (target == "assigned")
       promises = [
@@ -76,6 +77,12 @@ const gitHubApi = {
       return;
 
     return await this.dispatchPromisesAndGetModel(target, provider, promises);
+  },
+  getMatchSearch: function (match) {
+    const exclude = match.criterion == "exclude" ? "-" : "";
+    const matchUser = match.user.length > 0 ? ` ${exclude}user:` + match.user.join(` ${exclude}user:`) : "";
+    const matchOrg = match.org.length > 0 ? ` ${exclude}org:` + match.org.join(` ${exclude}org:`) : "";
+    return (matchUser + matchOrg).trim()
   },
   dispatchPromisesAndGetModel: async function(target, provider, promises) {
     const t0 = Date.now();

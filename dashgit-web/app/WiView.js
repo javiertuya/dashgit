@@ -98,6 +98,7 @@ const wiView = {
             aria-controls="wi-providers-panel-${target}-${provider}">
           <p class="m-0">
             <span class='h4'>${wiRender.provider2html(header.provider)} ${header.provider} - ${header.user}</span>
+            <span class='h6'>${wiServices.filterMatchItemSummary(provider)}</span>
             <span class='h6'>${header.url != "" ? " &nbsp; at " + header.url.replace("https://", "") : ""}</span>
             <span id="wi-badges-${this.getId(target, header.uid, "all")}" style='position:relative; bottom:4px;'></span>
             <!--
