@@ -60,6 +60,9 @@ export async function handleCallback() {
     await login.successfulLogin(token);
     window.location.href = "./"; // Redirect back to main app after successful login
   }
+  // TODO test with exchange server down, clarify message/handle exception, 
+  // currently it returns html from nginx that fails to be displayed (at least it sould be sanitized).
+  // Maybe get the http code here or in the exchange method post
   catch (err) {
     await login.failedLogin("Unexpected error: " + err);
   }
@@ -76,6 +79,11 @@ export async function exchangeCodeForToken(code, oaconfig) {
     code_verifier
   };
 
+  // To do not use the exchange service proxy, set the addres of the GitHub endpoint
+  //const res = await fetch("https://github.com/login/oauth/access_token", {
+  // NOTE: This fails with GitHub because CORS. See this:
+  // https://github.com/getsentry/sentry/pull/107731
+  // In summary: the url of DashGit should be in a registered server, and this address be the homepage url the OAuth App
   const res = await fetch(oaconfig.exchangeUrl, {
     method: "POST",
     headers: {

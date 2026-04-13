@@ -1,4 +1,5 @@
 import { config } from "./Config.js"
+import { login } from "./Login.js"
 import { wiController } from "./WiController.js"
 import { wiView } from "./WiView.js"
 import { configView } from "./ConfigView.js"
@@ -81,9 +82,11 @@ $(document).on('click', '.config-btn-provider-submit', function (e) {
 
 $(document).on('click', '#inputEncryptButton', function (e) {
   if ($('#inputEncryptPassword').val().length > 0) {
-    config.xtoken = $("#inputEncryptPassword").val();
     config.data.encrypted = true;
-    config.encryptTokens();
+    // encryption of config.data is managed at the login module
+    const secret = $("#inputEncryptPassword").val();
+    login.setPatSecret(secret);
+    login.encryptConfigTokens();
     config.save();
     $(this).closest("form")[0].reset();
     e.preventDefault()
@@ -99,7 +102,9 @@ $(document).on('click', '#inputEncryptButton', function (e) {
 $(document).on('click', '#inputDecryptButton', function (e) {
   for (let provider of config.data.providers)
     provider.token = "";
+  config.data.managerRepo.token = ""; // manager repo
   config.data.encrypted = false;
+  login.setPatSecret("");
   config.save();
   configController.updateMainTarget();
   e.preventDefault();
@@ -108,7 +113,7 @@ $(document).on('click', '#inputDecryptButton', function (e) {
 $(document).on('click', '#buttonConfigSave', function (e) {
   console.log("Save config json");
   try {
-    config.updateFromString($("#configJson").val());
+    login.updateConfigFromString($("#configJson").val());
     configController.afterSaveData();
   } catch (error) {
     wiView.renderAlert("danger", error);
@@ -141,7 +146,7 @@ const configController = {
     }
 
     // Replace the global config data with the local config data value, it is assumed that all data was validated at the ui
-    config.updateFromString(JSON.stringify(data));
+    login.updateConfigFromString(JSON.stringify(data));
   },
   afterSaveData: function () {
     configController.updateMainTarget();

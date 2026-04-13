@@ -21,8 +21,9 @@ import { configController } from "./ConfigController.js"
 //In patLoginMode mode, enter and validate password
 $(document).on('click', '#inputPasswordButton', function (e) {
   if ($('#inputPassword').val().length > 0) {
-    config.xtoken = $("#inputPassword").val();
-    if (config.isValidPassword(config.data.providers, config.xtoken)) {
+    const secret = $("#inputPassword").val();
+    if (login.isValidPassword(config.data.providers, secret)) {
+      login.setPatSecret(secret);
       indexController.start();
     } else {
       $('#inputPassword')[0].setCustomValidity("Password does not match with the one used to encrypt the access tokens");
@@ -103,7 +104,7 @@ const indexController = {
     config.load();
 
     $("#appVersion").text(config.appVersion);
-    if (config.data.encrypted) { 
+    if (config.data.encrypted && login.getPatSecret() == "") { 
       // A simpler view to set the password before entering the application
       indexController.patLoginMode();
       return;

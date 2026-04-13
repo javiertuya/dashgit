@@ -1,10 +1,9 @@
-import { encryption } from "./Encryption.js"
-
 /**
  * Shared persitent data: configuration of parameters, providers, etc. 
  */
 const DASHGIT_CONFIG = "dashgit-config"; // Store: all configuration
 const LAST_VISITED_DATES = "dashgit-config-visited"; // Store: to highlight recent items
+//const PAT_SECRET = "dashgit-pat-secret"; // Store: to decript PATs
 const config = {
 
   //App version number, do not push any change of it, this is set during deploy
@@ -31,7 +30,7 @@ const config = {
     viewFilter: {}, // additional filters applicable to the view indicated by the key
   },
 
-  //Persisten configuration data, that is saved to browser storage
+  //Persistent configuration data, that is saved to browser storage
   //Next methods are intended for manipulation of this config data
   data: {},
 
@@ -45,11 +44,6 @@ const config = {
   save: function () {
     localStorage.setItem(DASHGIT_CONFIG, JSON.stringify(config.data));
   },
-  encryptTokens: function () {
-    config.data.managerRepo.token=this.encrypt(config.data.managerRepo.token, config.xtoken);
-    for (let provider of config.data.providers)
-      provider.token = this.encrypt(provider.token, config.xtoken);
-  },
 
   // Determines if version has changed from last used configuration (used to display a message to the user),
   // does not fire if there are no providers (still not initialized)
@@ -60,19 +54,6 @@ const config = {
       return true;
     }
     return false;
-  },
-
-  // Save from a string representation of the data object
-  updateFromString: function (dataStr) {
-    config.data = this.parseAndSanitizeData(dataStr);
-    //ensure new tokens are encrypted, if applicable
-    if (config.data.encrypted)
-      this.encryptTokens();
-    //set config data not directly set from the ui
-    for (let i = 0; i < config.data.providers.length; i++) {
-      config.data.providers[i].uid = i.toString() + "-" + config.data.providers[i].provider.toLowerCase();
-    }
-    config.save();
   },
 
   // Process a string with configuration and converts to an object.
@@ -90,6 +71,10 @@ const config = {
         this.migrateV2toV3(data);
     }
     data = this.setAllDefaults(data);
+    //set other config data not directly set from the ui (uid identification of providers)
+    for (let i = 0; i < data.providers.length; i++)
+      data.providers[i].uid = i.toString() + "-" + data.providers[i].provider.toLowerCase();
+
     return data;
   },
   setAllDefaults: function (data) {
@@ -252,47 +237,6 @@ const config = {
     if (value == undefined || value == null)
       value = "{}";
     return JSON.parse(value);
-  },
-
-  //Token encryption related
-
-  //To decript token if necessary
-  xtoken: "",
-
-  //to check a valid password checks if decription of all provider tokens is possible
-  isValidPassword: function (providers, pass) {
-    for (let provider of providers) {
-      try {
-        this.decrypt(provider.token);
-      } catch (error) {
-        return false;
-      }
-    }
-    return true;
-  },
-
-  // encrypted tokens are prefixed with "aes:" to avoid a duble encryption and decrypt non encrypted tokens
-  // Allows empty tokens (e.g. for anonymous access to GitHub)
-  encrypt: function (text, pass) {
-    if (text == "" || text.startsWith("aes:"))
-      return text; //already encrypted
-    let ciphertext = encryption.encrypt(text, pass);
-    return "aes:" + ciphertext;
-  },
-  // This is called from the API related methods to authenticate the requests
-  decrypt: function (configToken) {
-    // decrypt only if token is encrypted, if not, returns the value
-    if (configToken.startsWith("aes:")) {
-      let ciphertext = configToken.substring(4);
-      if (config.xtoken == "") //will make fail the api calls
-        return "invalid token";
-      let text = encryption.decrypt(ciphertext, config.xtoken);
-      //raise exception if password does not match (receives empty string)
-      if (text.length == 0)
-        throw "Can't decrypt the token, maybe the password is wrong"; //NOSONAR
-      return text;
-    } else
-      return configToken;
   },
 
   // Manage feature flags

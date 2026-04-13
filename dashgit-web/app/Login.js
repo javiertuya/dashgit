@@ -1,3 +1,4 @@
+import { encryption } from "./Encryption.js"
 import { config } from "./Config.js"
 import { oaconfig } from "./oauth/OAConfig.js"
 import { startLogin, handleCallback } from "./oauth/auth.js"
@@ -8,16 +9,22 @@ import { startLogin, handleCallback } from "./oauth/auth.js"
  * - Required methods that called from controllers to coordinate the OAuth login process
  * - Setup of the OAuth configuration for each provider (oaconfig)
  * - Interface with the oauth module (invoke the start and callback handler and receives the login result)
+ * - Manage encryption/decription for password protected PAT authentication
  */
 const PROVIDER_UID="dashgit-oauth-provider-key"; // Store: provider that is currently being handled
 const OAUTH_TOKEN_PREFIX="dashgit-oauth-token_"; // Store: token names are prefix+uid
+const PAT_SECRET = "dashgit-pat-secret"; // Store: to decript PATs (entered by the user at the session start)
 const login = {
 
   // Returns the token for a provider, either PAT or OAuth
   getProviderToken: function (provider) {
-    let token = provider.oauth ? this.getOAuthTokenByUid(provider.uid) : config.decrypt(provider.token);
+    let token = provider.oauth ? this.getOAuthTokenByUid(provider.uid) : this.decrypt(provider.token);
     return token;
   },
+
+  ////////////////////////////////////////////////////////////////////////////
+  // OAuth2 authentication
+  ////////////////////////////////////////////////////////////////////////////
 
   // Determines the providers that use OAuth and if they require a new login or they failed login
   getLoginStatusForAllProviders: async function () { // NOSONAR
@@ -181,6 +188,10 @@ const login = {
     //await new Promise(r => setTimeout(r, 2000));
   },
 
+  ////////////////////////////////////////////////////////////////////////////
+  // OAuth2 configuration
+  ////////////////////////////////////////////////////////////////////////////
+ 
 
   getOAuthProviderConfig: function (provider) {
     const thisUrl = window.location.protocol + "//" + window.location.host  + window.location.pathname
@@ -216,7 +227,76 @@ const login = {
     } else {
       return {};
     }
-  }
+  },
+
+  ////////////////////////////////////////////////////////////////////////////
+  // PAT token encryption/decription 
+  ////////////////////////////////////////////////////////////////////////////
+
+  setPatSecret: function (secret) {
+    sessionStorage.setItem(PAT_SECRET, secret);
+  },
+  getPatSecret: function () {
+    return sessionStorage.getItem(PAT_SECRET) ?? "";
+  },
+
+  // Save all config.data taken from a string representation of the data object
+  updateConfigFromString: function (dataStr) {
+    config.data = config.parseAndSanitizeData(dataStr);
+    //ensure new tokens are encrypted, if applicable
+    if (config.data.encrypted)
+      this.encryptConfigTokens();
+
+    config.save();
+  },
+  encryptConfigTokens: function () {
+    const secret = this.getPatSecret();
+    config.data.managerRepo.token = this.encrypt(config.data.managerRepo.token, secret);
+    for (let provider of config.data.providers)
+      provider.token = this.encrypt(provider.token, secret);
+  },
+
+  // To check a valid password checks if decryption of all provider tokens is possible
+  isValidPassword: function (providers, pass) {
+    for (let provider of providers) {
+      try {
+        const result = this.decrypt(provider.token, pass);
+        if (result == "invalid token")
+          return false;
+      } catch (error) {
+        return false;
+      }
+    }
+    return true;
+  },
+
+  // encrypted tokens are prefixed with "aes:" to avoid a duble encryption and decrypt non encrypted tokens
+  // Allows empty tokens (e.g. for anonymous access to GitHub)
+  encrypt: function (text, pass) {
+    if (text == "" || text.startsWith("aes:"))
+      return text; //already encrypted
+    let ciphertext = encryption.encrypt(text, pass);
+    return "aes:" + ciphertext;
+  },
+
+  // This is called from the API related methods to authenticate the requests and session login
+  // If parameter pass is included, uses this as the secret to decrypt (to validate at sesion login)
+  // Else, find the secret in local storage (regular use to call the APIs)
+  decrypt: function (configToken, pass) {
+    // decrypt only if token is encrypted, if not, returns the value
+    if (configToken.startsWith("aes:")) {
+      let ciphertext = configToken.substring(4);
+      let secret = pass ?? this.getPatSecret();
+      if (secret == "") //will make fail the api calls
+        return "invalid token";
+      let text = encryption.decrypt(ciphertext, secret);
+      //raise exception if password does not match (receives empty string)
+      if (text.length == 0)
+        throw "Can't decrypt the token, maybe the password is wrong"; //NOSONAR
+      return text;
+    } else
+      return configToken;
+  },
 
 }
 export { login };
