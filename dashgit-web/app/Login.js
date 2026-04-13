@@ -1,7 +1,7 @@
 import { encryption } from "./Encryption.js"
 import { config } from "./Config.js"
 import { oaconfig } from "./oauth/OAConfig.js"
-import { startLogin, handleCallback } from "./oauth/auth.js"
+import { startLogin, handleCallback, refreshExpiredToken } from "./oauth/auth.js"
 
 /**
  * Manges the login of the providers and returns the appropriate token when requested.
@@ -13,6 +13,7 @@ import { startLogin, handleCallback } from "./oauth/auth.js"
  */
 const PROVIDER_UID="dashgit-oauth-provider-key"; // Store: provider that is currently being handled
 const OAUTH_TOKEN_PREFIX="dashgit-oauth-token_"; // Store: token names are prefix+uid
+const OAUTH_REFRESH_PREFIX="dashgit-oauth-refresh_"; // Store: refresh token and date to refresh
 const PAT_SECRET = "dashgit-pat-secret"; // Store: to decript PATs (entered by the user at the session start)
 const login = {
 
@@ -41,31 +42,37 @@ const login = {
       const providerConfig = this.getOAuthProviderConfig(provider);
       console.log(`- Applicable configuration: ${JSON.stringify(providerConfig, null, 2)}`);
 
-      if (token) {
+      const providerWithMyApp = status.alreadySetByApp[providerConfig.appName + "-" + provider.provider + "-" + provider.url];
+      if (providerWithMyApp) { // Optimization to avoid multiple logins for the same app
+        console.log(`- Provider ${provider.uid} authenticates with the same app than ${providerWithMyApp.uid}, which is known to be logged or failed, set this token`);
+        this.copyFromAppAlreadySet(providerWithMyApp, provider, status);
+      } else if (token) { // Existing token, manages failures and refresh
         if (token === "failed") {
           console.log("- Previous login attempt failed, skip login");
           status.failedProviders.push(provider);
         } else {
+          await this.refreshTokenIfNeeded(provider, providerConfig);
           console.log("- Already logged");
         }
         // to avoid repeat login if already logged in the same app, platform and url,
-        // eg. other providers using GitLab and gitlab.com or the same GitLab on premises
         status.alreadySetByApp[providerConfig.appName + "-" + provider.provider + "-" + provider.url] = provider;
       } else {
-        const providerWithMyApp = status.alreadySetByApp[providerConfig.appName + "-" + provider.provider + "-" + provider.url];
-        if (providerWithMyApp) {
-          console.log(`- Provider ${provider.uid} authenticates with the same app than ${providerWithMyApp.uid}, which is known to be logged or failed, set this token`);
-          const token = this.getProviderToken(providerWithMyApp);
-          this.setOAuthTokenByUid(provider.uid, token);
-          if (token == "failed")
-            status.failedProviders.push(provider);
-        } else {
           console.log("- Requires login");
           status.unsetProviders.push(provider);
-        }
       }
     }
     return status;
+  },
+  copyFromAppAlreadySet: function(providerWithMyApp, provider, status) {
+    // Copy to the provider, this includes both the token and the refresh info
+    const token = this.getOAuthTokenByUid(providerWithMyApp.uid);
+    this.setOAuthTokenByUid(provider.uid, token);
+    const refresh = this.getOAuthRefreshByUid(providerWithMyApp.uid);
+    this.setOAuthRefreshByUid(provider.uid, refresh);
+
+    // Failed status must be recorded too
+    if (token == "failed")
+      status.failedProviders.push(provider);
   },
   getOAuthEnabledProviders: function() {
     let providers = [];
@@ -97,7 +104,17 @@ const login = {
     return provider;
   },
 
-  // Interface with the auth module to initiate the login and the callback
+  // Interface with the auth module to initiate the login, callback and token refresh
+  refreshTokenIfNeeded: async function (provider, providerConfig) {
+    const refresh = this.getOAuthRefreshByUid(provider.uid);
+    if (refresh.token != "" && refresh.time != "" && new Date().getTime() > new Date(refresh.time).getTime()) {
+      console.log("- Refreshing token");
+      // auth module will invoke successfulLogin (that requires the uid in session storage) after refresh to set the new tokens
+      sessionStorage.setItem(PROVIDER_UID, provider.uid)
+      await refreshExpiredToken(refresh.token, providerConfig);
+      sessionStorage.removeItem(PROVIDER_UID);
+    }
+  },
   startLoginForProvider: async function (provider) {
     console.log("Login.js: Starting login for provider " + provider.uid);
     let conf = this.getOAuthProviderConfig(provider);
@@ -149,9 +166,13 @@ const login = {
   // - when the login is successful to save the token
   // - when the login fails to ensure a special value in the token to avoid autentication loops
 
-  successfulLogin: async function (token) {
+  successfulLogin: async function (token, refreshToken, expiresIn) {
     const providerUid = sessionStorage.getItem(PROVIDER_UID);
     this.setOAuthTokenByUid(providerUid, token);
+    // stores in a separate session variable the refresh info, 10 minutes before expiration, 
+    // no undefined values (GotHub does not have refresh, GitLab does)
+    const refreshTime = expiresIn ? new Date(new Date().getTime() + (expiresIn - 600) * 1000).toISOString() : "";
+    this.setOAuthRefreshByUid(providerUid, {token: refreshToken ?? "", time: refreshTime});
   },
   failedLogin: async function (message) {
     await this.logError(message);
@@ -163,6 +184,12 @@ const login = {
   },
   getOAuthTokenByUid: function (uid) {
     return sessionStorage.getItem(`${OAUTH_TOKEN_PREFIX}${uid}`);
+  },
+  setOAuthRefreshByUid: function (uid, refreshInfo) {
+    sessionStorage.setItem(`${OAUTH_REFRESH_PREFIX}${uid}`, JSON.stringify(refreshInfo));
+  },
+  getOAuthRefreshByUid: function (uid) {
+    return JSON.parse(sessionStorage.getItem(`${OAUTH_REFRESH_PREFIX}${uid}`));
   },
   retryOAuth: function () {
     const providers = this.getOAuthEnabledProviders();
@@ -216,6 +243,16 @@ const login = {
     const oadefault = oadefaults[platform]?.[appName] ?? {};
     if (Object.keys(oadefault).length === 0) // wrong configuration
       return {};
+
+    // Additional check for the platform url in the provider and the platform url in the config
+    // If they do not match, the authentication will fail. Returns empty config.
+    // This prevents, situations such that an on-premises gitlab is set but cliend id is not configured:
+    // The platform would reject authentication and redirect DashGit to an url that blocks the application
+    // TODO review later configuration validations
+    //if (platformUrl != oadefault.platformUrl) {
+    //  console.error(`The provider platform url '${platformUrl}' does not match with the specified in the configuration '${oadefault.platformUrl}'`);
+    //  return {};
+    //}
     
     // Finally, other platform specific configuration and other overrides
     let callbackUrl = thisUrl + "?oapp=" + appName;

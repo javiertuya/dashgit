@@ -20,11 +20,13 @@ const oaconfig = {
     github: {
       clientId: "Ov23liF8QHJgpfMvHfDx",
       scopes: "repo notifications",
+      //platformUrl: "https://github.com",
       exchangeUrl: "https://giis.uniovi.es/desarrollo/oauth/exchange",
     },
     github2: {
       clientId: "Ov23liX99oNsXeNScNCS",
       scopes: "repo notifications",
+      //platformUrl: "https://github.com",
       exchangeUrl: "https://giis.uniovi.es/desarrollo/oauth/exchange",
     },
   },
@@ -32,6 +34,7 @@ const oaconfig = {
     gitlab: {
       clientId: "0f31ac81765c1290f903cd671975d71314a0bb48dfd070e4136ee4e08283b97b",
       scopes: "read_api",
+      //platformUrl: "https://gitlab.com",
       exchangeUrl: "",
     },
   },

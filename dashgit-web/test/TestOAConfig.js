@@ -1,11 +1,12 @@
 import assert from 'assert';
 import { login } from "../app/Login.js"
 
+// TODO Temporal, this configuration will change and test revised to include config validation
 const oaconfig = {
     GitHub: {
-        github: { clientId: "client", scopes: "repo read:user notifications", },
+        github: { clientId: "client", exchangeUrl: 'https://giis.uniovi.es/desarrollo/oauth/exchange', scopes: "repo read:user notifications", },
         github2: { clientId: "client2", scopes: "repo notifications", },
-        github3: { clientId: "client3", scopes: "repo notifications", },
+        github3: { clientId: "client3", exchangeUrl: 'https://giis.uniovi.es/desarrollo/oauth/exchange', scopes: "repo notifications", },
     },
     //GitLab: {
     //    gitlab1: { clientId: "clientgl", scopes: "read_api", },

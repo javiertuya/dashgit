@@ -66,8 +66,8 @@ export async function handleCallback() {
       return;
     }
 
-    const token = tokenResponse.access_token;
-    await login.successfulLogin(token);
+    // Uses refresh info in addition to the received token
+    await login.successfulLogin(tokenResponse.access_token, tokenResponse.refresh_token, tokenResponse.expires_in);
     window.location.href = "./"; // Redirect back to main app after successful login
   }
   // TODO test with exchange server down, clarify message/handle exception, 
@@ -91,8 +91,31 @@ export async function exchangeCodeForToken(code, oaconfig) {
 
   // NOTE: GitHub reqires a proxy for exchange, if not, it fails because of CORS. See this:
   // https://github.com/getsentry/sentry/pull/107731
-  // In summary: the url of DashGit should be in a registered server, and this address be the homepage url the OAuth App
-  const res = await fetch(oaconfig.exchangeUrl, {
+  // In summary: to do not require proxy, the url of the client should be in a registered server, and this address be the homepage url the OAuth App
+  const response = await post (oaconfig.exchangeUrl, body);
+  return response;
+}
+
+export async function refreshExpiredToken(refreshToken, oaconfig) {
+  const body = {
+    client_id: oaconfig.clientId,
+    refresh_token: refreshToken,
+    grant_type: "refresh_token",
+    redirect_uri: oaconfig.callbackUrl
+  };
+  
+  const response = await post(oaconfig.exchangeUrl, body);
+  // Error handling is different from login for a new token because refresh must be executed
+  // silently, just to replace the token if possible
+  if (response.error)
+    console.error(`Error refeshing token (${response.error}): ${response.error_description}`
+      + ` - Configuration: ${JSON.stringify(oaconfig, null, 2)}`);
+  else
+    await login.successfulLogin(response.access_token, response.refresh_token, response.expires_in);
+}
+
+async function post (url, body) {
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -100,6 +123,6 @@ export async function exchangeCodeForToken(code, oaconfig) {
     },
     body: JSON.stringify(body)
   });
-
-  return res.json();
+  const response = res.json();
+  return response;
 }

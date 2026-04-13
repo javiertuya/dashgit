@@ -112,8 +112,14 @@ const indexController = {
 
     // Checks all unset providers that require OAuth, if there are any, starts the OAuth login of the first one.
     // The rest will be started after receiving the callback.
-    // Ignore if the feature flag 'disableoa' is enabled to have the posibility to enter into the configuration tab to correct wrong configs
-    const loginResult = await login.getLoginStatusForAllProviders(config.ff["disableoa"]);
+
+    // Ignore if the feature flag 'disableoa' is enabled to have the posibility to enter into the configuration tab to fix wrong configs
+    if (config.ff["disableoa"]) {
+      indexController.start();
+      return;
+    }
+
+    const loginResult = await login.getLoginStatusForAllProviders();
     if (loginResult.unsetProviders.length > 0 && !config.ff["disableoa"]) {
       indexController.oauthLoginMode(); // to show how the login process is going on
       await login.startLoginForProvider(loginResult.unsetProviders[0]);
@@ -124,7 +130,7 @@ const indexController = {
     indexController.start();
 
     // The view is rendered, now we can finishsh some pending chores related to the login process
-    if (loginResult.failedProviders.length > 0 && !config.ff["disableoa"]) {
+    if (!config.ff["disableoa"] && loginResult.failedProviders.length > 0) {
       const uids = loginResult.failedProviders.map(a => a.uid);
       console.log("Login.js: The following OAuth2 providers failed to log in: " + uids.join(", "));
       $("#oauth-reset-message").text( `OAuth2 authentication failed for the provider(s) ${uids.join(", ")}. `
@@ -134,10 +140,10 @@ const indexController = {
       $("#oauth-reset-message").text("");
       $("#oauth-reset").hide();
     }
-    $('[data-toggle="tooltip"]').tooltip({trigger:"hover", delay:600});
   },
 
   start: function() {
+    $('[data-toggle="tooltip"]').tooltip({trigger:"hover", delay:600});
     wiController.reset(true);
     indexController.workMode();
     indexController.tabControlSelectLastOrDefault("assigned");
