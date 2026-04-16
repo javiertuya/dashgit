@@ -22,13 +22,14 @@ This dashboard offers:
   - Open issues and pull requests
   - Review requests and requests for changes
   - Branches and Dependabot updates
-- Build statuses for PRs/granches and notifications
+- Build statuses for PRs/branches and notifications
 - The ability to automatically combine Dependabot updates into a single pull request per repository and merge them with just a few clicks
 - The option to flag work items with a reminder date for follow-up.
 
 DashGit works entirely in the browser and is hosted on GitHub Pages at
 [https://javiertuya.github.io/dashgit](https://javiertuya.github.io/dashgit).
-The only data sent outside the browser is what is required to request repository information about your work items.
+The only data sent outside the browser is what is required to request repository information about your work items
+or to get the OAuth2 authorization.
 
 Below is an example view of DashGit configured to manage two GitHub and one GitLab repositories:
 
@@ -47,17 +48,23 @@ open the Configure tab, add a GitHub provider:
 - You can access without authentication, but this will subject you to lower rate limits and will not allow you to view the branches tab, build statuses, or notifications.
 
 The configuration is stored in your browser's local storage.
+OAuth tokens are stored in session storage, dropped after closing the browser tab.
 If you authenticate using Personal Access Tokens (PAT) you can encrypt them with a password, which will be requested when you open a new DashGit browser tab.
 
 ## Features and Configuration
 
 The different *views* (tabs) in the UI display open *work items* (issues, pull requests, etc.) in a collapsible panel for each *provider*.
-A provider is defined by a repository type (GitHub, GitLab), a *user*, and an method (OAuth or PAT) to authenticate requests.
+A provider is defined by a repository platform (GitHub, GitLab), a *user*, and an method (OAuth or PAT) to authenticate requests.
 You can define any combination (e.g., providers with the same username but different authentication, or different usernames but the same authentication).
 
 ### OAuth authentication
 
-TODO
+OAuth2 authentication implements the *Authorization code with Proof Key for Code Exchange (PKCE)* protocol.
+Out of the box, it uses a predefined GitHug OAuth App or GitLab Application to handle de authorization process.
+In the configuration of each provider, you only need check *Use OAuth2 to authenticate* instead of introducing a Personal Access Token (PAT).
+
+The OAuth tokens received after authorization only live during the session and they are not stored in the browser's local storage (unlike PAT).
+For more details and the customization features, see [OAUTH2.MD](dashgit-web/OAUTH2.md).
 
 ### PAT token permissions
 Each tab in DashGit issues different API calls to the repository APIs to get issues, pull requests, notifications, branches, and build statuses,
@@ -81,7 +88,7 @@ Below, required token permissions are described for different scenarios when usi
   - When creating the token, you specify the organization as the **resource owner**.
   - The token has the aforementioned permissions: `Commit statuses`, `Contents`, `Issues`, `Metadata`, `Pull requests`
     (and `Notifications` when available).
-- **GitLab:** Set a personal access token with `api` permission.
+- **GitLab:** Set a personal access token with `read_api` permission.
 
 ### PAT token encryption
 As mentioned above, the configuration is stored in the browser's local storage and all processing occurs in the browser.
@@ -95,7 +102,7 @@ Note that once a token is encrypted, you can't decrypt it, only reset it.
 ### Selecting, sorting, and grouping
 The user can customize how work items are sorted and organized by using the controls at the top of the header.
 An additional option allows you to restrict the displayed items to repositories that match a specified search criterion.
-These settings are not stored in the configuration.
+These settings are stored in the configuration and persist between sessions.
 
 ### Scope configuration
 The *username* is the reference user for whom the work items are displayed (assigned to, created by, etc.),
@@ -109,6 +116,7 @@ Note that the username can be someone other than the authenticated user.
 - The scope of the Branches view is handled differently, as data is obtained by GraphQL API requests instead of the REST API.
   On GitHub, you have to specify one or more of the following scopes: OWNER, ORGANIZATION_MEMBER, or COLLABORATOR.
   Optionally, you can include PRs from other repositories even if they are out of scope.
+- The branch/PR statuses obtained from the same query as the branches view.
 
 ### Filtering configuration
 Requests made against the repositories retrieve the most recent work items that fit on a single response page,
@@ -116,11 +124,31 @@ which is enough for the most common use case to display open work items for the 
 Moreover, the displayed data can be restricted by setting any of the following parameters:
 - `Max age`: Filters out work items that are older than the specified number of days.
 - `Filter if Label`: Filters out work items that contain the specified label.
+- `Match criterion`: On GitHub, it is possible to include or exclude work items in the repositories owned by certain users or organizations
+
+### Configuration for multiple providers
+
+You can use different providers in different Git platforms (e.g. GitHub and GitLab) or in the same platform but with different users.
+You can also configure different providers for the same user in the same Git platform but still separate the work items to keep things more organized.
+Let assume that you want to separate the work items in your personal account from the work items in an organization that you have access to.
+
+Configuration for GitHub could be like this:
+- Create two GitHub providers and set the same user and authentication.
+- Add the organization name to `Add owners to triage`, `Add owners to dependabot` in both providers.
+- Set the `GraphQL scope` to Owner and Organization member in both providers.
+- In the first one, set the `Match criterion` to Exclude and match the organization. This will show your personal repos.
+- In the second one, set the `Match criterion` to Include and match the organization. This will show your organization repos.
+
+With this configuration, each provider will send separate (and equal) GraphQL calls for obtaining the statuses and the branches of each provider. 
+To avoid the duplication of these calls, that are expensive, you can specify a provider as a surrogate of other. 
+In this example, you should:
+- Set the `Use a status surrogate` in one of the providers, for instance, the first one.
+- Specify the username of the surrogate provider, in this case the username of the second one.
 
 ### Status cache configuration
 Requests to the GraphQL API to get branches and build statuses are expensive if they retrieve data
 from many repositories and are subject to more restrictive rate limits than the REST API.
-To mitigate potential problems with API rate limits and improve UI response times, these calls are cached and managed
+To mitigate potential problems with API rate limits and improve UI response times, these calls have a two level cache and managed
 by two parameters (measured in seconds) that you can adjust in the Configuration tab:
 - `Status Cache Update Time`: During this period, any call to get statuses returns the cached data.
   This avoids making API calls when the user moves from one view to another in a short period of time.
@@ -129,17 +157,17 @@ by two parameters (measured in seconds) that you can adjust in the Configuration
 - `Status Cache Refresh Time`: This specifies a much longer period than `Status Cache Update Time`.
   When this period expires, the cache is fully refreshed.
 
-
 ## Advanced Features
 
 These features require a bit more configuration:
 - Combined Dependabot updates: Automatically combine and merge multiple Dependabot updates.
 - Manage follow-ups: Select work items for follow-up and display reminders in the *Assigned* tab.
 
-Because DashGit works entirely in the browser without a backend server, you must set up a dedicated (private) repository—called the *manager repository*—before using these features:
+Because DashGit works entirely in the browser, you must set up a dedicated (private) repository—called the *manager repository*—before using these features:
 - Create the manager repository in GitHub: It is recommended to keep it private, since although no token is sent to it, the logs may contain sensitive information such as URLs or usernames when accessing private or on-premises repositories.
 - Enable the manager repository: Go to the Configure tab and check *Enable a Manager Repository for advanced functions*.
   Provide the name of the manager repository (OWNER/REPO) and the authentication method (OAuth or PAT) used to push the combined updates or follow-up payload.
+- Note that this requires write permissions to this repository, so the token here must have `repo` permissions on GitLab or read-write permissions if using fine grained tokens on GitHub.
 
 ### Combined Dependabot Updates
 
@@ -156,7 +184,7 @@ This requires the previous setup of the manager repository (see above) and a bit
 Notes:
 - On GitLab, projects have automerge enabled by default, but on GitHub you need to explicitly enable it per repository from Settings > General. It is recommended to activate the automatic deletion of head branches when PRs are merged.
 - On GitHub, to automerge when the build succeeds, you must configure the repository to require status checks to pass before merging. To do this, create a branch protection rule on the main branch, check this option, and specify the checks that must pass.
-- On GitLab, you can generate Dependabot updates using the [Dependabot Script](https://github.com/dependabot/dependabot-script) or [this more customized version of Dependabot Script](https://github.com/javiertuya/dependabot-script).
+- On GitLab, you can generate Dependabot updates using [Dependabot CLI](https://github.com/dependabot/cli), or a customized version of Dependabot CLI for GitLab [dependabot-cli-gitlab](https://github.com/javiertuya/dependabot-cli-gitlab).
 
 ### Follow-up
 

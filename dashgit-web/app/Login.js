@@ -31,8 +31,8 @@ const login = {
   getLoginStatusForAllProviders: async function () { // NOSONAR
     let status = {
       unsetProviders: [], // providers that are not logged yet, to decide when the login process is finished
-      failedProviders: [], // providers that failed to login, to inform the user
-      alreadySetByApp: {}, // map app-provider that are already set, to do not repeat login in others using same app
+      failedProviders: [], // providers that failed to login, to skip and inform the user
+      alreadySetByApp: {}, // map app-provider that are already set, to do not repeat login for other providers using same app
     }
     const providers = this.getOAuthEnabledProviders();
     for (const provider of providers) {
@@ -164,7 +164,7 @@ const login = {
 
   // Invoked from the auth module at the end of the callback to notify the status:
   // - when the login is successful to save the token
-  // - when the login fails to ensure a special value in the token to avoid autentication loops
+  // - when the login fails to ensure a "failed" value in the token to avoid autentication loops
 
   successfulLogin: async function (token, refreshToken, expiresIn) {
     const providerUid = sessionStorage.getItem(PROVIDER_UID);
@@ -223,58 +223,36 @@ const login = {
  
 
   getOAuthProviderConfig: function (provider) {
+    // Currently only supporting single app name
+    const appName = provider.provider.toLowerCase();
     const thisUrl = window.location.protocol + "//" + window.location.host  + window.location.pathname
-    return this.getOAuthAppConfig(provider.provider, provider.url, thisUrl, oaconfig, provider.oacustom);
+    return this.getOAuthAppConfig(appName, provider.provider, provider.url, thisUrl, oaconfig, provider.oacustom);
   },
 
   // Creates the configuration required for 
   // - a given platform (named .provider in the DashGit config) and url
-  // - the current url where this is running
+  // - the current url of the Git server and the url where this is running
   // - Applying the defaults that are harcoded in OAConfig module
-  // - Overridden by platform specific configuration
   // - And the custom configuration that is set in the provider config.
-  getOAuthAppConfig: function (platform, platformUrl, thisUrl, oadefaults, oacustom) {
-    const customAppName = oacustom.enabled ? oacustom.appName : "";
-    const customClientId = oacustom.enabled ? oacustom.clientId : "";
-    // appName can be modified by custom config, by default is platform to lowercase
-    const appName = ((customAppName ?? "") == "") ? platform.toLowerCase() : customAppName;
-
+  getOAuthAppConfig: function (appName, platform, platformUrl, thisUrl, oadefaults, oacustom) {
     // Using appName and platform makes a lookup to get the defaults
     const oadefault = oadefaults[platform]?.[appName] ?? {};
     if (Object.keys(oadefault).length === 0) // wrong configuration
       return {};
-
-    // Additional check for the platform url in the provider and the platform url in the config
-    // If they do not match, the authentication will fail. Returns empty config.
-    // This prevents, situations such that an on-premises gitlab is set but cliend id is not configured:
-    // The platform would reject authentication and redirect DashGit to an url that blocks the application
-    // TODO review later configuration validations
-    //if (platformUrl != oadefault.platformUrl) {
-    //  console.error(`The provider platform url '${platformUrl}' does not match with the specified in the configuration '${oadefault.platformUrl}'`);
-    //  return {};
-    //}
     
-    // Finally, other platform specific configuration and other overrides
-    let callbackUrl = thisUrl + "?oapp=" + appName;
-    let authorizeUrl = "";
-    let exchangeUrl = ""; 
-    if (platform == "GitHub") {
-      authorizeUrl = platformUrl + "/login/oauth/authorize";
-      exchangeUrl = platformUrl + "/login/oauth/access_token"; 
-    } else if (platform == "GitLab") {
-      authorizeUrl = platformUrl + "/oauth/authorize";
-      exchangeUrl = platformUrl + "/oauth/token"; 
-    } else {
-      return {};
-    }
+    // Other platform specific configuration and other overrides
+    const clientId = oacustom?.enabled && (oacustom?.clientId ?? "") != "" ? oacustom.clientId : oadefault.clientId;
+    const tokenUrl = oacustom?.enabled && (oacustom?.tokenUrl ?? "") != "" ? oacustom.tokenUrl : oadefault.tokenUrl;
+    const callbackUrl = thisUrl + "?oapp=" + appName;
+    const authorizeUrl = platformUrl.replace(/\/$/, '') + oadefault.authorizePath;
 
     const oatarget = {
         appName: appName,
-        clientId: ((customClientId ?? "") == "") ? oadefault.clientId : customClientId,
+        clientId: clientId,
         callbackUrl: callbackUrl,
         authorizeUrl: authorizeUrl,
         scopes: oadefault.scopes,
-        exchangeUrl: ((oadefault.exchangeUrl ?? "") == "") ? exchangeUrl : oadefault.exchangeUrl,
+        tokenUrl: tokenUrl,
     };
     return oatarget;
   },

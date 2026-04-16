@@ -102,8 +102,8 @@ const config = {
     this.setDefault(element, "oauth", false);
     this.setDefault(element, "oacustom", {}); // can have a variable number of attributes
     this.setDefault(element.oacustom, "enabled", false);
-    this.setDefault(element.oacustom, "appName", "");
     this.setDefault(element.oacustom, "clientId", "");
+    this.setDefault(element.oacustom, "tokenUrl", "");
   },
   setProviderDefaults: function(element) {
     this.setDefault(element, "provider", "");
