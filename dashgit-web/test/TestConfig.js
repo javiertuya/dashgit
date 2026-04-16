@@ -17,6 +17,7 @@ describe("TestConfig - Sanitizing config data", async function () {
     it("Set default config attributes when reading empty", function () {
         let expected = { version: 3, encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 30, maxAge: 0, 
             viewFilter: { 
+                main: {status:"111111", sort: "descending,updated_at", search: "", group: false},
                 involved: {authorMe: true, authorOthers: true, exclude: ""},
                 created: {exclude: ""},
                 unassigned: {authorMe: true, authorOthers: true},
@@ -24,7 +25,7 @@ describe("TestConfig - Sanitizing config data", async function () {
                 dependabot: {exclude: ""},
             },      
             appLastVersion: "", 
-            managerRepo: { enabled: false, name: "", token: "", oauth: false, oacustom: { enabled: false, clientId: '', appName: '' } },
+            managerRepo: { enabled: false, name: "", token: "", oauth: false, oacustom: { enabled: false, clientId: '', tokenUrl: '' } },
             providers: [] };
         assert.deepEqual(expected, config.parseAndSanitizeData(""));
         assert.deepEqual(expected, config.parseAndSanitizeData(null));
@@ -37,16 +38,17 @@ describe("TestConfig - Sanitizing config data", async function () {
             appLastVersion: "",
             encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 60, maxAge: 0,
             viewFilter: { 
+                main: {status:"111111", sort: "descending,updated_at", search: "", group: false},
                 involved: {authorMe: true, authorOthers: true, exclude: ""},
                 created: {exclude: ""},
                 unassigned: {authorMe: true, authorOthers: true},
                 statuses: {compact: false, exclude: ""},
                 dependabot: {exclude: ""},
             },
-            managerRepo: { enabled: false, name: "", token: "", oauth: false, oacustom: { enabled: false, clientId: '', appName: '' } },
+            managerRepo: { enabled: false, name: "", token: "", oauth: false, oacustom: { enabled: false, clientId: '', tokenUrl: '' } },
             providers: [{
                 provider: 'GitHub', uid: '0-github', user: '', token: '', enabled: true,
-                oauth: false, oacustom: { enabled: false, clientId: '', appName: '' },
+                oauth: false, oacustom: { enabled: false, clientId: '', tokenUrl: '' },
                 url: 'https://github.com', api: 'https://api.github.com',
                 enableNotifications: true,
                 statusSurrogateUser: "",
@@ -68,16 +70,17 @@ describe("TestConfig - Sanitizing config data", async function () {
             appLastVersion: "",
             encrypted: false, statusCacheRefreshTime: 3600, statusCacheUpdateTime: 30, maxAge: 0,
             viewFilter: { 
+                main: {status:"111111", sort: "descending,updated_at", search: "", group: false},
                 involved: {authorMe: true, authorOthers: true, exclude: ""},
                 created: {exclude: ""},
                 unassigned: {authorMe: true, authorOthers: true},
                 statuses: {compact: false, exclude: ""},
                 dependabot: {exclude: ""},
             },      
-            managerRepo: { enabled: false, name: "", token: "", oauth: false, oacustom: { enabled: false, clientId: '', appName: '' } },
+            managerRepo: { enabled: false, name: "", token: "", oauth: false, oacustom: { enabled: false, clientId: '', tokenUrl: '' } },
             providers: [{
                 provider: 'GitHub', uid: '0-github', user: 'user', token: 'XXXXXXXXXXXX', enabled: false,
-                oauth: false, oacustom: { enabled: false, clientId: '', appName: '' },
+                oauth: false, oacustom: { enabled: false, clientId: '', tokenUrl: '' },
                 url: 'https://github.com', api: 'https://api.github.com',
                 enableNotifications: true,
                 statusSurrogateUser: "",

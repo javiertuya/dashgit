@@ -60,7 +60,6 @@ export async function handleCallback() {
     }
 
     const tokenResponse = await exchangeCodeForToken(code, oaconfig);
-
     if (tokenResponse.error) {
       await login.failedLogin("Error exchanging code for token: " + JSON.stringify(tokenResponse, null, 2));
       return;
@@ -70,11 +69,8 @@ export async function handleCallback() {
     await login.successfulLogin(tokenResponse.access_token, tokenResponse.refresh_token, tokenResponse.expires_in);
     window.location.href = "./"; // Redirect back to main app after successful login
   }
-  // TODO test with exchange server down, clarify message/handle exception, 
-  // currently it returns html from nginx that fails to be displayed (at least it sould be sanitized).
-  // Maybe get the http code here or in the exchange method post
   catch (err) {
-    await login.failedLogin("Unexpected error: " + err);
+    await login.failedLogin("Unexpected error: " + err.message);
   }
 };
 
@@ -92,7 +88,7 @@ export async function exchangeCodeForToken(code, oaconfig) {
   // NOTE: GitHub reqires a proxy for exchange, if not, it fails because of CORS. See this:
   // https://github.com/getsentry/sentry/pull/107731
   // In summary: to do not require proxy, the url of the client should be in a registered server, and this address be the homepage url the OAuth App
-  const response = await post (oaconfig.exchangeUrl, body);
+  const response = await post (oaconfig.tokenUrl, body);
   return response;
 }
 
@@ -104,7 +100,7 @@ export async function refreshExpiredToken(refreshToken, oaconfig) {
     redirect_uri: oaconfig.callbackUrl
   };
   
-  const response = await post(oaconfig.exchangeUrl, body);
+  const response = await post(oaconfig.tokenUrl, body);
   // Error handling is different from login for a new token because refresh must be executed
   // silently, just to replace the token if possible
   if (response.error)
@@ -114,15 +110,37 @@ export async function refreshExpiredToken(refreshToken, oaconfig) {
     await login.successfulLogin(response.access_token, response.refresh_token, response.expires_in);
 }
 
-async function post (url, body) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json"
-    },
-    body: JSON.stringify(body)
-  });
-  const response = res.json();
-  return response;
+async function post(url, body) {
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+
+    // If not JSON (e.g. 502 gateway because sever down behind nginx) 
+    // returns the html (or part) as error description
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      let text = await res.text();
+      if (text.includes("<body>")) // get only title
+        text = text.slice(0, text.indexOf("<body>")).replaceAll("\r", "").replaceAll("\n", "") + " ...";
+      return {
+        error: "No JSON response",
+        error_description: text
+      };
+    }
+
+    const data = await res.json();
+    return data;
+
+  } catch (err) {
+    return { // Network errors: server down, DNS, CORS, etc.
+      error: "POST exception",
+      error_description: err.message
+    };
+  }
 }
