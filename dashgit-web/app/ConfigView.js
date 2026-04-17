@@ -555,7 +555,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
   <p class="m-2">You can export or import your configuration by copying or saving the JSON below.</p>
   <label for="configJson">Configuration parameters (JSON):</label>
   <textarea class="form-control" id="configJson" rows="10">${JSON.stringify(data, null, 2)}</textarea>
-  <button type="submit" class="btn btn-primary btn-sm" id="buttonConfigSave">SAVE CONFIGURATION</button>
+  <button type="submit" class="btn btn-primary btn-sm" id="buttonConfigSaveFromImportExport">SAVE CONFIGURATION</button>
   `);
   },
 

@@ -120,10 +120,10 @@ $(document).on('click', '#inputDecryptButton', function (e) {
   e.preventDefault();
 });
 
-$(document).on('click', '#buttonConfigSave', function (e) {
+$(document).on('click', '#buttonConfigSaveFromImportExport', function (e) {
   console.log("Save config json");
   try {
-    login.updateConfigFromString($("#configJson").val());
+    configController.updateConfigFromString($("#configJson").val());
     configController.afterSaveData();
   } catch (error) {
     wiView.renderAlert("danger", error);
@@ -157,7 +157,16 @@ const configController = {
     }
 
     // Replace the global config data with the local config data value, it is assumed that all data was validated at the ui
-    login.updateConfigFromString(JSON.stringify(data));
+    this.updateConfigFromString(JSON.stringify(data));
+  },
+  // Save all config.data taken from a string representation of the data object
+  updateConfigFromString: function (dataStr) {
+    config.data = config.parseAndSanitizeData(dataStr);
+    //ensure new tokens are encrypted, if applicable
+    if (config.data.encrypted)
+      this.encryptConfigTokens();
+
+    config.save();
   },
   afterSaveData: function () {
     configController.updateMainTarget();
