@@ -12,14 +12,15 @@ import { startLogin, handleCallback, refreshExpiredToken } from "./oauth/auth.js
  * - Manage encryption/decription for password protected PAT authentication
  */
 const PROVIDER_UID="dashgit-oauth-provider-key"; // Store: provider that is currently being handled
-const OAUTH_TOKEN_PREFIX="dashgit-oauth-token_"; // Store: token names are prefix+uid
-const OAUTH_REFRESH_PREFIX="dashgit-oauth-refresh_"; // Store: refresh token and date to refresh
+const OAUTH_TOKEN_INFO_PREFIX="dashgit-oauth-token-info_"; // Store: all token info (current token, expiration...), prefix+uid
 const PAT_SECRET = "dashgit-pat-secret"; // Store: to decript PATs (entered by the user at the session start)
 const login = {
 
   // Returns the token for a provider, either PAT or OAuth
   getProviderToken: function (provider) {
-    let token = provider.oauth ? this.getOAuthTokenByUid(provider.uid) : this.decrypt(provider.token);
+    let token = provider.oauth 
+      ? this.getOAuthTokenInfoByUid(provider.uid).currentToken 
+      : this.decrypt(provider.token);
     return token;
   },
 
@@ -37,17 +38,23 @@ const login = {
     const providers = this.getOAuthEnabledProviders();
     for (const provider of providers) {
       console.log("Login.js: Provider " + provider.uid + " is configured for OAuth2, checking token and status");
-      const token = this.getProviderToken(provider);
+      let tokenInfo = this.getOAuthTokenInfoByUid(provider.uid);
 
       const providerConfig = this.getOAuthProviderConfig(provider);
       console.log(`- Applicable configuration: ${JSON.stringify(providerConfig, null, 2)}`);
+
+      // First, check if the provider config matches whith the stored in the tokenInfo (only if not failed). If does not match, remove it
+      if (await this.hasTokenWithChangedConfig(provider, providerConfig)) {
+        this.gremoveOAuthTokenInfoByUid(provider.uid);
+        tokenInfo = undefined;
+      }
 
       const providerWithMyApp = status.alreadySetByApp[providerConfig.appName + "-" + provider.provider + "-" + provider.url];
       if (providerWithMyApp) { // Optimization to avoid multiple logins for the same app
         console.log(`- Provider ${provider.uid} authenticates with the same app than ${providerWithMyApp.uid}, which is known to be logged or failed, set this token`);
         this.copyFromAppAlreadySet(providerWithMyApp, provider, status);
-      } else if (token) { // Existing token, manages failures and refresh
-        if (token === "failed") {
+      } else if (tokenInfo) { // Existing token, manages failures and refresh
+        if (tokenInfo.currentToken === "failed") {
           console.log("- Previous login attempt failed, skip login");
           status.failedProviders.push(provider);
         } else {
@@ -63,15 +70,21 @@ const login = {
     }
     return status;
   },
+  hasTokenWithChangedConfig: async function(provider, currentConfig) {
+    const tokenInfo = this.getOAuthTokenInfoByUid(provider.uid);
+    return (tokenInfo && tokenInfo.currentToken != "failed") 
+      && (currentConfig.appName != tokenInfo.oaconfig.appName
+        || currentConfig.clientId != tokenInfo.oaconfig.clientId
+        || currentConfig.authorizeUrl != tokenInfo.oaconfig.authorizeUrl
+        || currentConfig.tokenUrl != tokenInfo.oaconfig.tokenUrl);
+  },
   copyFromAppAlreadySet: function(providerWithMyApp, provider, status) {
     // Copy to the provider, this includes both the token and the refresh info
-    const token = this.getOAuthTokenByUid(providerWithMyApp.uid);
-    this.setOAuthTokenByUid(provider.uid, token);
-    const refresh = this.getOAuthRefreshByUid(providerWithMyApp.uid);
-    this.setOAuthRefreshByUid(provider.uid, refresh);
+    const tokenInfo = this.getOAuthTokenInfoByUid(providerWithMyApp.uid);
+    this.setOAuthTokenInfoByUid(provider.uid, tokenInfo);
 
     // Failed status must be recorded too
-    if (token == "failed")
+    if (tokenInfo.currentToken == "failed")
       status.failedProviders.push(provider);
   },
   getOAuthEnabledProviders: function() {
@@ -106,12 +119,13 @@ const login = {
 
   // Interface with the auth module to initiate the login, callback and token refresh
   refreshTokenIfNeeded: async function (provider, providerConfig) {
-    const refresh = this.getOAuthRefreshByUid(provider.uid);
-    if (refresh.token != "" && refresh.time != "" && new Date().getTime() > new Date(refresh.time).getTime()) {
+    const tokenInfo = this.getOAuthTokenInfoByUid(provider.uid);
+    if (tokenInfo.refreshToken != "" && tokenInfo.refreshTime != "" 
+        && new Date().getTime() > new Date(tokenInfo.refreshTime).getTime()) {
       console.log("- Refreshing token");
       // auth module will invoke successfulLogin (that requires the uid in session storage) after refresh to set the new tokens
       sessionStorage.setItem(PROVIDER_UID, provider.uid)
-      await refreshExpiredToken(refresh.token, providerConfig);
+      await refreshExpiredToken(tokenInfo.refreshToken, providerConfig);
       sessionStorage.removeItem(PROVIDER_UID);
     }
   },
@@ -166,39 +180,49 @@ const login = {
   // - when the login is successful to save the token
   // - when the login fails to ensure a "failed" value in the token to avoid autentication loops
 
+  // Token information that is store in session storage is an object that includes 
+  // the current token, expiration data and the configuration that is was created with
   successfulLogin: async function (token, refreshToken, expiresIn) {
     const providerUid = sessionStorage.getItem(PROVIDER_UID);
-    this.setOAuthTokenByUid(providerUid, token);
+    config.load(); // need to iterate over all providers
+    const provider = config.getProviderByUid(providerUid);
+    const oaconfig = this.getOAuthProviderConfig(provider);
     // stores in a separate session variable the refresh info, 10 minutes before expiration, 
     // no undefined values (GotHub does not have refresh, GitLab does)
     const refreshTime = expiresIn ? new Date(new Date().getTime() + (expiresIn - 600) * 1000).toISOString() : "";
-    this.setOAuthRefreshByUid(providerUid, {token: refreshToken ?? "", time: refreshTime});
+    const tokenInfo = {
+      currentToken: token,
+      refreshToken: refreshToken ?? "",
+      refreshTime: refreshTime,
+      oaconfig: oaconfig,
+    }
+    this.setOAuthTokenInfoByUid(providerUid, tokenInfo);
   },
   failedLogin: async function (message) {
     await this.logError(message);
     const providerUid = sessionStorage.getItem(PROVIDER_UID);
-    this.setOAuthTokenByUid(providerUid, "failed");
+    const tokenInfo = { currentToken: "failed" }; // anything else needed, failed tokens are skipped
+    this.setOAuthTokenInfoByUid(providerUid, tokenInfo);
   },
-  setOAuthTokenByUid: function (uid, token) {
-    sessionStorage.setItem(`${OAUTH_TOKEN_PREFIX}${uid}`, token);
+  setOAuthTokenInfoByUid: function (uid, tokenInfo) {
+    sessionStorage.setItem(`${OAUTH_TOKEN_INFO_PREFIX}${uid}`, JSON.stringify(tokenInfo));
   },
-  getOAuthTokenByUid: function (uid) {
-    return sessionStorage.getItem(`${OAUTH_TOKEN_PREFIX}${uid}`);
+  getOAuthTokenInfoByUid: function (uid) {
+    const infoStr = sessionStorage.getItem(`${OAUTH_TOKEN_INFO_PREFIX}${uid}`); // null if not found
+    return infoStr ? JSON.parse(infoStr) : undefined;
   },
-  setOAuthRefreshByUid: function (uid, refreshInfo) {
-    sessionStorage.setItem(`${OAUTH_REFRESH_PREFIX}${uid}`, JSON.stringify(refreshInfo));
+  gremoveOAuthTokenInfoByUid: function (uid) {
+    sessionStorage.removeItem(`${OAUTH_TOKEN_INFO_PREFIX}${uid}`);
   },
-  getOAuthRefreshByUid: function (uid) {
-    return JSON.parse(sessionStorage.getItem(`${OAUTH_REFRESH_PREFIX}${uid}`));
-  },
+
   retryOAuth: function () {
     const providers = this.getOAuthEnabledProviders();
     for (const provider of providers) {
       console.log("Check provider for retry: " + provider.uid);
-      const token = this.getProviderToken(provider);
-      if (token == "failed") {
+      const tokenInfo = this.getOAuthTokenInfoByUid(provider.uid);
+      if (tokenInfo.currentToken == "failed") {
         console.log("Reset failed token for provider: " + provider.uid);
-        sessionStorage.removeItem(`${OAUTH_TOKEN_PREFIX}${provider.uid}`);
+        this.gremoveOAuthTokenInfoByUid(provider.uid);
       }
     }
     window.location.href = "./"
@@ -268,15 +292,6 @@ const login = {
     return sessionStorage.getItem(PAT_SECRET) ?? "";
   },
 
-  // Save all config.data taken from a string representation of the data object
-  updateConfigFromString: function (dataStr) {
-    config.data = config.parseAndSanitizeData(dataStr);
-    //ensure new tokens are encrypted, if applicable
-    if (config.data.encrypted)
-      this.encryptConfigTokens();
-
-    config.save();
-  },
   encryptConfigTokens: function () {
     const secret = this.getPatSecret();
     config.data.managerRepo.token = this.encrypt(config.data.managerRepo.token, secret);
