@@ -210,13 +210,15 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
           ${this.check2html(`config-providers-oauth-customize-${key}`,
                 `Customize OAuth2`,
                 provider.oacustom.enabled,
-                "The default configuration is enough authenticate using OAuth2 against github.com. Customize only if you need a second GitHub identity or you use your own resources for OAuth2 authentication.", true)}
+                "The default configuration is enough authenticate using OAuth2 against github.com and gitlab.com. "
+                + "Customize only if you are using your own resources for authorization (GitHub OAuth App or GitLab Application), "
+                + "on-premises Git server or Token Exchange Proxy.", true)}
         </div>
         <div class="row">
-          ${this.input2html(`config-providers-oauth-appName-${key}`, "text", "OAuth App Name", provider.oacustom.appName, '', "150", "150",
-            "The name that DashGit uses to identify the GitHub OAuth App. If you need to configure a second identity, use 'github2'")}
-          ${this.input2html(`config-providers-oauth-clientId-${key}`, "text", "OAuth Client ID", provider.oacustom.clientId, '', "150", "150",
-            "The client ID of the GitHub OAuth App. Leave empty if you use github2 as the app name.")}
+          ${this.input2html(`config-providers-oauth-clientId-${key}`, "text", "OAuth App ID", provider.oacustom.clientId, '', "150", "150",
+            "The Client/Application ID of the GitHub/GitLab App where DashGit connects to get the authentication and authorization.")}
+          ${this.input2html(`config-providers-oauth-tokenUrl-${key}`, "text", "OAuth exchange token URL", provider.oacustom.tokenUrl, '', "225", "300",
+            "The URL of the proxy service endpoint that exchanges the authorization code by the authorization token.")}
         </div>
     `;
   },
@@ -237,11 +239,11 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
             </div>
           </div>
           ${this.array2html(`config-providers-match-user-${key}`, "text", "match user(s)", provider.match.user, 'pattern=".*"', "160", "215",
-            "A list of users separated by spaces that will be included/excluded. If the criterion is include, only a single user/organization can be included",
-            "If criterion is include, only one user or organization is allowed")}
+            "A list of users separated by spaces that will be included/excluded. ",
+            "If criterion is include, only one user or organization is allowed.")}
           ${this.array2html(`config-providers-match-org-${key}`, "text", "match org(s)", provider.match.org, 'pattern=".*"', "160", "215",
-            "A list of organizations separated by spaces that will be included/excluded. If the criterion is include, only a single user/organization can be included",
-            "If criterion is include, only one user or organization is allowed")}
+            "A list of organizations separated by spaces that will be included/excluded. ",
+            "If criterion is include, only one user or organization is allowed.")}
          </div>
     `;
     else
@@ -273,8 +275,8 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
     provider.oauth = $(`#config-providers-auth-select-${id}`).is(':checked');
     provider.token = $(`#config-providers-token-${id}`).val().trim();
     provider.oacustom.enabled = $(`#config-providers-oauth-customize-${id}`).is(':checked');
-    provider.oacustom.appName = $(`#config-providers-oauth-appName-${id}`).val().trim();
     provider.oacustom.clientId = $(`#config-providers-oauth-clientId-${id}`).val().trim();
+    provider.oacustom.tokenUrl = $(`#config-providers-oauth-tokenUrl-${id}`).val().trim();
   },
 
   html2provider: function (provider, id) {
@@ -361,23 +363,23 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
       let auth = $(card).find('input[id^="config-providers-auth-select-"]');
       let token = $(card).find('input[id^="config-providers-token-"]');
       let customize = $(card).find('input[id^="config-providers-oauth-customize-"]');
-      let appName = $(card).find('input[id^="config-providers-oauth-appName-"]');
       let clientId = $(card).find('input[id^="config-providers-oauth-clientId-"]');
+      let tokenUrl = $(card).find('input[id^="config-providers-oauth-tokenUrl-"]');
       if ($(auth).is(':checked')) {
         $(token).closest(".col-auto").hide();
         $(customize).closest(".col-auto").show();
         if ($(customize).is(':checked')) {
-          $(appName).closest(".col-auto").show();
           $(clientId).closest(".col-auto").show();
+          $(tokenUrl).closest(".col-auto").show();
         } else {
-          $(appName).closest(".col-auto").hide();
           $(clientId).closest(".col-auto").hide();
+          $(tokenUrl).closest(".col-auto").hide();
         }
       } else {
         $(token).closest(".col-auto").show();
         $(customize).closest(".col-auto").hide();
-        $(appName).closest(".col-auto").hide();
         $(clientId).closest(".col-auto").hide();
+        $(tokenUrl).closest(".col-auto").hide();
     }
   },
 
