@@ -53,13 +53,24 @@ $(document).on('click', '#reloadIcon', async function () {
   indexController.reload();
 });
 $(document).on('change', '#inputSort', async function () {
+  indexController.saveMainFilterState();
   indexController.render();
 });
 $(document).on('change', '#checkGroup', async function () {
+  indexController.saveMainFilterState();
   indexController.render();
 });
 $(document).on('change', '#inputStatus', async function () {
+  indexController.saveMainFilterState();
   wiView.updateStatusVisibility();
+});
+$(document).on('click', '#mainFilterDefaults', async function (e) {
+  // override main filters to defaults and redisplays
+  config.data.viewFilter.main = {};
+  config.setMainFilterDefaults(config.data);
+  config.save();
+  indexController.render();
+  e.preventDefault();
 });
 $(document).on('click', '#oauth-reset-btn', async function () {
   login.retryOAuth();
@@ -75,11 +86,14 @@ $(document).on('change', '.wi-view-filter-clickable', async function () {
 });
 // Generic view header to perform additional filtering with text input (search, exclude)
 // Changes update the view dynamically without renderiing again
+// The current text persists in the configuration (main and view filters)
 $(document).on('keyup', '.wi-view-filter-input', async function () { // on typing
+  indexController.saveMainFilterState();
   wiView.updateStatusVisibility();
   wiView.saveViewFilterState();
 });
 $(document).on('search', '.wi-view-filter-input', async function () { // clearing the input with the cross button
+  indexController.saveMainFilterState();
   wiView.updateStatusVisibility();
   wiView.saveViewFilterState();
 });
@@ -182,12 +196,28 @@ const indexController = {
     this.tabControlSelect(lastTarget || defaultTarget);
   },
 
+  // Manages the main filters that have persist in config
+  renderMainFilters: function() {
+    $("#inputStatus").val(config.data.viewFilter.main.status);
+    $("#inputFilterRepoInclude").val(config.data.viewFilter.main.search);
+    $("#inputSort").val(config.data.viewFilter.main.sort);
+    $("#checkGroup").prop("checked", config.data.viewFilter.main.group);
+  }, 
+  saveMainFilterState: function() {
+    config.data.viewFilter.main.status = $("#inputStatus").val();
+    config.data.viewFilter.main.search =  $("#inputFilterRepoInclude").val();
+    config.data.viewFilter.main.sort = $("#inputSort").val();
+    config.data.viewFilter.main.group = $("#checkGroup").is(":checked");
+    config.save();
+  },
+
   //Rendering depends on the selected tab, calls the appropriate controller to update the UI
   render: function () {
     wiView.resetAlerts();
     if (config.appUpdateEvent())
       wiView.renderAlert("info", `Dashgit version has been updated to ${config.appVersion}. See the release notes at <a target="_blank" href="https://github.com/javiertuya/dashgit/releases">https://github.com/javiertuya/dashgit/releases</a>`);
 
+    indexController.renderMainFilters();
     let target = $(".nav-link.active").attr("aria-controls");
     if (target == "config")
       configController.updateMainTarget();

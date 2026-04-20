@@ -148,6 +148,8 @@ const config = {
   },
   setViewFilterDefaults: function (data) {
     this.setDefault(data, "viewFilter", {});
+    this.setDefault(data.viewFilter, "main", {}); // main is shared by all views (in the header)
+    this.setMainFilterDefaults(data);
     this.setDefault(data.viewFilter, "involved", {});
     this.setDefault(data.viewFilter, "created", {});
     this.setDefault(data.viewFilter, "unassigned", {});
@@ -162,6 +164,12 @@ const config = {
     this.setDefault(data.viewFilter.statuses, "compact", false);
     this.setDefault(data.viewFilter.statuses, "exclude", "");
     this.setDefault(data.viewFilter.dependabot, "exclude", "");
+  },
+  setMainFilterDefaults: function(data) {
+    this.setDefault(data.viewFilter.main, "status", "111111");
+    this.setDefault(data.viewFilter.main, "search", "");
+    this.setDefault(data.viewFilter.main, "sort", "descending,updated_at");
+    this.setDefault(data.viewFilter.main, "group", false);
   },
   setDefault: function (parent, property, value) {
     if (parent[property] == undefined || parent[property] == null)
