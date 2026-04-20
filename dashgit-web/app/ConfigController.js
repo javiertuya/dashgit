@@ -3,6 +3,7 @@ import { login } from "./Login.js"
 import { wiController } from "./WiController.js"
 import { wiView } from "./WiView.js"
 import { configView } from "./ConfigView.js"
+import { configValidation } from "./ConfigValidation.js"
 
 /**
  * Manages the dialog at the config tab
@@ -25,10 +26,12 @@ $(document).on('click', '#config-reset', function (e) {
 // actions on events
 $(document).on('click', '.config-btn-add-github', function (e) {
   configView.addProvider(config.setProviderDefaults({ provider: "GitHub" }));
+  configValidation.installValidation();
   //configView.refreshAll();
 });
 $(document).on('click', '.config-btn-add-gitlab', function (e) {
   configView.addProvider(config.setProviderDefaults({ provider: "GitLab" }));
+  configValidation.installValidation();
   //configView.refreshAll();
 });
 $(document).on('click', '.config-btn-provider-remove', function (e) {
@@ -53,8 +56,12 @@ $(document).on('change', '[id^="config-providers-oauth-customize-"]', function (
   configView.refreshAll();
   e.stopPropagation();
 });
+$(document).on('change', '[id^="config-providers-match-criterion-"]', function (e) {
+  configValidation.validateMatchCriterion($(this)); // input validation changes according to the criterion
+  e.stopPropagation();
+});
 $(document).on('change', '[id^="config-providers-surrogate-enabled-"]', function (e) {
-  configView.refreshProviderSurrogate(this, $(this).is(':checked'));
+  configView.refreshProviderSurrogate($(this), $(this).is(":checked"));
   e.stopPropagation();
 });
 
@@ -76,8 +83,11 @@ $(document).on('click', '.config-btn-provider-submit', function (e) {
     configController.saveData();
     configController.afterSaveData();
     e.preventDefault();
-  } else
-    console.log("Can't save config data due to validation issues");
+    //e.stopPropagation();
+  } else {
+    console.log("Can not save this configuration due to validation issues");
+    configController.displayToast("Can not save this configuration due to validation issues", true);
+  }
 });
 
 $(document).on('click', '#inputEncryptButton', function (e) {
@@ -126,6 +136,7 @@ const configController = {
   updateMainTarget: function () {
     configView.renderHeader();
     configView.renderConfigData($("#config-providers"), config.data);
+    configValidation.installValidation();
   },
 
   saveData: function () {
@@ -150,13 +161,17 @@ const configController = {
   },
   afterSaveData: function () {
     configController.updateMainTarget();
-    configController.displayToast("Configuration saved");
+    configController.displayToast("Configuration saved", false);
     //to force a refresh when changing later to another tab
     wiController.reset(true);
     wiView.reset();
   },
 
-  displayToast: function (message) {
+  displayToast: function (message, isError) {
+    if (isError)
+      $(".toast-body").addClass("text-danger");
+    else
+      $(".toast-body").removeClass("text-danger");
     $(".toast-body").html(`<strong>${message}</strong>`);
     bootstrap.Toast.getOrCreateInstance($('#liveToast')[0]).show();
   },

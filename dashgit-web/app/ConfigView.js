@@ -1,4 +1,5 @@
 import { config } from "./Config.js"
+import { configValidation } from "./ConfigValidation.js"
 
 /**
  * Generates the html content for the config view
@@ -13,7 +14,7 @@ const configView = {
       <li class="nav-item"><a class="nav-link config-nav-link" id="config-encrypt" href="#">Encrypt personal access tokens</a></li>
       <li class="nav-item"><a class="nav-link config-nav-link" id="config-reset" href="#">Reset password and tokens</a></li>
     </ul>
-    <form class="config-form" id="config-form"></form>
+    <form class="config-form novalidate" id="config-form"></form>
     `);
   },
   renderHeaderState: function (target, encrypted) {
@@ -68,12 +69,14 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
 
         <h6 class="card-subtitle mb-1 mt-1 text-body-secondary">Common parameters:</h6>
         <div class="row">
-          ${this.input2html("config-common-max-age", "number", "Max age", data.maxAge == 0 ? "" : data.maxAge, 'min="0" max="365"', "100", "100", 
+          ${this.input2html("config-common-max-age", "number", "Max age", data.maxAge == 0 ? "" : data.maxAge, '', "100", "100", 
             "If present, filters out the work items with an update date older than the number of days specified")}
-          ${this.input2html("config-common-statusCacheUpdateTime", "number", "Status Cache Update Time", data.statusCacheUpdateTime, 'min="5" max="60"', "200", "100",
-            "During this period (in seconds), any call to get statuses returns the cached data. When this time expires, the cache is incrementally updated by requesting data only from the projects that had recent commits")}
+          ${this.input2html("config-common-statusCacheUpdateTime", "number", "Status Cache Update Time", data.statusCacheUpdateTime, 'required min="5" max="60"', "200", "100",
+            "During this period (in seconds), any call to get statuses returns the cached data. When this time expires, the cache is incrementally updated by requesting data only from the projects that had recent commits",
+            "Requred, between 5 and 60")}
           ${this.input2html("config-common-statusCacheRefreshTime", "number", "Status Cache Refresh Time", data.statusCacheRefreshTime, 'min="60" max="7200"', "200", "100",
-            "Specifies a much longer period (in seconds) than Status Cache Update Time. When this time expires, the cache is fully refreshed")}
+            "Specifies a much longer period (in seconds) than Status Cache Update Time. When this time expires, the cache is fully refreshed",
+            "Required, between 60 and 7200")}
         </div>
 
         <div class="card-subtitle h6 mb-1 mt-1 text-body-secondary">
@@ -105,7 +108,8 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
           </div>
           <div class="col-auto" style="width:22px"></div>
           ${this.check2html(`config-providers-enabled-${key}`, "Enabled", provider.enabled, "", true)}      
-          ${this.input2html(`config-providers-url-${key}`, "url", "Repository url", provider.url, 'required', "150", "225", "The URL of the repository server.")}
+          ${this.input2html(`config-providers-url-${key}`, "url", "Repository url", provider.url, 'type="url" required', "150", "225", "The URL of the repository server.",
+            "Enter the repository server URL for this provider")}
         </div>
         
         ${this.authprovider2html(provider, key)}
@@ -131,17 +135,21 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
         </div>
         <div class="row config-providers-graphql-settings">
           ${this.input2html(`config-graphql-maxProjects-${key}`, "number", "Max projects", provider.graphql.maxProjects, 'required min="2" max="100"', "150", "70",
-            "Maximum number of repositories/projects that are retrieved to get the branches and build statuses")}
+            "Maximum number of repositories/projects that are retrieved to get the branches and build statuses",
+            "Required, between 2 and 100")}
           ${provider.provider == "GitHub"
             ? this.input2html(`config-graphql-pageSize-${key}`, "number", "Page size", provider.graphql.pageSize, 'required min="2" max="50"', "150", "70",
-              "Page size for the GitHub GraphQL API requests that get the branches and build statuses")
+              "Page size for the GitHub GraphQL API requests that get the branches and build statuses",
+              "Required, between 2 and 100")
             : ""}
           ${this.input2html(`config-graphql-maxBranches-${key}`, "number", "Max branches", provider.graphql.maxBranches, 'required min="2" max="100"', "150", "70",
             "Maximum number of branches that are retrieved for each repository/project to get the build statuses"
-            + (provider.provider == "GitLab" ? ". Note that in GitLab, more branches can be displayed if they are referenced in open merge requests" : ""))}
+            + (provider.provider == "GitLab" ? ". Note that in GitLab, more branches can be displayed if they are referenced in open merge requests" : ""),
+            "Required, between 2 and 100")}
           ${provider.provider == "GitLab"
             ? this.input2html(`config-graphql-maxPipelines-${key}`, "number", "Max pipelines", provider.graphql.maxPipelines, 'required min="2" max="100"', "150", "70",
-              "Maximum number of pipeline runs that are retrieved for each repository/project to get the branches and build statuses")
+              "Maximum number of pipeline runs that are retrieved for each repository/project to get the branches and build statuses",
+              "Required, between 2 and 100")
             : this.check2html(`config-graphql-include-forks-${key}`, "Include Forks", provider.graphql.includeForks)
               + this.check2html(`config-graphql-only-forks-${key}`, "Only Forks", provider.graphql.onlyForks)
               + (this.raw2html(" - GraphQL scope:", "Specifies the scope of the GitHub GraphQL API requests that get the branches and build statuses") + " &nbsp; "
@@ -153,8 +161,9 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
           }
         </div>
         <div class="row config-providers-surrogate-settings">
-          ${this.input2html(`config-providers-statusSurrogateUser-${key}`, "text", "Username of the status surrogate provider", provider.statusSurrogateUser, '', "350", "150",
-            "The provider with this username and same repository url will be used to get the statuses, instead of calling the GraphQL API")}
+          ${this.input2html(`config-providers-statusSurrogateUser-${key}`, "text", "Username of the status surrogate provider", provider.statusSurrogateUser, 'required', "350", "150",
+            "The provider with this username and same repository url will be used to get the statuses, instead of calling the GraphQL API",
+            "Enter the username of one of the other enabled providers in this platform")}
         </div>
 
         <div class="config-provider-updates-div-container">
@@ -185,9 +194,11 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
         <!-- regular providers and manager repo have some additional properties that are different -->
         ${key == "mgrepo"
           ? this.input2html(`config-providers-name-mgrepo`, "text", "Manager Repository", provider.name, 'required', "200", "200",
-              "The full name (OWNER/REPO) of a dedicated private GitHub repository where the combined updates will be pushed and merged and where work item follow-ups are stored")
+              "The full name (OWNER/REPO) of a dedicated private GitHub repository where the combined updates will be pushed and merged and where work item follow-ups are stored",
+              "The name of the manager repository (OWNER/REPO) is required")
           : this.input2html(`config-providers-user-${key}`, "text", "Username", provider.user, 'required', "150", "150",
-              "The reference user for whom the work items are displayed (assigned to, created by, etc.)")
+              "The reference user for whom the work items are displayed (assigned to, created by, etc.)",
+            "The reference username is required")
         }
           ${this.check2html(`config-providers-auth-select-${key}`,
                 `Use OAuth2 to authenticate <a href="" target="_blank">[learn more]</a>`,
@@ -225,10 +236,12 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
               </select>
             </div>
           </div>
-          ${this.array2html(`config-providers-match-user-${key}`, "text", "match user(s)", provider.match.user, '', "160", "215",
-            "A list of users separated by spaces that will be included/excluded. If the criterion is include, only a single user/organization can be included")}
-          ${this.array2html(`config-providers-match-org-${key}`, "text", "match org(s)", provider.match.org, '', "160", "215",
-            "A list of organizations separated by spaces that will be included/excluded. If the criterion is include, only a single user/organization can be included")}
+          ${this.array2html(`config-providers-match-user-${key}`, "text", "match user(s)", provider.match.user, 'pattern=".*"', "160", "215",
+            "A list of users separated by spaces that will be included/excluded. If the criterion is include, only a single user/organization can be included",
+            "If criterion is include, only one user or organization is allowed")}
+          ${this.array2html(`config-providers-match-org-${key}`, "text", "match org(s)", provider.match.org, 'pattern=".*"', "160", "215",
+            "A list of organizations separated by spaces that will be included/excluded. If the criterion is include, only a single user/organization can be included",
+            "If criterion is include, only one user or organization is allowed")}
          </div>
     `;
     else
@@ -326,14 +339,12 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
   refreshUpdateManagerRepo: function () {
     if ($(`#config-providers-enabled-mgrepo`).is(':checked')) {
       $(`#config-providers-all-mgrepo`).show();
-      $(`#config-providers-name-mgrepo`).attr('required', 'required');
-      $(`#config-providers-name-mgrepo-div-container`).show();
       $(`.config-provider-updates-div-container`).show();
-    } else {
-      $(`#config-providers-all-mgrepo`).hide();
-      $(`#config-providers-name-mgrepo`).removeAttr('required');
-      $(`#config-providers-name-mgrepo-div-container`).hide();
+      configValidation.onShowInstallValidation($(`#config-providers-name-mgrepo`))
+   } else {
+      configValidation.onHideUninstallValidation($(`#config-providers-name-mgrepo`));     
       $(`.config-provider-updates-div-container`).hide();
+      $(`#config-providers-all-mgrepo`).hide();
     }
   },
   // Toggle between authentication with PAT and OAuth2
@@ -392,23 +403,50 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
   refreshProviderSurrogate: function (check, checked) {
     let providerRoot = $(check).closest(".config-provider-card");
     // Hide the checkbox and disables surrogates if there are less than 2 providers with the same url
-    if (this.countUrls(providerRoot) <= 1) {
+    if (this.getSurrogateCandidateNames(providerRoot).length == '') {
       $(providerRoot).find('input[id^="config-providers-surrogate-enabled-"]').closest(".col-auto").hide();
-      checked = false; //to clear surrogate, e.g. if the second provider was removed
+      checked = false; // no enough providers, force all disabled even if it was checked before
     } else {
       $(providerRoot).find('input[id^="config-providers-surrogate-enabled-"]').closest(".col-auto").show();
     }
     // Toogle input values depending on the checked state
+    const surrogateUser = $(providerRoot).find('input[id^="config-providers-statusSurrogateUser-"]');
     if (checked) {
       $(providerRoot).find(".config-providers-graphql-settings").hide();
       $(providerRoot).find(".config-providers-surrogate-settings").show();
+      // Before installing validation, sets the appropriate validation attributes in the dom
+      const allowedSurrogates = this.getSurrogateCandidateNames(providerRoot);
+      surrogateUser.attr("pattern", allowedSurrogates.join("|"));
+      surrogateUser.attr("reqired", "");
+      configValidation.onShowInstallValidation(surrogateUser);
     } else {
-      // if unchecked, also cleans the surrogate user field
-      $(providerRoot).find('input[id^="config-providers-statusSurrogateUser-"]').val("");
+      configValidation.onHideUninstallValidation(surrogateUser);
+      // if unchecked, also cleans the surrogate user field, which is what is stored in the config to determine if there is a surrogate
+      surrogateUser.val("");
+      surrogateUser.removeAttr("required");
+      surrogateUser.removeAttr("pattern");
       $(providerRoot).find(".config-providers-graphql-settings").show();
       $(providerRoot).find(".config-providers-surrogate-settings").hide();
     }
   },
+  // the usernames of all providers that could be designated as surrogate of this provider
+  getSurrogateCandidateNames(providerRoot) {
+    const thisId = $(providerRoot).find(".card-body").attr("key");
+    const thisUrl = $(providerRoot).find('input[id^="config-providers-url-"]').val().trim();
+    let names = [];
+    for (let provider of $("#config-providers-all").children()) {
+      // url must match, enabled, name non empty, excluding this provider (check by id)
+      const targetId = $(provider).find(".card-body").attr("key");
+      const targetUrl = $(provider).find('input[id^="config-providers-url-"]').val().trim();
+      const targetEnabled = $(provider).find('input[id^="config-providers-enabled-"]').is(":checked");
+      const targetUser = $(provider).find('input[id^="config-providers-user-"]').val().trim();
+      if (thisUrl == targetUrl && targetEnabled && targetUser != "" && thisId != targetId)
+        names.push(targetUser);
+    }
+    console.log(`Surrogate candidate names, provider ${thisId}: ${names}`);
+    return names;
+  },
+
   refreshGraphqlIncludeForks: function (check, checked) {
     if (checked)
        $(check).closest(".config-provider-card").find('input[id^="config-graphql-only-forks-"]').prop("checked", false);
@@ -416,17 +454,6 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
   refreshGraphqlOnlyForks: function (check, checked) {
     if (checked)
       $(check).closest(".config-provider-card").find('input[id^="config-graphql-include-forks-"]').prop("checked", false);
-  },
-  countUrls: function (providerRoot) { // how many urls match the providerRoot url
-    let count = 0;
-    let urlValue = $(providerRoot).find('input[id^="config-providers-url-"]').val()
-    let urls = $('input[id^="config-providers-url-"]');
-    for (let url of urls) {
-      let user = $(url).closest(".config-provider-card").find('input[id^="config-providers-user-"]').val();
-      if (urlValue == $(url).val() && urlValue != "" && user != "") // if user empty it is provisional, does not count
-        count++;
-    }
-    return count;
   },
   // toggle visibility of move provider buttons
   refreshMoveStatus: function () {
@@ -481,6 +508,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
     const html = this.provider2html(provider, last);
     $("#config-providers-all").append(html);
     this.refreshAll();
+    $("#config-providers-user-" + last).focus();
   },
   removeProvider: function (location) {
     $(location).closest(".config-provider-card").remove();
@@ -507,7 +535,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
     $("#config-form").html(this.encloseInsideCard(`
   <p>This configuration is stored in your browser's local storage. You can set a password to encrypt the personal access tokens.</p>
       <div class="row">
-  ${this.inputSimple2html("inputEncryptPassword", "password", "Enter a password to encrypt the Personal Access Tokens (PAT):", "Required")}
+  ${this.inputSimple2html("inputEncryptPassword", "password", "Enter a password to encrypt the Personal Access Tokens (PAT):", "required")}
       ${this.button2html("inputEncryptButton", "submit", "Encrypt")}
       </div>
     `));
@@ -542,7 +570,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
 
   // Display of common form input controls, enclosed in col-auto for fluid placement
 
-  input2html: function (id, type, label, value, validation, labelWidth, valueWidth, info) { // NOSONAR
+  input2html: function (id, type, label, value, validation, labelWidth, valueWidth, info, invalidMsg = "Invalid value") { // NOSONAR
     let labelStyle = labelWidth == "" ? "" : `style="width:${labelWidth}px"`;
     let valueStyle = valueWidth == "" ? "" : `style="width:${valueWidth}px"`;
     return `
@@ -552,13 +580,14 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
         <input id="${id}" type="${type}" value="${value ?? ''}" ${validation} ${valueStyle}
           class="form-control ${label == 'Username' ? ' fw-bold' : ''}" aria-label="${label}" aria-describedby="${id}-label">
       </div>
+      ${ validation && validation != "" ? '<div class="text-danger small d-none">' + invalidMsg + '</div>' : ""}
     </div>
     `;
   },
 
-  array2html: function (id, type, label, value, validation, labelWidth, valueWidth, info) { // NOSONAR
+  array2html: function (id, type, label, value, validation, labelWidth, valueWidth, info, invalidMsg) { // NOSONAR
     let valueStr = value == undefined || value.length == 0 ? "" : value.join(" ");
-    return this.input2html(id, type, label, valueStr, validation, labelWidth, valueWidth, info);
+    return this.input2html(id, type, label, valueStr, validation, labelWidth, valueWidth, info, invalidMsg);
   },
 
   inputSimple2html: function (id, type, label, validationMessage) {
