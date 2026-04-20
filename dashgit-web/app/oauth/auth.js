@@ -24,10 +24,10 @@ export async function startLogin(oaconfig) {
   sessionStorage.setItem(OACONFIG, JSON.stringify(oaconfig))
 
   const { code_verifier, code_challenge } = await generatePKCE();
-  localStorage.setItem(PKCE_VERIFIER, code_verifier);
+  sessionStorage.setItem(PKCE_VERIFIER, code_verifier);
 
   const state = generateRandomString(32);
-  localStorage.setItem(STATE, state);
+  sessionStorage.setItem(STATE, state);
 
   const url =
     oaconfig.authorizeUrl +
@@ -51,31 +51,30 @@ export async function handleCallback() {
     const state = params.get("state");
 
     if (!code) {
-      await login.failedLogin("Did not receive 'code' in callback parameters");
+      await login.failedLoginCallback("Did not receive 'code' in callback parameters");
       return;
     }
-    if (state != localStorage.getItem(STATE)) {
-      await login.failedLogin("State does not match the request");
+    if (state != sessionStorage.getItem(STATE)) {
+      await login.failedLoginCallback("State does not match the request");
       return;
     }
 
     const tokenResponse = await exchangeCodeForToken(code, oaconfig);
     if (tokenResponse.error) {
-      await login.failedLogin("Error exchanging code for token: " + JSON.stringify(tokenResponse, null, 2));
+      await login.failedLoginCallback("Error exchanging code for token: " + JSON.stringify(tokenResponse, null, 2));
       return;
     }
 
-    // Uses refresh info in addition to the received token
-    await login.successfulLogin(tokenResponse.access_token, tokenResponse.refresh_token, tokenResponse.expires_in);
+    await login.successfulLoginCallback(tokenResponse.access_token, tokenResponse.refresh_token, tokenResponse.expires_in);
     window.location.href = "./"; // Redirect back to main app after successful login
   }
   catch (err) {
-    await login.failedLogin("Unexpected error: " + err.message);
+    await login.failedLoginCallback("Unexpected error: " + err.message);
   }
 };
 
 export async function exchangeCodeForToken(code, oaconfig) {
-  const code_verifier = localStorage.getItem(PKCE_VERIFIER);
+  const code_verifier = sessionStorage.getItem(PKCE_VERIFIER);
 
   const body = {
     client_id: oaconfig.clientId,
@@ -101,13 +100,8 @@ export async function refreshExpiredToken(refreshToken, oaconfig) {
   };
   
   const response = await post(oaconfig.tokenUrl, body);
-  // Error handling is different from login for a new token because refresh must be executed
-  // silently, just to replace the token if possible
-  if (response.error)
-    console.error(`Error refeshing token (${response.error}): ${response.error_description}`
-      + ` - Configuration: ${JSON.stringify(oaconfig, null, 2)}`);
-  else
-    await login.successfulLogin(response.access_token, response.refresh_token, response.expires_in);
+  // This is called synchronously, no callbacks,returns the response to leave error handling to the login module
+  return response;
 }
 
 async function post(url, body) {

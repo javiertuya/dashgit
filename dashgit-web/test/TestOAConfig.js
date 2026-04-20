@@ -1,7 +1,6 @@
 import assert from 'assert';
 import { login } from "../app/Login.js"
 
-// TODO Temporal, this configuration will change and test revised to include config validation
 const oadefaults = {
   GitHub: {
     github: { clientId: "gh-client-id", scopes: "repo notifications",
@@ -21,7 +20,9 @@ const baseGitHubConfig = {
             clientId: 'gh-client-id', scopes: 'repo notifications', tokenUrl: 'https://gh.proxy/exchange'
         }
 
-describe("TestOAConfig - Creating default configurations", async function () {
+   
+describe("TestOAConfig", async function () {
+  describe("TestOAConfig - Creating default configurations", async function () {
     it("GitHub valid default configuration", function () {
         assert.deepEqual(login.getOAuthAppConfig("github", "GitHub", "https://github.com", "https://domain/dashgit", oadefaults, {enabled: false}), 
             baseGitHubConfig
@@ -38,8 +39,8 @@ describe("TestOAConfig - Creating default configurations", async function () {
             {}
         );
     });
-});
-describe("TestOAConfig - Creating default configurations with provider.oauth variants", async function () {
+  });
+  describe("TestOAConfig - Creating default configurations with provider.oauth variants", async function () {
     it("Provider oauth empty", function () {
         assert.deepEqual(login.getOAuthAppConfig("github", "GitHub", "https://github.com", "https://domain/dashgit", oadefaults, {}), 
             baseGitHubConfig
@@ -65,10 +66,10 @@ describe("TestOAConfig - Creating default configurations with provider.oauth var
             baseGitHubConfig
         );
     });
-});
+  });
 
 
-describe("TestOAConfig - Creating custom configurations", async function () {
+  describe("TestOAConfig - Creating custom configurations", async function () {
     it("Custom client id", function () {
         let oacustom = {enabled: true, clientId: "NEW-CLIENT-ID"};
         let expected =  structuredClone(baseGitHubConfig);
@@ -81,4 +82,5 @@ describe("TestOAConfig - Creating custom configurations", async function () {
         expected.tokenUrl = "https://new.token.url";
         assert.deepEqual(login.getOAuthAppConfig("github", "GitHub", "https://github.com", "https://domain/dashgit", oadefaults, oacustom), expected );
     });
+  });
 });

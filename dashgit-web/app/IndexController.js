@@ -46,11 +46,11 @@ $(document).on('click', '#inputSkipButton', function (e) {
 // click on a tab to change view
 $('button[data-bs-toggle="tab"]').on('shown.bs.tab', async function (e) {
   const target = $(this).attr("aria-controls");
-  indexController.tabControlEntering(target);
+  await indexController.tabControlEntering(target);
 });
 
 $(document).on('click', '#reloadIcon', async function () {
-  indexController.reload();
+  await indexController.reload();
 });
 $(document).on('change', '#inputSort', async function () {
   indexController.saveMainFilterState();
@@ -163,14 +163,14 @@ const indexController = {
     indexController.tabControlSelectLastOrDefault("assigned");
     // Do not need render because the entry event in the target tab already does it
   },
-  reload: function() {
+  reload: async function() {
     wiController.reset(false);
-    indexController.render();
+    await indexController.render();
   },
 
   // Entering event executes when tab changes, either by user click or programmatically
   // Stores in the tab name in session to allow restoring it after a reload, and performs the rendering of the target tab
-  tabControlEntering: function (target) {
+  tabControlEntering: async function (target) {
     console.log("*** Entering tab " + target);
     const lastTarget = sessionStorage.getItem(LAST_TAB);
     // Target is rendered with one exception: when last selected tab is config, we need to update everything because
@@ -179,7 +179,7 @@ const indexController = {
       sessionStorage.setItem(LAST_TAB, target); // to reload the target tab, not the last target
       window.location.reload();
     } else {
-      indexController.render();
+      await indexController.render();
     }
     sessionStorage.setItem(LAST_TAB, target);
   },
@@ -211,8 +211,9 @@ const indexController = {
     config.save();
   },
 
-  //Rendering depends on the selected tab, calls the appropriate controller to update the UI
-  render: function () {
+  //Rendering depends on the selected tab, calls the appropriate controller to 
+  //generate the contents of target and update the UI in the appropriate tab
+  render: async function () {
     wiView.resetAlerts();
     if (config.appUpdateEvent())
       wiView.renderAlert("info", `Dashgit version has been updated to ${config.appVersion}. See the release notes at <a target="_blank" href="https://github.com/javiertuya/dashgit/releases">https://github.com/javiertuya/dashgit/releases</a>`);
@@ -221,8 +222,11 @@ const indexController = {
     let target = $(".nav-link.active").attr("aria-controls");
     if (target == "config")
       configController.updateMainTarget();
-    else
+    else {
+      // Token renewal must be done here before dispatching and rendering because there are no page loads when switching form tabas
+      await login.refreshTokensForAllProviders();
       wiController.updateTarget(target, $("#inputSort").val()); //display work items for the indicated target, with sort criterion
+    }
   },
 
   clearMode: function () {

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "mocha": "11.7.5",
+    "sinon": "21.1.2",
     "chai": "6.2.2",
     "mochawesome": "7.1.4"
   }

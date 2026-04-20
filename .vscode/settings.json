@@ -1,0 +1,14 @@
+{
+  "mochaExplorer.cwd": "dashgit-web/test",
+  "mochaExplorer.mochaPath": "dashgit-web/test/node_modules/mocha",
+  "mochaExplorer.files": [
+    "Test*.js",
+    "test/**/*.js"
+  ],
+  "mochaExplorer.require": [
+    "./setup.js"
+  ],
+  "mochaExplorer.env": {
+    "NODE_ENV": "test"
+  }
+}

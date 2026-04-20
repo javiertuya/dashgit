@@ -29,12 +29,12 @@ $(document).on('click', '.wi-item-column-clickable', async function (e) {
 $(document).on('click', '#wi-follow-up-btn-save', async function (e) {
   wiView.followUpProgress();
   await wiControllerFollowUp.save(wiView.followUpGetValues(), false);
-  indexController.reload();
+  await indexController.reload();
 });
 $(document).on('click', '#wi-follow-up-btn-delete', async function (e) {
   wiView.followUpProgress();
   await wiControllerFollowUp.save(wiView.followUpGetValues(), true);
-  indexController.reload();
+  await indexController.reload();
 });
 $(".modal").on("hidden.bs.modal", function () { // clear modal content on close
   wiView.followUpClear();
