@@ -27,12 +27,10 @@ $(document).on('click', '#config-reset', function (e) {
 $(document).on('click', '.config-btn-add-github', function (e) {
   configView.addProvider(config.setProviderDefaults({ provider: "GitHub" }));
   configValidation.installValidation();
-  //configView.refreshAll();
 });
 $(document).on('click', '.config-btn-add-gitlab', function (e) {
   configView.addProvider(config.setProviderDefaults({ provider: "GitLab" }));
   configValidation.installValidation();
-  //configView.refreshAll();
 });
 $(document).on('click', '.config-btn-provider-remove', function (e) {
   configView.removeProvider($(this));
@@ -83,7 +81,6 @@ $(document).on('click', '.config-btn-provider-submit', function (e) {
     configController.saveData();
     configController.afterSaveData();
     e.preventDefault();
-    //e.stopPropagation();
   } else {
     console.log("Can not save this configuration due to validation issues");
     configController.displayToast("Can not save this configuration due to validation issues", true);

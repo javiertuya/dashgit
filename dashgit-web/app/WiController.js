@@ -199,7 +199,7 @@ const wiController = {
         // In the case of surrogates, the same statuses model is shared by different providers,
         // The match filters applied to display a provider would affect the display of the next provider.
         // Ensure that in any case each provider has its own model by creating a clone
-        model = JSON.parse(JSON.stringify(model)); // pending: migrate to structuredClone
+        model = JSON.parse(JSON.stringify(model)); // NOSONAR pending: migrate to structuredClone
         model.header.uid = prov.uid;
         models.push(model);
       }
