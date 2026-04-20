@@ -46,8 +46,8 @@ jobs:
 
   sonarqube:
     # As in test-ut, but excludes dependabot updates to remove duplicates on local prs
-    if: ${{ false }}
-    #if: github.actor != 'dependabot[bot]' && ( (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/'))) )
+    #if: ${{ false }}
+    if: github.actor != 'dependabot[bot]' && ( (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/'))) )
     runs-on: ubuntu-latest
     steps:
       - if: github.event.pull_request.head.repo.fork
@@ -90,8 +90,8 @@ jobs:
       pull-requests: read
     outputs:
       output1: ${{ steps.filter.outputs.workflows }}
-    if: ${{ false }}
-    #if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/')))
+    #if: ${{ false }}
+    if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/')))
     steps:
     - uses: actions/checkout@v6
     - run: echo "current branch ${{ github.ref_name }}"

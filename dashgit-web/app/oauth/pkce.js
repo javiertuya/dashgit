@@ -8,10 +8,10 @@ export function generateRandomString(length = 64) {
 }
 
 function base64urlencode(buffer) {
-  return btoa(String.fromCharCode(...new Uint8Array(buffer)))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  return btoa(String.fromCharCode(...new Uint8Array(buffer))) // NOSONAR
+    .replace(/\+/g, "-") // NOSONAR
+    .replace(/\//g, "_") // NOSONAR
+    .replace(/=+$/, ""); // NOSONAR
 }
 
 async function sha256(message) {

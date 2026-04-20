@@ -105,7 +105,7 @@ const gitHubApi = {
     if (token == "" || token.startsWith("ghp_") || token.startsWith("gho_")) { // single query for no token or fine grained token
       return [this.octokitSearchIssues(octokit, query)];
     } else { // separated queries to find issues and prs
-      // TODO necesito probar esto con fine grained tokens, al ejecutar con un gho_ ha dado un error indicando que pr no estaba definido
+      // Pendiente probar esto con fine grained tokens, al ejecutar con un gho_ ha dado un error indicando que pr no estaba definido
       console.log("Assuming fine grained token, using separated queries for issues and PRs");
       let qissue = JSON.parse(JSON.stringify(query));
       let qpr = JSON.parse(JSON.stringify(query));

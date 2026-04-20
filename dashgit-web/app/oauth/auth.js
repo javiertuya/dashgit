@@ -39,14 +39,14 @@ export async function startLogin(oaconfig) {
     `&code_challenge=${code_challenge}` +
     `&code_challenge_method=S256`;
 
-  window.location = url;
+  globalThis.location = url;
 }
 
 export async function handleCallback() {
   const oaconfig = JSON.parse(sessionStorage.getItem(OACONFIG));
   sessionStorage.removeItem(OACONFIG); // not needed anymore in storage
   try {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(globalThis.location.search);
     const code = params.get("code");
     const state = params.get("state");
 
@@ -66,7 +66,7 @@ export async function handleCallback() {
     }
 
     await login.successfulLoginCallback(tokenResponse.access_token, tokenResponse.refresh_token, tokenResponse.expires_in);
-    window.location.href = "./"; // Redirect back to main app after successful login
+    globalThis.location.href = "./"; // Redirect back to main app after successful login
   }
   catch (err) {
     await login.failedLoginCallback("Unexpected error: " + err.message);

@@ -104,7 +104,7 @@ const indexController = {
   // Main entry point invoked from index.html
   load: async function() {
     // Main page has been invoked as a callback of the OAuth2 login process
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(globalThis.location.search);
     const app = params.get("oapp")
     if (app) {
       console.log("IndexController: App parameter found in url, running as callback to login " + app);
@@ -177,7 +177,7 @@ const indexController = {
     // the configuration may have changed authentication or provider settings.
     if (lastTarget == "config" && target != "config") {
       sessionStorage.setItem(LAST_TAB, target); // to reload the target tab, not the last target
-      window.location.reload();
+      globalThis.location.reload();
     } else {
       await indexController.render();
     }

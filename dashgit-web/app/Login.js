@@ -128,7 +128,7 @@ const login = {
       const tokenInfo = this.getOAuthTokenInfoByUid(provider.uid);
       const needsRefresh = tokenInfo.refreshToken && tokenInfo.refreshTime
         && tokenInfo.refreshToken != "" && tokenInfo.refreshTime != ""
-        && new Date().getTime() > new Date(tokenInfo.refreshTime).getTime() - 5 * 60 * 1000;
+        && Date.now() > new Date(tokenInfo.refreshTime).getTime() - 5 * 60 * 1000;
 
       if (needsRefresh) {
         const providerWithMyApp = alreadySetByApp[providerConfig.appName + "-" + provider.provider + "-" + provider.url];
@@ -181,9 +181,8 @@ const login = {
       return;
     }
     // Localhost is not a valid host for OAuth2 callbacks, simulates the callback (that will fail)
-    if (window.location.host === "localhost") {
-      //await new Promise(r => setTimeout(r, 2000));
-      window.location.href = "http://localhost/dashgit/?oapp=github";
+    if (globalThis.location.host === "localhost") {
+      globalThis.location.href = "http://localhost/dashgit/?oapp=github";
       return;
     }
 
@@ -195,9 +194,8 @@ const login = {
     await this.logDebug("Login with provider " + providerUid + ", authorizing...");
     // Localhost is not a valid host for OAuth2 callbacks, fails immediately 
     // (nevertheless we can use 127.0.0.1 to test the real failure)
-    if (window.location.host === "localhost") {
-      //await new Promise(r => setTimeout(r, 2000));
-      await this.failedLoginCallback("Invalid host: " + window.location.host);
+    if (globalThis.location.host === "localhost") {
+      await this.failedLoginCallback("Invalid host: " + globalThis.location.host);
       return;
     }
     if (!providerUid) {
@@ -265,20 +263,18 @@ const login = {
         this.gremoveOAuthTokenInfoByUid(provider.uid);
       }
     }
-    window.location.href = "./"
+    globalThis.location.href = "./"
   },
 
   // Logging messages and failures are also shown in the user interface
   logDebug: async function (message) {
     console.log(`OAuth: ${message}`);
     $("#callback-provider").text(message);
-    //await new Promise(r => setTimeout(r, 2000));
   },
   logError: async function (message) {
     console.error(`OAuth: ${message}`);
     $("#callback-error").text(message);
     $("#callback-continue-btn").show();
-    //await new Promise(r => setTimeout(r, 2000));
   },
 
   ////////////////////////////////////////////////////////////////////////////
@@ -286,7 +282,7 @@ const login = {
   ////////////////////////////////////////////////////////////////////////////
  
   getDashGitUrl: function() {
-    return window.location.protocol + "//" + window.location.host  + window.location.pathname;
+    return globalThis.location.protocol + "//" + globalThis.location.host  + globalThis.location.pathname;
   },
   getOAuthProviderConfig: function (provider) {
     // Currently only supporting single app name
@@ -348,7 +344,7 @@ const login = {
         const result = this.decrypt(provider.token, pass);
         if (result == "invalid token")
           return false;
-      } catch (error) {
+      } catch (error) { // NOSONAR
         return false;
       }
     }
