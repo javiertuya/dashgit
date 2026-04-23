@@ -4,7 +4,7 @@ import { gitHubAdapter } from "./GitHubAdapter.js"
 import { gitStoreApi } from "./GitStoreApi.js"
 import { log } from "./Log.js"
 import { wiController } from "../WiController.js"
-import { config } from "../Config.js"
+import { config } from "../core/Config.js"
 import { login } from "../login/Login.js"
 
 /**

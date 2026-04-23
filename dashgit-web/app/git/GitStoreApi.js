@@ -1,5 +1,5 @@
 import { Octokit } from "octokit/rest"
-import { config } from "../Config.js"
+import { config } from "../core/Config.js"
 import { login } from "../login/Login.js"
 
 /**

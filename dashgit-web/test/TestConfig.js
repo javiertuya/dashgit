@@ -9,8 +9,8 @@
 //Use mochawesome reporter that captures the detailed diffs when assert.deepEqual (same info than console)
 
 import assert from 'assert';
-import { config } from "../app/Config.js"
-import { cache } from "../app/Cache.js"
+import { config } from "../app/core/Config.js"
+import { cache } from "../app/core/Cache.js"
 
 describe("TestConfig - Sanitizing config data", async function () {
 

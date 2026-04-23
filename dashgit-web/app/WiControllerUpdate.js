@@ -1,6 +1,6 @@
 import { gitStoreApi } from "./git/GitStoreApi.js"
 import { wiView } from "./WiView.js"
-import { config } from "./Config.js"
+import { config } from "./core/Config.js"
 import { login } from "./login/Login.js"
 
 /**

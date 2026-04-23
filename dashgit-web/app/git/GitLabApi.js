@@ -4,8 +4,8 @@ import { gitLabGraphql } from "./GitLabGraphql.js"
 import { gitStoreApi } from "./GitStoreApi.js"
 import { log } from "./Log.js"
 import { wiController } from "../WiController.js"
-import { config } from "../Config.js"
-import { cache } from "../Cache.js"
+import { config } from "../core/Config.js"
+import { labelsCache } from "../core/LabelsCache.js"
 import { login } from "../login/Login.js"
 
 /**
@@ -100,7 +100,7 @@ const gitLabApi = {
         allResponses.push(...response.followUp);
       else
         allResponses.push(...response);
-    let model = gitLabAdapter.workitems2model(provider, allResponses, cache.labelsCache[provider.uid]);
+    let model = gitLabAdapter.workitems2model(provider, allResponses, labelsCache.data[provider.uid]);
     model.header.target = target;
     model.header.message = promises.length == 0 ? `Target ${target} not implemented for this provider` : ``;
     if (target == "involved")
@@ -114,7 +114,7 @@ const gitLabApi = {
       })
   },
   emptyModel: function (provider, message) {
-    let model = gitLabAdapter.workitems2model(provider, [], cache.labelsCache[provider.uid]);
+    let model = gitLabAdapter.workitems2model(provider, [], labelsCache.data[provider.uid]);
     model.header.message = message;
     return model;
   },
@@ -161,7 +161,7 @@ const gitLabApi = {
     const gids = gitLabAdapter.model4projectIds(model0);
 
     //First time that page loads: determine info about labels (to set their color)
-    if (cache.labelsCache[provider.uid] == undefined)
+    if (labelsCache.data[provider.uid] == undefined)
       this.updateLabelsAsync(provider, gids);
 
     // Now gets the statuses of all pipelines and complete the model
@@ -187,7 +187,7 @@ const gitLabApi = {
   },
 
   updateLabelsAsync: async function (provider, gids) {
-    cache.labelsCache[provider.uid] = {}; // don't enter here any more
+    labelsCache.data[provider.uid] = {}; // don't enter here any more
     let queryx = gitLabGraphql.getLabelsQuery("ids:" + JSON.stringify(gids));
     //this call may intermitently fail on gitlab.com due to insufficient permssions (do not show altert)
     let gqlresponsex = await gitLabGraphql.callGraphqlApi(provider, queryx, false);

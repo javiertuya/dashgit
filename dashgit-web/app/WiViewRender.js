@@ -1,5 +1,6 @@
-import { cache } from "./Cache.js"
-import { config } from "./Config.js"
+import { config } from "./core/Config.js"
+import { notifCache } from "./core/NotifCache.js"
+import { statusIndex } from "./core/StatusIndex.js"
 
 /**
  * Primitive methods and constants to support generation of the html content from the work item view
@@ -46,14 +47,14 @@ const wiRender = {
       return "notavailable";
     if (type == "issue") //issues do not have status
       return "issue";
-    let status = cache.getStatus(provider, uid);
+    let status = statusIndex.getStatus(provider, uid);
     return status;
   },
   status2html: function (type, provider, uid, id) {
     if (type == "issue") //issues do not have status
       return "";
     // wraps the content (status icon) to later change the icon by id
-    let status = cache.getStatus(provider, uid);
+    let status = statusIndex.getStatus(provider, uid);
     return `<span id="wi-status-${id}">${wiRender.statusIcon(status)}</span>`;
   },
   type2html: function (type, highlight) {
@@ -68,9 +69,9 @@ const wiRender = {
       return '';
   },
   notifications2html: function (provider, uid) {
-    if (cache.notifCache[provider] == undefined)
+    if (notifCache.data[provider] == undefined)
       return "";
-    let reason = cache.notifCache[provider][uid];
+    let reason = notifCache.data[provider][uid];
     if (reason == undefined)
       return "";
     let iconClass = reason == "mention" || reason == "mentioned" || reason == "directly_addressed" ? this.mentionIconClass : this.notificationIconClass;

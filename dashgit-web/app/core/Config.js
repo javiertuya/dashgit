@@ -1,21 +1,20 @@
 /**
- * Shared persitent data: configuration of parameters, providers, etc. 
+ * Shared persitent data: configuration of parameters, providers, migrations, etc. 
  */
 const DASHGIT_CONFIG = "dashgit-config"; // Store: all configuration
 const LAST_VISITED_DATES = "dashgit-config-visited"; // Store: to highlight recent items
-//const PAT_SECRET = "dashgit-pat-secret"; // Store: to decript PATs
 const config = {
 
-  //App version number, do not push any change of it, this is set during deploy
+  // App version number, do not push any change of it, this is set during deploy
   appVersion: "main",
 
-  //Configuration data version number, to keep track of changes of data structure and migrations
+  // Configuration data version number, to keep track of changes of data structure and migrations
   dataVersion: 3,
 
-  //Feature flags, keeps boolean flags activated from the querystring ?ff=flag1,flag2...
+  // Feature flags, keeps boolean flags activated from the querystring ?ff=flag1,flag2...
   ff: {},
 
-  //Constant parameters
+  // Constant parameters
   param: {
     followUpBranch: "dashgit/follow-up",
     followUpFolder: ".dashgit/follow-up",
@@ -24,7 +23,7 @@ const config = {
     readmeFollowUp: "https://github.com/javiertuya/dashgit?tab=readme-ov-file#follow-up",
   },
 
-  //Persistent data, kept only if page is not reloaded
+  // Persistent data, kept only if page is not reloaded
   session: {
     panelCollapsed: {}, //panel with the id indicated by the key is collapsed
     viewFilter: {}, // additional filters applicable to the view indicated by the key
@@ -43,17 +42,6 @@ const config = {
   },
   save: function () {
     localStorage.setItem(DASHGIT_CONFIG, JSON.stringify(config.data));
-  },
-
-  // Determines if version has changed from last used configuration (used to display a message to the user),
-  // does not fire if there are no providers (still not initialized)
-  appUpdateEvent: function() {
-    if (config.appVersion != config.data["appLastVersion"] && config.data.providers.length > 0) {
-      config.data["appLastVersion"] = config.appVersion;
-      this.save(); // save to prevent this message again
-      return true;
-    }
-    return false;
   },
 
   // Process a string with configuration and converts to an object.
@@ -97,7 +85,7 @@ const config = {
     this.setViewFilterDefaults(data);
     return data;
   },
-  setAuthProviderDefaults: function(element) {
+  setAuthProviderDefaults: function (element) {
     this.setDefault(element, "token", "");
     this.setDefault(element, "oauth", false);
     this.setDefault(element, "oacustom", {}); // can have a variable number of attributes
@@ -105,7 +93,7 @@ const config = {
     this.setDefault(element.oacustom, "clientId", "");
     this.setDefault(element.oacustom, "tokenUrl", "");
   },
-  setProviderDefaults: function(element) {
+  setProviderDefaults: function (element) {
     this.setDefault(element, "provider", "");
     this.setDefault(element, "uid", "");
     this.setDefault(element, "user", "");
@@ -144,7 +132,20 @@ const config = {
     this.setDefault(element, "updates", {});
     this.setDefault(element.updates, "tokenSecret", "");
     this.setDefault(element.updates, "userEmail", "");
-  return element;
+    return element;
+  },
+  setProviderSecretDefaults: function (data) {
+    for (let provider of data.providers) {
+      if (provider.updates.tokenSecret == "" && provider.user != "") //only suggest if not set and user is defined
+        // only alphanumeric and _ is allowed, for now, replacing dash characters
+        provider.updates.tokenSecret = `DASHGIT_${provider.provider.toUpperCase()}_${provider.user.toUpperCase().replaceAll("-", "_")}_TOKEN`;
+    }
+  },
+  setMainFilterDefaults: function (data) {
+    this.setDefault(data.viewFilter.main, "status", "111111");
+    this.setDefault(data.viewFilter.main, "search", "");
+    this.setDefault(data.viewFilter.main, "sort", "descending,updated_at");
+    this.setDefault(data.viewFilter.main, "group", false);
   },
   setViewFilterDefaults: function (data) {
     this.setDefault(data, "viewFilter", {});
@@ -165,24 +166,19 @@ const config = {
     this.setDefault(data.viewFilter.statuses, "exclude", "");
     this.setDefault(data.viewFilter.dependabot, "exclude", "");
   },
-  setMainFilterDefaults: function(data) {
-    this.setDefault(data.viewFilter.main, "status", "111111");
-    this.setDefault(data.viewFilter.main, "search", "");
-    this.setDefault(data.viewFilter.main, "sort", "descending,updated_at");
-    this.setDefault(data.viewFilter.main, "group", false);
-  },
   setDefault: function (parent, property, value) {
     if (parent[property] == undefined || parent[property] == null)
       parent[property] = value;
   },
-  
-  migrateV1toV2: function(configData) {
+
+  // Migrations, called when parse and santize data
+  migrateV1toV2: function (configData) {
     this.renameProperty(configData, "enableCombinedUpdates", configData, "enableManagerRepo");
     this.renameProperty(configData, "updateManagerRepo", configData, "managerRepoName");
     this.renameProperty(configData, "updateManagerToken", configData, "managerRepoToken");
     configData.version = 2;
   },
-  migrateV2toV3: function(configData) {
+  migrateV2toV3: function (configData) {
     // Manager repo properties are all inside a new object, copy and delte old properties
     configData["managerRepo"] = {
       enabled: configData.enableManagerRepo,
@@ -195,31 +191,36 @@ const config = {
     configData.version = 3;
   },
 
-  renameProperty: function(fromParent, fromName, toParent, toName) {
+  renameProperty: function (fromParent, fromName, toParent, toName) {
     if (fromParent[fromName] != undefined) {
       toParent[toName] = fromParent[fromName];
     }
     delete fromParent[fromName];
   },
 
-  setProviderSecretDefaults: function(data) {
-    for (let provider of data.providers) {
-      if (provider.updates.tokenSecret == "" && provider.user != "") //only suggest if not set and user is defined
-        // only alphanumeric and _ is allowed, for now, replacing dash characters
-        provider.updates.tokenSecret = `DASHGIT_${provider.provider.toUpperCase()}_${provider.user.toUpperCase().replaceAll("-", "_")}_TOKEN`;
-    }
-  },
+  // Utilities
   getProviderByUid: function (uid) {
     for (let provider of config.data.providers)
       if (provider.uid == uid)
         return provider;
     return undefined;
   },
-  getProviderFollowUpFileName: function(url, user) {
+  getProviderFollowUpFileName: function (url, user) {
     return this.param.followUpFolder + "/" + url.replace("https://", "").replaceAll("/", "_") + "-" + user + ".json";
   },
-  getGitHubUserAgent: function() {
+  getGitHubUserAgent: function () {
     return `dashgit/${this.appVersion}`
+  },
+
+  // Determines if version has changed from last used configuration (used to display a message to the user),
+  // does not fire if there are no providers (still not initialized)
+  appUpdateEvent: function () {
+    if (config.appVersion != config.data["appLastVersion"] && config.data.providers.length > 0) {
+      config.data["appLastVersion"] = config.appVersion;
+      this.save(); // save to prevent this message again
+      return true;
+    }
+    return false;
   },
 
   // Control of the moment where each tab is visited, used to highlight items
@@ -231,21 +232,20 @@ const config = {
   // this means that some item may be highlighted twice if updated during this period
   // A completely precise should check the items that were displayed previously
   // and compare them against the actual items
-
-  getLastVisitedDate: function(target) {
+  getLastVisitedDate: function (target) {
     let visited = this.getVisitedDates();
     return new Date(visited[target]);
   },
-  saveLastVisitedDate: function(target, currentDate) {
+  saveLastVisitedDate: function (target, currentDate) {
     let visited = this.getVisitedDates();
     currentDate.setMilliseconds(0);
     // Gives a few secons of tolerance,
     // this means that some item may be highlighted twice if updated during this period
     // but avoids and item not to be highlighted when it should
-    visited[target] = new Date(currentDate-4000);
+    visited[target] = new Date(currentDate - 4000);
     localStorage.setItem(LAST_VISITED_DATES, JSON.stringify(visited));
   },
-  getVisitedDates: function() {
+  getVisitedDates: function () {
     let value = localStorage.getItem(LAST_VISITED_DATES);
     if (value == undefined || value == null)
       value = "{}";
@@ -253,12 +253,12 @@ const config = {
   },
 
   // Manage feature flags
-  loadFeatureFlags: function() {
+  loadFeatureFlags: function () {
     let ffstr = (new URL(document.location)).searchParams.get("ff");
-    if (ffstr!=undefined && ffstr!=null) {
+    if (ffstr != undefined && ffstr != null) {
       let ffarr = ffstr.split(",");
       for (let item of ffarr)
-        this.ff[item]=true;
+        this.ff[item] = true;
     }
     console.log("Using feature flags: ", JSON.stringify(this.ff));
   },

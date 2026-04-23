@@ -1,5 +1,5 @@
 import { tokens } from "./Tokens.js"
-import { config } from "../Config.js"
+import { config } from "../core/Config.js"
 import { oaconfig } from "./OAConfig.js"
 import { loginController } from "./LoginController.js"
 

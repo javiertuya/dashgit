@@ -18,10 +18,10 @@ class Model {
   //  repository + type + iid (issues and prs) or branch name
   //As the uid can be used as a jquery id, replaces invalid characters by -
   getModelUid(repo, type, iid, branch) {
-    repo = repo.replace(/[^a-zA-Z0-9]+/g, "-");
+    repo = repo.replaceAll(/[^a-zA-Z0-9]+/g, "-");
     branch = branch == undefined ? "" : branch;
     iid = iid == undefined ? "" : iid; //if there is no iid (issue, pr) uses the branch name
-    iid = iid != "" ? iid : branch.replace(/[^a-zA-Z0-9]+/g, "-")
+    iid = iid == "" ? branch.replaceAll(/[^a-zA-Z0-9]+/g, "-") : iid
     return repo + "_" + type + "_" + iid;
   }
 
@@ -60,8 +60,8 @@ class Model {
     return uid;
   }
 
-  //Renames the item id according to the information in the item.
-  //(e.g. in GitLab item may be a branch, and later is discovered as pr, the id changes it must be reindexed)
+  // Renames the item id according to the information in the item.
+  // (e.g. in GitLab item may be a branch, and later is discovered as pr, the id changes it must be reindexed)
   updateItemUid(item) {
     let oldUid = item.uid;
     let newUid = this.getModelUid(item.repo_name, item.type, item.iid, item.branch_name);
@@ -70,8 +70,8 @@ class Model {
     this.#index[newUid] = item;
   }
 
-  //Merge this model prs and branches with the model received as parameter:
-  //Merges in a repo by repo basis. Requires the names of repos be in the header
+  // Merge this model prs and branches with the model received as parameter:
+  // Merges in a repo by repo basis. Requires the names of repos be in the header
   mergeBranchesAndPrs(model) {
     //Remove items from repos not contained in the header.repo_names and adds the new items of model
     for (let i = this.items.length - 1; i >= 0; i--) {
@@ -91,9 +91,9 @@ class Model {
   }
 
   addLastItemLabel(name, color) {
-    this.items[this.items.length - 1].labels.push({ name: name, color: color });
+    this.items.at(-1).labels.push({ name: name, color: color });
   }
+
 }
 
 export { Model };
-

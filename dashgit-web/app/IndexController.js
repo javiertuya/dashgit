@@ -1,4 +1,4 @@
-import { config } from "./Config.js"
+import { config } from "./core/Config.js"
 import { login } from "./login/Login.js"
 import { loginController } from "./login/LoginController.js"
 import { tokens } from "./login/Tokens.js"

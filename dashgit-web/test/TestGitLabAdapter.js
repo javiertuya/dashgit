@@ -1,6 +1,6 @@
 import assert from 'assert';
 import fs from "fs"
-import { Model } from "../app/Model.js"
+import { Model } from "../app/core/Model.js"
 import { gitLabAdapter } from "../app/git/GitLabAdapter.js"
 
 beforeEach(function() {

@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { Model } from "../app/Model.js"
+import { Model } from "../app/core/Model.js"
 import { wiServices } from "../app/WiServices.js"
 
 /**

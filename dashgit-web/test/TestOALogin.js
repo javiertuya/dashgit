@@ -1,7 +1,7 @@
 import assert from 'assert';
 import sinon from 'sinon';
 import { createMockSessionStorage } from "./MockSessionStorage.js";
-import { config } from "../app/Config.js"
+import { config } from "../app/core/Config.js"
 import { login } from "../app/login/Login.js"
 import { loginController } from "../app/login/LoginController.js"
 

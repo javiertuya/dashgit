@@ -1,4 +1,4 @@
-import { config } from "./Config.js"
+import { config } from "./core/Config.js"
 import { wiHeaders } from "./WiViewHeaders.js"
 import { wiRender } from "./WiViewRender.js"
 import { wiServices } from "./WiServices.js"

@@ -1,9 +1,13 @@
 import { gitHubApi } from "./git/GitHubApi.js"
 import { gitLabApi } from "./git/GitLabApi.js"
 import { wiView } from "./WiView.js"
-import { Model } from "./Model.js"
-import { cache } from "./Cache.js"
-import { config } from "./Config.js"
+import { Model } from "./core/Model.js"
+import { cache } from "./core/Cache.js"
+import { statusesCache } from "./core/StatusesCache.js"
+import { statusIndex } from "./core/StatusIndex.js"
+import { labelsCache } from "./core/LabelsCache.js"
+import { notifCache } from "./core/NotifCache.js"
+import { config } from "./core/Config.js"
 import { login } from "./login/Login.js"
 
 /**
@@ -46,7 +50,13 @@ import { login } from "./login/Login.js"
 
 const wiController = {
   reset: function (hard) {
-    cache.reset(hard); //used for reload operations
+    statusesCache.reset(config.data.providers, hard); //used for reload operations
+    if (hard) {
+      notifCache.reset();
+      statusIndex.reset();
+      labelsCache.reset();
+    }
+    cache.resetStatusSurrogates(config.data.providers);
   },
   updateTarget: function (target, sorting) {
     console.log(`**** Trigger update to target: ${target}`);
@@ -153,13 +163,13 @@ const wiController = {
             console.log(`${provider.uid}: Get statuses from surrogate provider ${cache.getStatusSurrogate(provider.uid)} (later)`);
             return;
           }        
-          if (cache.hit(provider.uid)) { // use data from cache and avoid call the api
+          if (statusesCache.hit(provider.uid)) { // use data from cache and avoid call the api
             console.log(`${provider.uid}: Update Statuses to view from CACHE`);
             this.displayProviderStatuses(provider.uid);
           } else if (provider.provider.toLowerCase() == "github") {
-            gitHubApi.updateStatusesAsync(provider, cache.updateSince(provider.uid));
+            gitHubApi.updateStatusesAsync(provider, statusesCache.updateSince(provider.uid));
           } else if (provider.provider.toLowerCase() == "gitlab") {
-            gitLabApi.updateStatusesAsync(provider, cache.updateSince(provider.uid));
+            gitLabApi.updateStatusesAsync(provider, statusesCache.updateSince(provider.uid));
           }
   },
   displayProviderStatuses: function(providerId) {
@@ -169,12 +179,12 @@ const wiController = {
       return;
     }
     // General case for the rest of targets, only update the status icons
-    let model = cache.getModel(providerId);
-    wiView.updateStatuses(model, providerId, cache.labelsCache[providerId]); //labels cache only for GitLab, may be undefined
+    let model = statusesCache.getModel(providerId);
+    wiView.updateStatuses(model, providerId, labelsCache.data[providerId]); //labels cache only for GitLab, may be undefined
     //if (providerId=="0-github")
-    //  wiView.updateStatuses(cache.getModel("1-github"), "1-github", cache.labelsCache["1-github"]);
+    //  wiView.updateStatuses(cache.getModel("1-github"), "1-github", labelsCache.data["1-github"]);
     for (let surrogated of cache.getStatusSurrogatedIds(providerId))
-      wiView.updateStatuses(cache.getModel(surrogated), surrogated, cache.labelsCache[surrogated]);
+      wiView.updateStatuses(statusesCache.getModel(surrogated), surrogated, labelsCache.data[surrogated]);
   },
   displayError: function (message) {
     wiView.renderAlert("danger", message);
@@ -190,7 +200,7 @@ const wiController = {
     // and providers where cache has not been initialized yet
     for (let prov of config.data.providers)
       if (prov.enabled) {
-        let model = cache.getModel(prov.uid);
+        let model = statusesCache.getModel(prov.uid);
         /*if (cache.hasStatusSurrogate(prov.uid))
           model = this.emptyModel(prov, "Branch statuses are shown in the surrogate provider defined in the configuration");
         else*/ if (model == undefined)
@@ -214,8 +224,8 @@ const wiController = {
   updateStatuses: function (providerId, statusesModel, updateSince) {
     console.log(`${providerId}: ASYNC update statuses to view:`);
     console.log(statusesModel);
-    cache.setModel(providerId, statusesModel, updateSince); //save to allow a hit in further calls
-    if (cache.initialized(providerId))
+    statusesCache.setModel(providerId, statusesModel, updateSince); //save to allow a hit in further calls
+    if (statusesCache.initialized(providerId))
       this.displayProviderStatuses(providerId)
   },
 
@@ -232,12 +242,12 @@ const wiController = {
     //In case of failure in getting the status schedules a near refresh to try again
     this.displayError(message);
     wiView.updateSpinnerEnd(providerId);
-    cache.scheduleNearRefresh(providerId);
+    statusesCache.scheduleNearRefresh(providerId);
   },
 
   //this is necessary for GitLab because items only store the label name
   updateLabels: function (providerId, labels) {
-    cache.setLabels(providerId, labels)
+    labelsCache.setLabels(providerId, labels)
     wiView.updateLabelColors(providerId, labels);
   },
 
@@ -247,10 +257,10 @@ const wiController = {
     //save to cache to allow access from synchronous calls that display workitems
     //(note that github poll interval control must call this method during the poll interval with a null model)
     if (notifModel != undefined && notifModel != null)
-      cache.saveNotifications(providerId, notifModel);
+      notifCache.saveNotifications(providerId, notifModel);
     let allMentions = 0; //to display the total of notifications of all providers
     let thisMentions = 0; //only of this provier
-    for (let prop in cache.notifCache) {
+    for (let prop in notifCache.data) {
       let mentions = this.countProviderMentions(prop);
       allMentions += mentions;
       if (prop == providerId)
@@ -261,8 +271,8 @@ const wiController = {
   countProviderMentions: function (prop) {
     // counts only mentions, but across all providers that have notifications in cache
     let mentionCount = 0;
-    for (let notifKey in cache.notifCache[prop]) {
-      let reason = cache.notifCache[prop][notifKey];
+    for (let notifKey in notifCache.data[prop]) {
+      let reason = notifCache.data[prop][notifKey];
       if (reason == "mention" || reason == "mentioned" || reason == "directly_addressed")
         mentionCount++; //PENDING: reason values are duplicated in the view, refactor
     }

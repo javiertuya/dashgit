@@ -1,4 +1,4 @@
-import { config } from "./Config.js"
+import { config } from "./core/Config.js"
 import { configValidation } from "./ConfigValidation.js"
 
 /**

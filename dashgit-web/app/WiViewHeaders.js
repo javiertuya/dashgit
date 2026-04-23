@@ -1,4 +1,4 @@
-import { config } from "./Config.js"
+import { config } from "./core/Config.js"
 
 /**
  * Additional headers inserted before all providers and at each provider

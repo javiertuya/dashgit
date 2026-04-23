@@ -1,4 +1,4 @@
-import { config } from "./Config.js"
+import { config } from "./core/Config.js"
 import { tokens } from "./login/Tokens.js"
 import { wiController } from "./WiController.js"
 import { wiView } from "./WiView.js"
