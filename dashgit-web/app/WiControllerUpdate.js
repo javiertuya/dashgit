@@ -1,7 +1,7 @@
 import { gitStoreApi } from "./git/GitStoreApi.js"
 import { wiView } from "./WiView.js"
 import { config } from "./Config.js"
-import { login } from "./Login.js"
+import { login } from "./login/Login.js"
 
 /**
  * Additional work item controller to manage the combined updates 

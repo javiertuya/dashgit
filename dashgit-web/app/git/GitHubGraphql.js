@@ -2,7 +2,7 @@ import { graphql } from "octokit/graphql"
 import { gitHubAdapter } from "./GitHubAdapter.js"
 import { log } from "./Log.js"
 import { wiController } from "../WiController.js"
-import { login } from "../Login.js"
+import { login } from "../login/Login.js"
 
 /**
  * Core interface with the provider api (GitHub).

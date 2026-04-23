@@ -1,4 +1,4 @@
-const crypt = {
+const encryption = {
   //Note: crypto js does not have an ES6 module (there exist a port crypto-es), import directly in the index.html
   //import { CryptoJS } from "https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js";
 
@@ -11,4 +11,4 @@ const crypt = {
   },
 }
 
-export { crypt as encryption };
+export { encryption };

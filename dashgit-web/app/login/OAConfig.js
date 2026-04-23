@@ -9,7 +9,7 @@
  *  - clientId
  *  - scopes as defined in the app
  *  - Paths/urls to determine the endpoints for authorization request or token exchange
- *  - Does not contain the secret, this should be in the configuration of the exchange proxy
+ *  - Does not contain the secret, this should be stored in the the exchange proxy
  * 
  * GitHub OAuth Apps: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#web-application-flow
  * GitHub Apps: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app#using-the-web-application-flow-to-generate-a-user-access-token
@@ -22,13 +22,6 @@ const oaconfig = {
   GitHub: {
     github: {
       clientId: "Ov23liF8QHJgpfMvHfDx",
-      scopes: "repo notifications",
-      authorizePath: "/login/oauth/authorize",
-      //tokenUrl: "https://github.com/login/oauth/access_token",
-      tokenUrl: "https://giis.uniovi.es/desarrollo/oauth/exchange",
-    },
-    github2: {
-      clientId: "Ov23liX99oNsXeNScNCS",
       scopes: "repo notifications",
       authorizePath: "/login/oauth/authorize",
       //tokenUrl: "https://github.com/login/oauth/access_token",

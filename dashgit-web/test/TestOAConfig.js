@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { login } from "../app/Login.js"
+import { login } from "../app/login/Login.js"
 
 const oadefaults = {
   GitHub: {

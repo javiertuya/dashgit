@@ -1,6 +1,6 @@
 import { Octokit } from "octokit/rest"
 import { config } from "../Config.js"
-import { login } from "../Login.js"
+import { login } from "../login/Login.js"
 
 /**
  * Secondary interface with the GitHub api to manage stored files

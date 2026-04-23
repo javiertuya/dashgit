@@ -3,7 +3,7 @@
 DashGit supports the *Authorization Code Grant with Proof Key for Code Exchange (PKCE)* protocol [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749) to authenticate and authorize access to GitHub and GitLab resources.
 
 In simplified terms, this involves two phases:
-1. DashGit requests authentication to the GitHub or GitLab *Authorization Server*:
+1. DashGit requests authorization to the GitHub or GitLab *Authorization Server*:
   - The first time, you are requested to authenticate (if you are not already logged in) and to authorize a given scope (permissions to access the API).
   - Returns an *Authorization code* by redirecting the browser to a callback page in DashGit.
 2. DashGit requests the *Authorization Server* to exchange the *Authorization code* for an *Access Token* that will be used by DashGit to authenticate all API calls until the session is closed (when the browser tab is closed).

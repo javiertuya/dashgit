@@ -523,6 +523,9 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
     else if (where < 0)
       $(element).insertBefore($(element).prev());
     this.refreshAll();
+    // set focus to the moved element
+    $(element)[0].scrollIntoView();
+    $(element).find('input[id^="config-providers-user-"]').focus();
   },
 
   // Other rendering actions

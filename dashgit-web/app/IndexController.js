@@ -1,5 +1,7 @@
 import { config } from "./Config.js"
-import { login } from "./Login.js"
+import { login } from "./login/Login.js"
+import { loginController } from "./login/LoginController.js"
+import { tokens } from "./login/Tokens.js"
 import { wiView } from "./WiView.js"
 import { wiController } from "./WiController.js"
 import { wiControllerUpdate } from "./WiControllerUpdate.js" // NOSONAR to install jquery events
@@ -11,19 +13,17 @@ import { configController } from "./ConfigController.js"
  * Enters sequentially in one of three modes (that acctivate/deactivate elements in the UI depending on the authentication for configuration.
  * - patLoginMode: a simpler view to set the password before entering de application, used when the access tokens are encrypted with a password
  * - oauthLoginMode: to control the authentication of providers that require OAuth2 login and view the progress.
- *   If there is a provider that needs login, it calls the Login module, which will call the auth module to complete the login process.
- *   The callback of the login process will cause entering again in this module to login the next provider
- * - workMode: the main mode, with all elements visible. Performs the initial rendering of all work items.
- * 
- * The main page also acts as the OAuth2 callback page when it receives a querystring parameter (oapp)
+ *   If there is a provider that needs login, it calls the Login moduleController to handle the authorization request or the callback.
+ *   Page can reenter loading several times until finishes all logins
+ * - workMode: the main mode, with all elements visible. Performs the initial update and render of all work items.
  */
 
 //In patLoginMode mode, enter and validate password
 $(document).on('click', '#inputPasswordButton', function (e) {
   if ($('#inputPassword').val().length > 0) {
     const secret = $("#inputPassword").val();
-    if (login.isValidPassword(config.data.providers, secret)) {
-      login.setPatSecret(secret);
+    if (tokens.isValidPassword(config.data.providers, secret)) {
+      tokens.setPatSecret(secret);
       indexController.start();
     } else {
       $('#inputPassword')[0].setCustomValidity("Password does not match with the one used to encrypt the access tokens");
@@ -54,11 +54,11 @@ $(document).on('click', '#reloadIcon', async function () {
 });
 $(document).on('change', '#inputSort', async function () {
   indexController.saveMainFilterState();
-  indexController.render();
+  indexController.updateAndRender();
 });
 $(document).on('change', '#checkGroup', async function () {
   indexController.saveMainFilterState();
-  indexController.render();
+  indexController.updateAndRender();
 });
 $(document).on('change', '#inputStatus', async function () {
   indexController.saveMainFilterState();
@@ -69,11 +69,12 @@ $(document).on('click', '#mainFilterDefaults', async function (e) {
   config.data.viewFilter.main = {};
   config.setMainFilterDefaults(config.data);
   config.save();
-  indexController.render();
+  indexController.updateAndRender();
   e.preventDefault();
 });
 $(document).on('click', '#oauth-reset-btn', async function () {
-  login.retryOAuth();
+  login.removeFailedTokens();
+  globalThis.location.href = "./"
 });
 $(document).on('click', '.accordion-button', function () {
   wiView.saveStatePanel($(this).attr('id'), $(this).attr('aria-expanded'))
@@ -82,10 +83,10 @@ $(document).on('click', '.accordion-button', function () {
 // included here instead of wiController because behaviour is common for several views and causes rendering
 $(document).on('change', '.wi-view-filter-clickable', async function () {
   wiView.saveViewFilterState();
-  indexController.render();
+  indexController.updateAndRender();
 });
 // Generic view header to perform additional filtering with text input (search, exclude)
-// Changes update the view dynamically without renderiing again
+// Changes update the view dynamically without rendering again
 // The current text persists in the configuration (main and view filters)
 $(document).on('keyup', '.wi-view-filter-input', async function () { // on typing
   indexController.saveMainFilterState();
@@ -103,51 +104,49 @@ const indexController = {
 
   // Main entry point invoked from index.html
   load: async function() {
-    // Main page has been invoked as a callback of the OAuth2 login process
-    const params = new URLSearchParams(globalThis.location.search);
-    const app = params.get("oapp")
-    if (app) {
-      console.log("IndexController: App parameter found in url, running as callback to login " + app);
-      indexController.oauthLoginMode(); // to show how the callback process is going on
-      await login.handleCallbackFromApp(app);
-      return;
-    }
-
-    // Start normal flow 
     config.loadFeatureFlags();
     config.load();
 
+    // Token decryption if applicable, 
     $("#appVersion").text(config.appVersion);
-    if (config.data.encrypted && login.getPatSecret() == "") { 
+    if (config.data.encrypted && tokens.getPatSecret() == "") { 
       // A simpler view to set the password before entering the application
       indexController.patLoginMode();
       return;
     }
 
-    // Checks all unset providers that require OAuth, if there are any, starts the OAuth login of the first one.
-    // The rest will be started after receiving the callback.
-
-    // Ignore if the feature flag 'disableoa' is enabled to have the posibility to enter into the configuration tab to fix wrong configs
+    // Ignore rest of page load if the feature flag 'disableoa' is enabled to have the posibility 
+    // of entering into the configuration tab to fix wrong configs
     if (config.ff["disableoa"]) {
       indexController.start();
       return;
     }
 
-    const loginResult = await login.getLoginStatusForAllProviders();
-    if (loginResult.unsetProviders.length > 0 && !config.ff["disableoa"]) {
-      indexController.oauthLoginMode(); // to show how the login process is going on
-      await login.startLoginForProvider(loginResult.unsetProviders[0]);
-      return;
+    // Handle the callback in the OAuth2 flow for the current provider that is being set
+    // Errors where written in the UI to let the user the opportunity of accknowledge the message and continue
+    const params = new URLSearchParams(globalThis.location.search);
+    const app = params.get("oapp")
+    if (app) {
+      indexController.oauthLoginMode(); // to show how the callback process is going on
+      const callbackResult = await loginController.handleCallbackFromApp(app);
+      if (callbackResult.error)
+        return; // To acknowledge and continue (reload)
+      // if everything ok for this provider, flow continues to get the next provider to log in
     }
 
-    //Login procedure is finished, starts everything in work mode
+    // Handle the request for authorization in the OAUth2 flow for the first provider that has not been already set
+    indexController.oauthLoginMode(); // to show how the login process is going on
+    const loginResult = await loginController.handleLoginOnLoad();
+    if (loginResult.error || !loginResult.completed)
+       return; // to wait for the callback or acknowledge and continue (reload)
+
+    //Login procedure is finished, sets work mode and starts everything
     indexController.start();
 
-    // The view is rendered, now we can finishsh some pending chores related to the login process
-    if (!config.ff["disableoa"] && loginResult.failedProviders.length > 0) {
-      const uids = loginResult.failedProviders.map(a => a.uid);
-      console.log("Login.js: The following OAuth2 providers failed to log in: " + uids.join(", "));
-      $("#oauth-reset-message").text( `OAuth2 authentication failed for the provider(s) ${uids.join(", ")}. `
+    // Before finish, display permantent error message to show the providers that failed login and let the use retry
+    if (!config.ff["disableoa"] && loginResult.failed) {
+       console.log(loginResult.failed);
+      $("#oauth-reset-message").text(loginResult.failed
         + " Please check the configuration or switch back to PAT authentication and retry.");
       $("#oauth-reset").show();
     } else {
@@ -165,21 +164,21 @@ const indexController = {
   },
   reload: async function() {
     wiController.reset(false);
-    await indexController.render();
+    await indexController.updateAndRender();
   },
 
   // Entering event executes when tab changes, either by user click or programmatically
-  // Stores in the tab name in session to allow restoring it after a reload, and performs the rendering of the target tab
+  // Stores in the tab name in session to allow restoring it after a reload, and performs the update and rendering of the target tab
   tabControlEntering: async function (target) {
     console.log("*** Entering tab " + target);
     const lastTarget = sessionStorage.getItem(LAST_TAB);
-    // Target is rendered with one exception: when last selected tab is config, we need to update everything because
+    // Target is updated and rendered with one exception: when last selected tab is config, we need a full reload because
     // the configuration may have changed authentication or provider settings.
     if (lastTarget == "config" && target != "config") {
       sessionStorage.setItem(LAST_TAB, target); // to reload the target tab, not the last target
       globalThis.location.reload();
     } else {
-      await indexController.render();
+      await indexController.updateAndRender();
     }
     sessionStorage.setItem(LAST_TAB, target);
   },
@@ -211,9 +210,9 @@ const indexController = {
     config.save();
   },
 
-  //Rendering depends on the selected tab, calls the appropriate controller to 
+  //Info to updat in the view depends on the selected tab, calls the appropriate controller to 
   //generate the contents of target and update the UI in the appropriate tab
-  render: async function () {
+  updateAndRender: async function () {
     wiView.resetAlerts();
     if (config.appUpdateEvent())
       wiView.renderAlert("info", `Dashgit version has been updated to ${config.appVersion}. See the release notes at <a target="_blank" href="https://github.com/javiertuya/dashgit/releases">https://github.com/javiertuya/dashgit/releases</a>`);

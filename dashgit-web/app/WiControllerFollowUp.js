@@ -2,7 +2,7 @@ import { gitStoreApi } from "./git/GitStoreApi.js"
 import { wiView } from "./WiView.js"
 import { wiServices } from "./WiServices.js"
 import { config } from "./Config.js"
-import { login } from "./Login.js"
+import { login } from "./login/Login.js"
 import { indexController } from "./IndexController.js"
 
 /**

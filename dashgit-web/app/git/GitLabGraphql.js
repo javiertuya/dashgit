@@ -1,5 +1,5 @@
 import { wiController } from "../WiController.js"
-import { login } from "../Login.js"
+import { login } from "../login/Login.js"
 
 /**
  * Core interface with the provider api (GitLab). See doc at Controller.js

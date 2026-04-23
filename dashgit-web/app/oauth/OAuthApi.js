@@ -1,19 +1,18 @@
 import { generatePKCE, generateRandomString } from "./pkce.js";
-import { login } from "../Login.js";
 
 /**
- * OAuth2+PKCSE implementation for DashGit
+ * OAuth2+PKCE implementation for DashGit
  * This module handles the OAuth2 authorization code with PKCE generation and token exchange.
  * Information flow:
  * - startLogin() is called when there is a provider that needs OAuth2 login. It calls the OAuth2 app.
  * - handleCalback() is called in response to the OAuth2 app callback. The authentcation is completed.
- * - The final result is communicated to the Login module by callin successfulLogin and failedLogin, 
- *   which will update the UI and store the token for future use.
- *
+ * - refreshExpiredToken() when requested
+ * 
  * Remarks:
  * - The startLogin receives oaconfig, which contains all configuration parameters related to the endpoints, client id, etc.
  * - handleCallback needs the oaconfig parameters that are not passed through the URL, 
- *  so they are stored in sessionStorage and cleared when they are no longer needed.
+ *   so they are stored in sessionStorage and cleared when they are no longer needed.
+ * - refreshExpiredToken is called directly without callbacks
  */
 
 const OACONFIG = "dashgit-oauth-oaconfig"; // Store: configuration for oauth authentication
@@ -50,26 +49,23 @@ export async function handleCallback() {
     const code = params.get("code");
     const state = params.get("state");
 
-    if (!code) {
-      await login.failedLoginCallback("Did not receive 'code' in callback parameters");
-      return;
-    }
-    if (state != sessionStorage.getItem(STATE)) {
-      await login.failedLoginCallback("State does not match the request");
-      return;
-    }
+    if (!code)
+      return { error: "Did not receive 'code' in callback parameters" };
+    if (state != sessionStorage.getItem(STATE))
+       return { error: "State does not match the request" };
 
     const tokenResponse = await exchangeCodeForToken(code, oaconfig);
-    if (tokenResponse.error) {
-      await login.failedLoginCallback("Error exchanging code for token: " + JSON.stringify(tokenResponse, null, 2));
-      return;
-    }
+    if (tokenResponse.error)
+      return { error: "Error exchanging code for token: " + JSON.stringify(tokenResponse, null, 2) };
 
-    await login.successfulLoginCallback(tokenResponse.access_token, tokenResponse.refresh_token, tokenResponse.expires_in);
-    globalThis.location.href = "./"; // Redirect back to main app after successful login
+    return { 
+      access_token: tokenResponse.access_token, 
+      refresh_token: tokenResponse.refresh_token,
+      expires_in: tokenResponse.expires_in
+    }
   }
   catch (err) {
-    await login.failedLoginCallback("Unexpected error: " + err.message);
+    return { error: "Unexpected error: " + err.message };
   }
 };
 
@@ -91,7 +87,7 @@ export async function exchangeCodeForToken(code, oaconfig) {
   return response;
 }
 
-export async function refreshExpiredToken(refreshToken, oaconfig) {
+export async function refreshToken(refreshToken, oaconfig) {
   const body = {
     client_id: oaconfig.clientId,
     refresh_token: refreshToken,
@@ -100,7 +96,6 @@ export async function refreshExpiredToken(refreshToken, oaconfig) {
   };
   
   const response = await post(oaconfig.tokenUrl, body);
-  // This is called synchronously, no callbacks,returns the response to leave error handling to the login module
   return response;
 }
 

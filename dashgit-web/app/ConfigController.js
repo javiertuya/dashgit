@@ -1,5 +1,5 @@
 import { config } from "./Config.js"
-import { login } from "./Login.js"
+import { tokens } from "./login/Tokens.js"
 import { wiController } from "./WiController.js"
 import { wiView } from "./WiView.js"
 import { configView } from "./ConfigView.js"
@@ -92,8 +92,8 @@ $(document).on('click', '#inputEncryptButton', function (e) {
     config.data.encrypted = true;
     // encryption of config.data is managed at the login module
     const secret = $("#inputEncryptPassword").val();
-    login.setPatSecret(secret);
-    login.encryptConfigTokens();
+    tokens.setPatSecret(secret);
+    tokens.encryptConfigTokens(config.data.providers,  config.data.managerRepo);
     config.save();
     $(this).closest("form")[0].reset();
     e.preventDefault()
@@ -111,7 +111,7 @@ $(document).on('click', '#inputDecryptButton', function (e) {
     provider.token = "";
   config.data.managerRepo.token = ""; // manager repo
   config.data.encrypted = false;
-  login.setPatSecret("");
+  tokens.setPatSecret("");
   config.save();
   configController.updateMainTarget();
   e.preventDefault();

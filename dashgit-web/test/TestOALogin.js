@@ -2,7 +2,8 @@ import assert from 'assert';
 import sinon from 'sinon';
 import { createMockSessionStorage } from "./MockSessionStorage.js";
 import { config } from "../app/Config.js"
-import { login } from "../app/Login.js"
+import { login } from "../app/login/Login.js"
+import { loginController } from "../app/login/LoginController.js"
 
 /**
  * Test the main interaction points between the controller and the login module that manages 
@@ -380,7 +381,7 @@ describe("TestOALogin", function () {
     // The above tests handle
     it("Token has renewal info, but not expired", async function () {
       let refreshTokenInfo = { access_token: "new-token", refresh_token: "new-refresh-token", expires_in: 7200 };
-      let refreshTokenStub = sinon.stub(login, "refreshToken").resolves(Promise.resolve(refreshTokenInfo));
+      let refreshTokenStub = sinon.stub(loginController, "refreshExpiredToken").resolves(Promise.resolve(refreshTokenInfo));
 
       // Login in this page and check that expiration has not been called
       await setupSingleProviderWithExpiration("GitLab");
@@ -398,7 +399,7 @@ describe("TestOALogin", function () {
 
     it("Successful expired token renewal", async function () {
       let refreshTokenInfo = { access_token: "new-token", refresh_token: "new-refresh-token", expires_in: 7200 };
-      let refreshTokenStub = sinon.stub(login, "refreshToken").resolves(Promise.resolve(refreshTokenInfo));
+      let refreshTokenStub = sinon.stub(loginController, "refreshExpiredToken").resolves(Promise.resolve(refreshTokenInfo));
 
       await setupSingleProviderWithExpiration("GitLab");
       sinon.assert.callCount(refreshTokenStub, 0);
@@ -421,7 +422,7 @@ describe("TestOALogin", function () {
     it("Successful token renewal is shared/no shared across providers", async function () {
       // Setup of three providers, two share login, the third (middle) does not, and initial login
       let refreshTokenInfo = { access_token: "new-token", refresh_token: "new-refresh-token", expires_in: 7200 };
-      let refreshTokenStub = sinon.stub(login, "refreshToken").resolves(Promise.resolve(refreshTokenInfo));
+      let refreshTokenStub = sinon.stub(loginController, "refreshExpiredToken").resolves(Promise.resolve(refreshTokenInfo));
       config.data = getConfig([provider(0, "myuser", "GitLab"), provider(1, "myuser", "GitLab"), provider(2, "myuser", "GitLab")]);
       config.data.providers[1].url = "https://my.gitlab.domain";
 
@@ -457,7 +458,7 @@ describe("TestOALogin", function () {
     it("Failed token renewal", async function () {
       // like successful, but failing, shorter scenario
       let refreshTokenInfo = { error: "Something failed" };
-      let refreshTokenStub = sinon.stub(login, "refreshToken").resolves(Promise.resolve(refreshTokenInfo));
+      let refreshTokenStub = sinon.stub(loginController, "refreshExpiredToken").resolves(Promise.resolve(refreshTokenInfo));
 
       await setupSingleProviderWithExpiration("GitLab");
       await login.refreshTokensForAllProviders();
@@ -473,7 +474,7 @@ describe("TestOALogin", function () {
     it("Failed token renewal is shared/no shared across providers", async function () {
       // like successful, but failing, shorter scenario
       let refreshTokenInfo = { error: "Something failed" };
-      let refreshTokenStub = sinon.stub(login, "refreshToken").resolves(Promise.resolve(refreshTokenInfo));
+      let refreshTokenStub = sinon.stub(loginController, "refreshExpiredToken").resolves(Promise.resolve(refreshTokenInfo));
       config.data = getConfig([provider(0, "myuser", "GitLab"), provider(1, "myuser", "GitLab"), provider(2, "myuser", "GitLab")]);
       config.data.providers[1].url = "https://my.gitlab.domain";
 

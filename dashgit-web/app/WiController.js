@@ -4,7 +4,7 @@ import { wiView } from "./WiView.js"
 import { Model } from "./Model.js"
 import { cache } from "./Cache.js"
 import { config } from "./Config.js"
-import { login } from "./Login.js"
+import { login } from "./login/Login.js"
 
 /**
  * Manages the calls to different APIs (GitHub or GitLab) receiving the transformed provider-independent
