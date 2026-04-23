@@ -1,4 +1,4 @@
-import { Model } from "./Model.js"
+import { Model } from "../Model.js"
 import { gitStoreAdapter } from "./GitStoreAdapter.js"
 
 /**
@@ -40,11 +40,11 @@ const gitHubAdapter = {
     }
     return m;
   },
-  addActionToPullRequestItems: function(responseItems, action) {
+  addActionToPullRequestItems: function (responseItems, action) {
     for (let item of responseItems) {
-      if (item.custom_actions==undefined) //create if does not exist
+      if (item.custom_actions == undefined) //create if does not exist
         item["custom_actions"] = {};
-      item.custom_actions[action]=true;
+      item.custom_actions[action] = true;
     }
   },
 
@@ -79,9 +79,9 @@ const gitHubAdapter = {
       m.header.repo_names.push(repoName);
       if (graphqlV2) {
         let loadedBranches = {}; // to exclude branches if already added from a PR
-        for (let ref of repo.pullRequests?.edges??[])
+        for (let ref of repo.pullRequests?.edges ?? [])
           this.statusesPrNode2model(ref.node, repoName, repoUrl, m, loadedBranches);
-        for (let ref of repo.refs?.nodes??[])
+        for (let ref of repo.refs?.nodes ?? [])
           this.statusesBranchNode2model(ref, repoName, repoUrl, m, loadedBranches);
       } else { // deprecated, gets PRs inside branches
         for (let ref of repo.refs.nodes)
@@ -92,7 +92,7 @@ const gitHubAdapter = {
   },
   statusesPrNode2model: function (node, repoName, repoUrl, targetModel, loadedBranches) {
     // Should ignore PRs in other states
-    if (node.state != "OPEN") 
+    if (node.state != "OPEN")
       return;
 
     let status = this.transformStatus(node.statusCheckRollup?.state);
@@ -141,54 +141,54 @@ const gitHubAdapter = {
       labels: []
     });
   },
-  
-  statusesNode2model: function(ref, repoName, repoUrl, targetModel) {
-        const branch = ref.name;
-        // Los siguientes datos son los de los commits de ramas y prs.
-        // Ambos son arrays, solo utiliza el primer item.
-        let type = "";
-        let title = "";
-        let url = "";
-        let branchUrl = "";
-        let createdAt = "";
-        let updatedAt = "";
-        let status = "";
-        let iid = "";
-        // Si no hay pull request asociada, ademas del status usara los datos correspondientes al commit.
-        if (ref.target.history.nodes.length > 0) {
-          type = "branch";
-          title = ref.target.history.nodes[0].messageHeadline;
-          createdAt = ref.target.history.nodes[0].committedDate;
-          branchUrl = repoUrl + "/tree/" + branch; //construct manually as we do not have the url for a commit
-          url = branchUrl;
-          updatedAt = createdAt;
-          if (ref.target.history.nodes[0].statusCheckRollup === undefined || ref.target.history.nodes[0].statusCheckRollup === null)
-            status = "notavailable"; //may not have status if there are any pr rule or action executed
-          else
-            status = this.transformStatus(ref.target.history.nodes[0].statusCheckRollup.state);
-        }
-        // Si hay pull request asociada, sobrescribe los datos anteriores (salvo status) para mostrar una pr en la vista.
-        // Requiere que la pr este abierta, si no, se vera como un commit.
-        if (ref.target.associatedPullRequests.edges.length > 0 && ref.target.associatedPullRequests.edges[0].node.state == "OPEN") {
-          type = "pr";
-          title = ref.target.associatedPullRequests.edges[0].node.title;
-          iid = ref.target.associatedPullRequests.edges[0].node.number;
-          url = ref.target.associatedPullRequests.edges[0].node.url;
-          createdAt = ref.target.associatedPullRequests.edges[0].node.createdAt;
-          updatedAt = ref.target.associatedPullRequests.edges[0].node.updatedAt;
-        }
-        // Crea el modelo, de la rama (commit)
-        targetModel.addItem({
-          repo_name: repoName, type: type, iid: iid,
-          branch_name: branch, status: status,
-          title: title, actions: {},
-          author: "", assignees: "", created_at: createdAt, updated_at: updatedAt,
-          iidstr: iid != "" ? "#" + iid : "", url: url, branch_url: branchUrl, repo_url: repoUrl,
-          labels: []
-        });
+
+  statusesNode2model: function (ref, repoName, repoUrl, targetModel) {
+    const branch = ref.name;
+    // Los siguientes datos son los de los commits de ramas y prs.
+    // Ambos son arrays, solo utiliza el primer item.
+    let type = "";
+    let title = "";
+    let url = "";
+    let branchUrl = "";
+    let createdAt = "";
+    let updatedAt = "";
+    let status = "";
+    let iid = "";
+    // Si no hay pull request asociada, ademas del status usara los datos correspondientes al commit.
+    if (ref.target.history.nodes.length > 0) {
+      type = "branch";
+      title = ref.target.history.nodes[0].messageHeadline;
+      createdAt = ref.target.history.nodes[0].committedDate;
+      branchUrl = repoUrl + "/tree/" + branch; //construct manually as we do not have the url for a commit
+      url = branchUrl;
+      updatedAt = createdAt;
+      if (ref.target.history.nodes[0].statusCheckRollup === undefined || ref.target.history.nodes[0].statusCheckRollup === null)
+        status = "notavailable"; //may not have status if there are any pr rule or action executed
+      else
+        status = this.transformStatus(ref.target.history.nodes[0].statusCheckRollup.state);
+    }
+    // Si hay pull request asociada, sobrescribe los datos anteriores (salvo status) para mostrar una pr en la vista.
+    // Requiere que la pr este abierta, si no, se vera como un commit.
+    if (ref.target.associatedPullRequests.edges.length > 0 && ref.target.associatedPullRequests.edges[0].node.state == "OPEN") {
+      type = "pr";
+      title = ref.target.associatedPullRequests.edges[0].node.title;
+      iid = ref.target.associatedPullRequests.edges[0].node.number;
+      url = ref.target.associatedPullRequests.edges[0].node.url;
+      createdAt = ref.target.associatedPullRequests.edges[0].node.createdAt;
+      updatedAt = ref.target.associatedPullRequests.edges[0].node.updatedAt;
+    }
+    // Crea el modelo, de la rama (commit)
+    targetModel.addItem({
+      repo_name: repoName, type: type, iid: iid,
+      branch_name: branch, status: status,
+      title: title, actions: {},
+      author: "", assignees: "", created_at: createdAt, updated_at: updatedAt,
+      iidstr: iid === "" ? "" : "#" + iid, url: url, branch_url: branchUrl, repo_url: repoUrl,
+      labels: []
+    });
   },
   transformStatus: function (status) {
-    status = status??"".toUpperCase();
+    status = status ?? "".toUpperCase();
     if (status == "SUCCESS")
       return "success";
     else if (status == "FAILURE" || status == "ERROR")
@@ -202,7 +202,7 @@ const gitHubAdapter = {
   // Transformations of the GraphQL response prior to conversion into a model
 
   // Adds the user specified reports (Sibling of the viewer node) as additional repositories in the viewer
-  postprocessGraphQl: function(gqlresponse) {
+  postprocessGraphQl: function (gqlresponse) {
     let repos = this.getUserSpecRepos(gqlresponse);
     if (repos.length == 0) // postprocessing not needed
       return gqlresponse;
@@ -222,7 +222,7 @@ const gitHubAdapter = {
     }
     return gqlresponse;
   },
-  getUserSpecRepos: function(gqlresponse) {
+  getUserSpecRepos: function (gqlresponse) {
     let nodes = [];
     let i = 0;
     let repo;
@@ -234,9 +234,9 @@ const gitHubAdapter = {
     } while (repo != undefined);
     return nodes;
   },
-  
+
   // Determination of the scope to update statuses since a given date
-  getNumReposToUpdate: function(gqlresponse0, maxProjects, keepSince) {
+  getNumReposToUpdate: function (gqlresponse0, maxProjects, keepSince) {
     if (keepSince == "")
       return maxProjects;
     let nodes = gqlresponse0.viewer.repositories.nodes;
@@ -247,7 +247,7 @@ const gitHubAdapter = {
       }
     return maxProjects;
   },
-  getUserReposToUpdate: function(gqlresponse0, keepSince) {
+  getUserReposToUpdate: function (gqlresponse0, keepSince) {
     let reposToUpdate = "";
     let repos = gitHubAdapter.getUserSpecRepos(gqlresponse0);
     for (let repo of repos)

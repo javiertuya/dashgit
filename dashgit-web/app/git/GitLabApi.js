@@ -1,10 +1,12 @@
 import { Gitlab } from 'gitbeaker/rest' //https://www.npmjs.com/package/@gitbeaker/rest
 import { gitLabAdapter } from "./GitLabAdapter.js"
+import { gitLabGraphql } from "./GitLabGraphql.js"
 import { gitStoreApi } from "./GitStoreApi.js"
-import { wiController } from "./WiController.js"
-import { config } from "./Config.js"
-import { cache } from "./Cache.js"
-import { login } from "./Login.js"
+import { log } from "./Log.js"
+import { wiController } from "../WiController.js"
+import { config } from "../Config.js"
+import { cache } from "../Cache.js"
+import { login } from "../Login.js"
 
 /**
  * Core interface with the provider api (GitLab). See doc at Controller.js
@@ -12,12 +14,6 @@ import { login } from "./Login.js"
  * See doc at Controller.js
  */
 const gitLabApi = {
-
-  log: function (providerId, message, model) {
-    console.log(`${providerId}: ${message}`);
-    if (model != undefined)
-      console.log(model);
-  },
 
   // OAuth tokens require different call (only for REST API, not for GraphQL)
   getGitLabApi: async function (provider) {
@@ -29,8 +25,8 @@ const gitLabApi = {
   getWorkItems: async function (target, provider, sorting) { // NOSONAR
     const api = await this.getGitLabApi(provider);
     // issue #116 set sorting criteria to match the selected in the UI
-    const sort = (sorting??"").includes("updated") ? "updated_at" : "created_at";
-    const order = (sorting??"").includes("descending") ? "desc" : "asc";
+    const sort = (sorting ?? "").includes("updated") ? "updated_at" : "created_at";
+    const order = (sorting ?? "").includes("descending") ? "desc" : "asc";
     const assigned = { state: "opened", assignee_username: provider.user, scope: "all", perPage: 100, maxPages: 1, order_by: sort, sort: order };
     const unassigned = { state: "opened", assignee_id: "None", scope: "all", perPage: 100, maxPages: 1, order_by: sort, sort: order };
     const reviewer = { state: "opened", reviewer_username: provider.user, scope: "all", perPage: 100, maxPages: 1, order_by: sort, sort: order };
@@ -93,11 +89,11 @@ const gitLabApi = {
 
     return await this.dispatchPromisesAndGetModel(target, provider, promises);
   },
-  dispatchPromisesAndGetModel: async function(target, provider, promises) {
+  dispatchPromisesAndGetModel: async function (target, provider, promises) {
     const t0 = Date.now();
     let responses = await Promise.all(promises);
-    this.log(provider.uid, `Data received from the api [${Date.now() - t0}ms]:`, responses);
-     //creates single result with all responses
+    log.debug(provider.uid, `Data received from the api [${Date.now() - t0}ms]:`, responses);
+    //creates single result with all responses
     let allResponses = [];
     for (let response of responses)
       if (response.followUp != undefined) // follow-ups have different structure than other items
@@ -117,17 +113,17 @@ const gitLabApi = {
         return gitLabAdapter.addActionToToDoResponse(response, action, user);
       })
   },
-  emptyModel: function(provider, message) {
+  emptyModel: function (provider, message) {
     let model = gitLabAdapter.workitems2model(provider, [], cache.labelsCache[provider.uid]);
     model.header.message = message;
     return model;
   },
 
   updateNotificationsAsync: async function (target, provider) {
-    this.log(provider.uid, "ASYNC Get Notifications from the REST api");
+    log.debug(provider.uid, "ASYNC Get Notifications from the REST api");
     const api = await this.getGitLabApi(provider);
     api.TodoLists.all({ state: "pending", perPage: 100, maxPages: 1 }).then(async function (response) {
-      gitLabApi.log(provider.uid, "ASYNC Notifications response:", response);
+      log.debug(provider.uid, "ASYNC Notifications response:", response);
       let model = gitLabAdapter.notifications2model(response);
       wiController.updateNotifications(provider.uid, model); //direct call instead of using a callback
     });
@@ -142,22 +138,22 @@ const gitLabApi = {
     //  The list of projects allows selecting the actual branches (if not,
     //  the pipelines could add branches that were removed)
     //- Get the label colors (only once in the page life)
-    let query0 = this.getProjectsQuery(provider, provider.graphql.maxProjects, true);
+    let query0 = gitLabGraphql.getProjectsQuery(provider, provider.graphql.maxProjects, true);
     const t0 = Date.now();
-    let gqlresponse0 = await this.callGraphqlApi(provider, query0, true);
-    this.log(provider.uid, `Statuses graphql response (projects) [${Date.now() - t0}ms]:`, gqlresponse0);
+    let gqlresponse0 = await gitLabGraphql.callGraphqlApi(provider, query0, true);
+    log.debug(provider.uid, `Statuses graphql response (projects) [${Date.now() - t0}ms]:`, gqlresponse0);
 
     if (updateSince != "") { //filter out oldest projects to do a partial update
       this.filterOldProjects(gqlresponse0, updateSince);
-      this.log(provider.uid, `Partial update with ${gqlresponse0.data.projects.nodes.length} projects`);
+      log.debug(provider.uid, `Partial update with ${gqlresponse0.data.projects.nodes.length} projects`);
     }
 
     //Get first version of model, with branches of projects, without any additional data
     let model0 = gitLabAdapter.projects2model(provider, gqlresponse0);
-    this.log(provider.uid, "Statuses model (projects):", model0);
+    log.debug(provider.uid, "Statuses model (projects):", model0);
 
     if (gqlresponse0.data.projects.nodes.length == 0) { //model0 has been created with header and no items, skip api calls
-      this.log(provider.uid, `No update needed, skip GraphQL api calls`);
+      log.debug(provider.uid, `No update needed, skip GraphQL api calls`);
       return model0;
     }
 
@@ -169,12 +165,12 @@ const gitLabApi = {
       this.updateLabelsAsync(provider, gids);
 
     // Now gets the statuses of all pipelines and complete the model
-    let query = this.getStatusesQuery(provider, "ids:" + JSON.stringify(gids));
-    let gqlresponse = await this.callGraphqlApi(provider, query, true);
-    this.log(provider.uid, "Statuses graphql response (branches/prs):", gqlresponse);
+    let query = gitLabGraphql.getStatusesQuery(provider, "ids:" + JSON.stringify(gids));
+    let gqlresponse = await gitLabGraphql.callGraphqlApi(provider, query, true);
+    log.debug(provider.uid, "Statuses graphql response (branches/prs):", gqlresponse);
 
     const model = gitLabAdapter.statuses2model(model0, gqlresponse);
-    this.log(provider.uid, "Statuses model (branches/prs):", model);
+    log.debug(provider.uid, "Statuses model (branches/prs):", model);
 
     return model;
   },
@@ -192,10 +188,10 @@ const gitLabApi = {
 
   updateLabelsAsync: async function (provider, gids) {
     cache.labelsCache[provider.uid] = {}; // don't enter here any more
-    let queryx = this.getLabelsQuery("ids:" + JSON.stringify(gids));
+    let queryx = gitLabGraphql.getLabelsQuery("ids:" + JSON.stringify(gids));
     //this call may intermitently fail on gitlab.com due to insufficient permssions (do not show altert)
-    let gqlresponsex = await this.callGraphqlApi(provider, queryx, false);
-    this.log(provider.uid, "Labels graphql model (projects):", gqlresponsex);
+    let gqlresponsex = await gitLabGraphql.callGraphqlApi(provider, queryx, false);
+    log.debug(provider.uid, "Labels graphql model (projects):", gqlresponsex);
     let labels = gitLabAdapter.labels2model(gqlresponsex);
     wiController.updateLabels(provider.uid, labels);
   },
@@ -214,10 +210,10 @@ const gitLabApi = {
   //Gets the statuses model, but asynchronously.
   //When the model is completed, calls controller to update the status valueof the current target
   updateStatusesAsync: function (provider, updateSince) {
-    this.log(provider.uid, "Get Statuses from the GraphQL api");
+    log.debug(provider.uid, "Get Statuses from the GraphQL api");
     const t0 = Date.now();
-    this.getStatusesRequest(provider, updateSince).then(function (model) {
-      gitLabApi.log(provider.uid, `ASYNC Statuses model [${Date.now() - t0}ms]:`, model);
+    gitLabApi.getStatusesRequest(provider, updateSince).then(function (model) {
+      log.debug(provider.uid, `ASYNC Statuses model [${Date.now() - t0}ms]:`, model);
       wiController.updateStatuses(provider.uid, model, updateSince); //direct call instead of using a callback
     }).catch(function (error) {
       console.error("GitLab GraphQL transformation failed");
@@ -226,81 +222,6 @@ const gitLabApi = {
     });
   },
 
-  callGraphqlApi: async function (provider, query, displayErrors) {
-    //https://www.ansango.com/blog/javascript/ajax-async-await
-    let result = await $.ajax({
-      url: `${provider.url}/api/graphql`,
-      type: 'post',
-      data: { query },
-      headers: { Authorization: `Bearer ${login.getProviderToken(provider)}` },
-      dataType: 'json',
-    });
-    if (result.errors != undefined) {
-      console.error("GitLab GraphQL api call failed");
-      console.error(result);
-      if (displayErrors)
-        for (let error of result.errors)
-          wiController.displayError("GitLab GraphQL api call failed. Message: " + error.message);
-      return {};
-    }
-    return result;
-  },
-
-  //La consulta de todas las ramas de los proyectos es muy rapida, por lo que primero se obtendran estas
-  //y luego se iran completando con los statuses de las pipelines (que eliminara las que ya no tienen rama)
-  //y finalmente las merge requests
-  //Si se pone junto en una query aumenta mucho la complejidad y puede fallar la query
-  getProjectsQuery: function (provider, maxProjects, includeAll) {
-    return `{
-      projects (first:${maxProjects}, sort: "updated_desc") {
-        nodes {
-          id, archived, name, fullPath, createdAt, lastActivityAt, webUrl
-          ${includeAll ? "," + this.getProjectsReposSubquery(provider) : ""}
-        }
-      }
-    }`;
-  },
-  getProjectsReposSubquery: function (provider) {
-    return `repository { branchNames(searchPattern:"*", offset:0, limit:${provider.graphql.maxBranches}) }`
-  },
-  getStatusesQuery: function (provider, selectCriterion) {
-    //repository {branchNames(searchPattern:"*", offset:0, limit:10)}
-    //aumenta la complejidad y falla, pero se podrian buscar las ramas por separado a los proyectos
-    return `{
-      projects (${selectCriterion}, sort: "updated_desc") {
-        nodes {
-          id, fullPath, lastActivityAt, webUrl,
-          pipelines(first:${provider.graphql.maxPipelines}){
-            nodes{
-              id, startedAt, finishedAt, refPath, status
-            }
-          }
-          mergeRequests (state: opened) {
-            nodes{
-              iid, webUrl, sourceBranch, title
-            }
-          }
-        }
-      }
-    }`;
-  },
-  getLabelsQuery: function (selectCriterion) {
-    return `{
-      projects (${selectCriterion}, sort: "updated_desc") {
-        nodes {
-          id, name, fullPath, lastActivityAt, webUrl,
-          labels(includeAncestorGroups:true) {
-            nodes { 
-              color, title
-            }
-          }
-        }
-      }
-    }`;
-  },
-
 }
+
 export { gitLabApi };
-
-
-

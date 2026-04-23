@@ -1,6 +1,6 @@
 import { Octokit } from "octokit/rest"
-import { config } from "./Config.js"
-import { login } from "./Login.js"
+import { config } from "../Config.js"
+import { login } from "../Login.js"
 
 /**
  * Secondary interface with the GitHub api to manage stored files
@@ -30,7 +30,7 @@ const gitStoreApi = {
         return gitStoreApi.emptyFollowUpContent;
       });
   },
-  filterExpiredFollowUps: function(content) {
+  filterExpiredFollowUps: function (content) {
     let items = [];
     for (let item of content.followUp) {
       if (new Date(item.remind) < new Date()) // keeps only expired
@@ -42,7 +42,7 @@ const gitStoreApi = {
 
   // Creates a new branch and a new file specified by path
   createBranchAndContent: async function (managerProvider, owner, repo, branch, path, content, message) {
-     const branchResponse = await this.createBranch(managerProvider, owner, repo, branch);
+    const branchResponse = await this.createBranch(managerProvider, owner, repo, branch);
     const response = await this.setContent(managerProvider, owner, repo, branch, path, branchResponse.data.object.sha, content, message);
     return response.data.content.download_url;
   },

@@ -1,7 +1,7 @@
 import assert from 'assert';
 import fs from "fs"
 import { Model } from "../app/Model.js"
-import { gitLabAdapter } from "../app/GitLabAdapter.js"
+import { gitLabAdapter } from "../app/git/GitLabAdapter.js"
 
 beforeEach(function() {
     if (!fs.existsSync("actual")){

@@ -5,7 +5,7 @@ const gitStoreAdapter = {
 
   followUp2model: function (provider, item) {
     // custom message to place in the follow up label
-    let message = item.message??""; 
+    let message = item.message ?? "";
     if (message == "")
       message = "follow up"; // default text if no message
     return {

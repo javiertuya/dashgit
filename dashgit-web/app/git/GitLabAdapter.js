@@ -1,4 +1,4 @@
-import { Model } from "./Model.js"
+import { Model } from "../Model.js"
 import { gitStoreAdapter } from "./GitStoreAdapter.js"
 
 /**
@@ -83,7 +83,7 @@ const gitLabAdapter = {
       // whit the user in the list of assigned reviewers, if not, does not modify this item
       if (action != "review_request" || item.target_type != "MergeRequest" || item.state != "pending"
         || item.target.reviewers == undefined || item.target.reviewers.map(p => p.username).indexOf(user) < 0)
-          continue;
+        continue;
       // Add the custom action to the request
       if (item.target.custom_actions == undefined) //create if does not exist
         item.target["custom_actions"] = {};
@@ -91,7 +91,7 @@ const gitLabAdapter = {
     }
     return response;
   },
-  
+
   getLabelsForItem: function (repoName, item, allLabels, model) {
     for (let label of this.safe(item?.labels)) {
       let color = ""; //default if not found
@@ -115,7 +115,7 @@ const gitLabAdapter = {
     }
     return labels;
   },
-   notifications2model: function (response) {
+  notifications2model: function (response) {
     let model = [];
     for (let item of this.safe(response)) {
       if (item.target_type == "Issue" || item.target_type == "MergeRequest") {
@@ -136,7 +136,7 @@ const gitLabAdapter = {
     for (let proj of this.safe(gqlresponse?.data?.projects?.nodes)) {
       const repoName = proj.fullPath;
       const repoUrl = proj.webUrl;
-      if (!proj.archived && proj.repository?.branchNames!=null) { //gitlab.com may give a null
+      if (!proj.archived && proj.repository?.branchNames != null) { //gitlab.com may give a null
         m.header.repo_names.push(repoName);
         for (let branch of this.safe(proj?.repository?.branchNames)) {
           const modelItem = this.newBranchModelItem(repoName, repoUrl, proj.id, branch);
@@ -146,17 +146,17 @@ const gitLabAdapter = {
     }
     return m;
   },
-  newBranchModelItem: function(repoName, repoUrl, projId, branch) {
+  newBranchModelItem: function (repoName, repoUrl, projId, branch) {
     return { //anyade un id que no esta en gitlab para poder usar como criterio de seleccion en siguiente query
-            repo_name: repoName, type: "branch", iid: "",
-            branch_name: branch, status: "notavailable",
-            title: "", actions: {},
-            author: "", assignees: "", created_at: "", updated_at: "",
-            iidstr: "", url: "", 
-            branch_url: repoUrl + "/-/tree/" + branch,
-            repo_url: repoUrl,
-            labels: [], gid: projId
-          };
+      repo_name: repoName, type: "branch", iid: "",
+      branch_name: branch, status: "notavailable",
+      title: "", actions: {},
+      author: "", assignees: "", created_at: "", updated_at: "",
+      iidstr: "", url: "",
+      branch_url: repoUrl + "/-/tree/" + branch,
+      repo_url: repoUrl,
+      labels: [], gid: projId
+    };
   },
   model4projectIds: function (mod) {
     let gids = [];

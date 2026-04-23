@@ -3,6 +3,6 @@
       "module": "ES6",
       "target": "ES6"
     },
-    "include": ["app/*", "test/*"],
+    "include": ["app/*", "app/git/*", "test/*"],
     "exclude": ["test/node_modules"]
   }

@@ -1,4 +1,4 @@
-import { gitStoreApi } from "./GitStoreApi.js"
+import { gitStoreApi } from "./git/GitStoreApi.js"
 import { wiView } from "./WiView.js"
 import { wiServices } from "./WiServices.js"
 import { config } from "./Config.js"

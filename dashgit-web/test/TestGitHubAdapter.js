@@ -1,6 +1,6 @@
 import assert from 'assert';
 import fs from "fs"
-import { gitHubAdapter } from "../app/GitHubAdapter.js"
+import { gitHubAdapter } from "../app/git/GitHubAdapter.js"
 
 beforeEach(function() {
     if (!fs.existsSync("actual")){

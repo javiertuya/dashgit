@@ -1,5 +1,5 @@
-import { gitHubApi } from "./GitHubApi.js"
-import { gitLabApi } from "./GitLabApi.js"
+import { gitHubApi } from "./git/GitHubApi.js"
+import { gitLabApi } from "./git/GitLabApi.js"
 import { wiView } from "./WiView.js"
 import { Model } from "./Model.js"
 import { cache } from "./Cache.js"
