@@ -1,5 +1,5 @@
 import { config } from "./Config.js"
-import { cache } from "./Cache.js"
+import { surrogates } from "./Surrogates.js"
 import { statusIndex } from "./StatusIndex.js"
 
 /**
@@ -53,9 +53,9 @@ const statusesCache = {
     }
   },
   getModel: function (provider) {
-    if (cache.hasStatusSurrogate(provider)) {
-      let surrogate = cache.getStatusSurrogate(provider);
-      return this.cachedModel[surrogate].model;
+    if (surrogates.hasSurrogate(provider)) {
+      let origin = surrogates.getSurrogate(provider);
+      return this.cachedModel[origin].model;
     }
     return this.cachedModel[provider].model;
   },
