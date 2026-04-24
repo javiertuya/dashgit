@@ -382,7 +382,8 @@ const wiView = {
     //PENDING: in a next iteration, include mentions of closed items in this view (need to refactor the merge of work items)
     if (target == "involved" && thisMentions > displayedMentions)
       $(`#wi-providers-target-header-${target}-${providerId}`)
-       .html(`<div class="mb-0" style="color:${wiRender.gitColor}"><em>You have ${thisMentions-displayedMentions} mention(s) in closed work items not shown in this view.</em></div>`)
+       .html(`<div class="mb-0" style="color:${wiRender.gitColor}"><em>You have ${thisMentions-displayedMentions} mention(s) in filtered or closed work items not shown in this view.</em></div>`)
+    return displayedMentions;
   },
   updateSpinnerEnd: function (provider) {
     const target = this.selectActiveTarget();

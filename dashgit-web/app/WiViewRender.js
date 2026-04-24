@@ -69,9 +69,9 @@ const wiRender = {
       return '';
   },
   notifications2html: function (provider, uid) {
-    if (notifCache.data[provider] == undefined)
+    if (notifCache.getModel(provider) == undefined)
       return "";
-    let reason = notifCache.data[provider][uid];
+    let reason = notifCache.getModel(provider)[uid];
     if (reason == undefined)
       return "";
     let iconClass = reason == "mention" || reason == "mentioned" || reason == "directly_addressed" ? this.mentionIconClass : this.notificationIconClass;

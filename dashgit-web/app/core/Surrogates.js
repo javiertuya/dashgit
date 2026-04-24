@@ -9,7 +9,7 @@ const surrogates = {
 
   // to be called on cache reset (at startup and config changes)
   reset: function (providers) {
-    this.statusSurrogates = this.init(providers);
+    this.surrogateRelations = this.init(providers);
   },
   init: function (providers) {
     let surrogates = {};
