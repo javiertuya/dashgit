@@ -56,7 +56,7 @@ const wiController = {
       statusIndex.reset();
       labelsCache.reset();
     }
-    surrogates.reset(config.data.providers);
+    surrogates.reset(config.data.providers, config.data.autoSurrogates);
   },
   updateTarget: function (target, sorting) {
     console.log(`**** Trigger update to target: ${target}`);
