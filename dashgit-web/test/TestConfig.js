@@ -10,7 +10,7 @@
 
 import assert from 'assert';
 import { config } from "../app/core/Config.js"
-import { cache } from "../app/core/Cache.js"
+import { surrogates } from "../app/core/Surrogates.js"
 
 describe("TestConfig - Sanitizing config data", async function () {
 
@@ -96,49 +96,49 @@ describe("TestConfig - Sanitizing config data", async function () {
         assert.deepEqual(expected, config.parseAndSanitizeData(JSON.stringify(expected)));
     });
 
-    // - surrogate match before/after surrogated
-    // - surrogate does not match because (no surrogate configured, user, url, surrogate disabled, surrogated disabled)
-    // - multiple potential surrogated (two/only one enabled)
-    // - multiple surrogated
+    // - surrogate match before/after origin
+    // - surrogate does not match because (no surrogate configured, user, url, surrogate disabled, origin disabled)
+    // - multiple potential origins (two/only one enabled)
+    // - multiple origins
     it("Find effective provider status surrogates as configured by cache", function () {
         let providers = getSurrogates();
-        assert.deepEqual({}, cache.getEnabledSurrogates(providers)); // baseline: no surrogate configured
+        assert.deepEqual({}, surrogates.init(providers)); // baseline: no surrogate configured
         providers = getSurrogates();
         providers[2].statusSurrogateUser = "gh1";
-        assert.deepEqual({ "2-github": "0-github" }, cache.getEnabledSurrogates(providers)); // match before surrogated
+        assert.deepEqual({ "2-github": "0-github" }, surrogates.init(providers)); // match before origin
         providers = getSurrogates();
         providers[0].statusSurrogateUser = "gh3";
-        assert.deepEqual({ "0-github": "2-github" }, cache.getEnabledSurrogates(providers)); // match, after surrogated
+        assert.deepEqual({ "0-github": "2-github" }, surrogates.init(providers)); // match, after origin
 
         providers = getSurrogates();
         providers[2].statusSurrogateUser = "gh4";
-        assert.deepEqual({}, cache.getEnabledSurrogates(providers)); // no match because: user
+        assert.deepEqual({}, surrogates.init(providers)); // no match because: user
         providers = getSurrogates();
         providers[2].statusSurrogateUser = "gh1";
         providers[0].url = "http://other.com";
-        assert.deepEqual({}, cache.getEnabledSurrogates(providers)); // no match because: url
+        assert.deepEqual({}, surrogates.init(providers)); // no match because: url
         providers = getSurrogates();
         providers[2].statusSurrogateUser = "gh1";
         providers[0].enabled = false;
-        assert.deepEqual({}, cache.getEnabledSurrogates(providers)); // no match because: surrogate disabled
+        assert.deepEqual({}, surrogates.init(providers)); // no match because: surrogate disabled
         providers = getSurrogates();
         providers[2].statusSurrogateUser = "gh1";
         providers[2].enabled = false;
-        assert.deepEqual({}, cache.getEnabledSurrogates(providers)); // no match because: surrogated disabled
+        assert.deepEqual({}, surrogates.init(providers)); // no match because: origin disabled
 
         providers = getSurrogates();
         providers[1].user = "gh1";
         providers[2].statusSurrogateUser = "gh1";
-        assert.deepEqual({ "2-github": "0-github" }, cache.getEnabledSurrogates(providers)); // multiple candidates
+        assert.deepEqual({ "2-github": "0-github" }, surrogates.init(providers)); // multiple candidates
         providers = getSurrogates();
         providers[0].enabled = false;
         providers[1].user = "gh1";
         providers[2].statusSurrogateUser = "gh1";
-        assert.deepEqual({ "2-github": "1-github" }, cache.getEnabledSurrogates(providers)); // multiple candidates, one disabled
+        assert.deepEqual({ "2-github": "1-github" }, surrogates.init(providers)); // multiple candidates, one disabled
         providers = getSurrogates();
         providers[2].statusSurrogateUser = "gh1";
         providers[3].statusSurrogateUser = "gl2";
-        assert.deepEqual({ "2-github": "0-github", "3-gitlab": "4-gitlab" }, cache.getEnabledSurrogates(providers)); // multiple surrogated
+        assert.deepEqual({ "2-github": "0-github", "3-gitlab": "4-gitlab" }, surrogates.init(providers)); // multiple origin
     });
     function getSurrogates() {
         return [

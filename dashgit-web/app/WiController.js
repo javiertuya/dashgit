@@ -2,7 +2,7 @@ import { gitHubApi } from "./git/GitHubApi.js"
 import { gitLabApi } from "./git/GitLabApi.js"
 import { wiView } from "./WiView.js"
 import { Model } from "./core/Model.js"
-import { cache } from "./core/Cache.js"
+import { surrogates } from "./core/Surrogates.js"
 import { statusesCache } from "./core/StatusesCache.js"
 import { statusIndex } from "./core/StatusIndex.js"
 import { labelsCache } from "./core/LabelsCache.js"
@@ -56,7 +56,7 @@ const wiController = {
       statusIndex.reset();
       labelsCache.reset();
     }
-    cache.resetStatusSurrogates(config.data.providers);
+    surrogates.reset(config.data.providers);
   },
   updateTarget: function (target, sorting) {
     console.log(`**** Trigger update to target: ${target}`);
@@ -159,8 +159,8 @@ const wiController = {
         }
   },
   dispatchProviderStatuses: function(provider) {
-          if (cache.hasStatusSurrogate(provider.uid)) {
-            console.log(`${provider.uid}: Get statuses from surrogate provider ${cache.getStatusSurrogate(provider.uid)} (later)`);
+          if (surrogates.hasSurrogate(provider.uid)) {
+            console.log(`${provider.uid}: Get statuses from surrogate provider ${surrogates.getSurrogate(provider.uid)} (later)`);
             return;
           }        
           if (statusesCache.hit(provider.uid)) { // use data from cache and avoid call the api
@@ -183,8 +183,8 @@ const wiController = {
     wiView.updateStatuses(model, providerId, labelsCache.data[providerId]); //labels cache only for GitLab, may be undefined
     //if (providerId=="0-github")
     //  wiView.updateStatuses(cache.getModel("1-github"), "1-github", labelsCache.data["1-github"]);
-    for (let surrogated of cache.getStatusSurrogatedIds(providerId))
-      wiView.updateStatuses(statusesCache.getModel(surrogated), surrogated, labelsCache.data[surrogated]);
+    for (let origin of surrogates.getOrigins(providerId))
+      wiView.updateStatuses(statusesCache.getModel(origin), origin, labelsCache.data[origin]);
   },
   displayError: function (message) {
     wiView.renderAlert("danger", message);
@@ -234,8 +234,8 @@ const wiController = {
     console.log(statusesModel);
     // direct call to display the statuses of the model without setting the cache
     wiView.updateStatusItems(statusesModel, providerId); //labels cache only for GitLab, may be undefined
-    for (let surrogated of cache.getStatusSurrogatedIds(providerId))
-      wiView.updateStatusItems(statusesModel, surrogated);
+    for (let origin of surrogates.getOrigins(providerId))
+      wiView.updateStatusItems(statusesModel, origin);
   },
 
   updateStatusesOnError: function (message, providerId) {

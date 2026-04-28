@@ -1,4 +1,4 @@
-import { cache } from "./Cache.js"
+import { surrogates } from "./Surrogates.js"
 
 /**
  * Keeps an unique index of each work item id to access the value of the status (string).
@@ -14,8 +14,8 @@ const statusIndex = {
     this.data[this.getUid(provider, uid)] = status;
   },
   getStatus: function (provider, uid) {
-    if (cache.hasStatusSurrogate(provider))
-      provider = cache.getStatusSurrogate(provider);
+    if (surrogates.hasSurrogate(provider))
+      provider = surrogates.getSurrogate(provider);
     return this.data[this.getUid(provider, uid)];
   },
   getUid: function (provider, uid) {
