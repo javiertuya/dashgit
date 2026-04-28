@@ -132,9 +132,11 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
           ${config.data.autoSurrogates 
             ? ""
             : this.check2html(`config-providers-surrogate-enabled-${key}`, "Use a status surrogate", provider.statusSurrogateUser != "", "", true)}
+          <!--
           ${provider.provider == "GitHub"
             ? this.check2html(`config-providers-deprecated-graphqlV1-${key}`, "Use deprecated GraphQL query (before V1.6)", provider.graphql.deprecatedGraphqlV1)
             : ""}
+          -->
         </div>
         <div class="row config-providers-graphql-settings">
           ${this.input2html(`config-graphql-maxProjects-${key}`, "number", "Max projects", provider.graphql.maxProjects, 'required min="2" max="100"', "150", "70",
@@ -317,7 +319,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
       provider.graphql.maxPipelines = $(`#config-graphql-maxPipelines-${id}`).val().trim();
     } else {
       provider.graphql.pageSize = $(`#config-graphql-pageSize-${id}`).val().trim();
-      provider.graphql.deprecatedGraphqlV1 = $(`#config-providers-deprecated-graphqlV1-${id}`).is(':checked')
+      // NOSONAR provider.graphql.deprecatedGraphqlV1 = $(`#config-providers-deprecated-graphqlV1-${id}`).is(':checked')
       provider.graphql.onlyForks = $(`#config-graphql-only-forks-${id}`).is(':checked')
       provider.graphql.includeForks = $(`#config-graphql-include-forks-${id}`).is(':checked');
       provider.graphql.ownerAffiliations = [];

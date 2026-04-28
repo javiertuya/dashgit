@@ -119,6 +119,8 @@ const config = {
       this.setDefault(element, "dependabotAdditionalOwner", []);
       this.setDefault(element, "graphql", {});
       this.setDefault(element.graphql, "deprecatedGraphqlV1", false);
+      // This deprecated option should be eventually removed, now, fixes it to false
+      element.graphql.deprecatedGraphqlV1 = false;
       this.setDefault(element.graphql, "includeForks", false);
       this.setDefault(element.graphql, "onlyForks", false);
       this.setDefault(element.graphql, "ownerAffiliations", ["OWNER"]);
