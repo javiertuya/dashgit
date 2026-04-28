@@ -34,6 +34,25 @@ const tokens = {
     return true;
   },
 
+  // Automatically determined surrogates that use PAT authentication:
+  // Each provider visited gets temporarily an index that represents its identity (authenticated user)
+  // -first visit of an index, stores it and links it to provider
+  // -second visit of an index, sets the provider as origin of the indexed provider (surrogate)
+  getPatSurrogates: function (providers) {
+    const surrogates = {}; // origin.uid -> surrogate.uid
+    const potentialSurrogates = {}; // index -> provider.uid
+    for (const provider of providers) { // ensure that origin and surrogate are linked and enabled
+      if (provider.enabled && !provider.oauth && provider.token != "") {
+        const identityIndex = this.decrypt(provider.token) + "-" + provider.url;
+        if (potentialSurrogates[identityIndex])
+          surrogates[provider.uid] = potentialSurrogates[identityIndex];
+        else
+          potentialSurrogates[identityIndex] = provider.uid;
+      }
+    }
+    return surrogates;
+  },
+
   // encrypted tokens are prefixed with "aes:" to avoid a duble encryption and decrypt non encrypted tokens
   // Allows empty tokens (e.g. for anonymous access to GitHub)
   encrypt: function (text, pass) {

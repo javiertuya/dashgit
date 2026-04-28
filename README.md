@@ -135,15 +135,13 @@ Let assume that you want to separate the work items in your personal account fro
 Configuration for GitHub could be like this:
 - Create two GitHub providers and set the same user and authentication.
 - Add the organization name to `Add owners to triage`, `Add owners to dependabot` in both providers.
-- Set the `GraphQL scope` to Owner and Organization member in both providers.
+- Set the `GraphQL scope` to Owner and Organization member in first provider.
 - In the first one, set the `Match criterion` to Exclude and match the organization. This will show your personal repos.
 - In the second one, set the `Match criterion` to Include and match the organization. This will show your organization repos.
 
-With this configuration, each provider will send separate (and equal) GraphQL calls for obtaining the statuses and the branches of each provider. 
-To avoid the duplication of these calls, that are expensive, you can specify a provider as a surrogate of other. 
-In this example, you should:
-- Set the `Use a status surrogate` in one of the providers, for instance, the first one.
-- Specify the username of the surrogate provider, in this case the username of the second one.
+This configuration, would cause duplicate expensive GraphQL calls for obtaining the statuses and the branches of each provider. 
+To avoid this, DashGit detects when multiple providers in the same repository share the authenticated user (same PAT token or OAuth login). 
+The first provider (surrogate) shares statuses and notifications with the others and is the only that issues GraphQL calls.
 
 ### Status cache configuration
 Requests to the GraphQL API to get branches and build statuses are expensive if they retrieve data

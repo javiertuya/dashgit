@@ -34,8 +34,7 @@ const login = {
       failedProviders: [], // providers that failed to login, to skip and inform the user
     }
     const providers = this.getOAuthEnabledProviders();
-    // map index->provider that act as surrogates of other providers with same key to do not repeat login (only copy token)
-    const surrogatesByIndex = {}; 
+    const surrogates = this.getOAuthSurrogates(providers);
     for (const provider of providers) {
       console.log("Login.js: Provider " + provider.uid + " is configured for OAuth2, checking token and status");
       let tokenInfo = this.getOAuthTokenInfoByUid(provider.uid);
@@ -49,10 +48,9 @@ const login = {
         tokenInfo = undefined;
       }
 
-      const providerWithMyApp = surrogatesByIndex[providerConfig.appName + "-" + provider.provider + "-" + provider.url];
-      if (providerWithMyApp) { // Optimization to avoid multiple logins for the same app
-        console.log(`- Provider ${provider.uid} authenticates with the same app than ${providerWithMyApp.uid}, which is known to be logged or failed, set this token`);
-        this.copyFromAppAlreadySet(providerWithMyApp, provider, status);
+      if (surrogates[provider.uid] != undefined) { // Optimization to avoid multiple logins for the same authenticated user
+        console.log(`- Provider ${provider.uid} authenticates with the same app than $surrogates[provider.uid]}, which is known to be logged or failed, set this token`);
+        this.copySurrogateToOrigin(surrogates[provider.uid], provider, status);
       } else if (tokenInfo) { // Existing token, manages failures and refresh
         if (tokenInfo.currentToken === "failed") {
           console.log("- Previous login attempt failed, skip login");
@@ -60,17 +58,12 @@ const login = {
         } else {
           console.log("- Already logged");
         }
-        // to avoid repeat login if already logged in the same app, platform and url,
-        surrogatesByIndex[this.surrogateIndex(provider, providerConfig)] = provider;
       } else {
           console.log("- Requires login");
           status.unsetProviders.push(provider);
       }
     }
     return status;
-  },
-  surrogateIndex(provider, config) {
-    return config.appName + "-" + provider.provider + "-" + provider.url
   },
   hasTokenWithChangedConfig: async function(provider, currentConfig) {
     const tokenInfo = this.getOAuthTokenInfoByUid(provider.uid);
@@ -80,14 +73,17 @@ const login = {
         || currentConfig.authorizeUrl != tokenInfo.oaconfig.authorizeUrl
         || currentConfig.tokenUrl != tokenInfo.oaconfig.tokenUrl);
   },
-  copyFromAppAlreadySet: function(providerWithMyApp, provider, status) {
-    // Copy to the provider, this includes both the token and the refresh info
-    const tokenInfo = this.getOAuthTokenInfoByUid(providerWithMyApp.uid);
-    this.setOAuthTokenInfoByUid(provider.uid, tokenInfo);
-
-    // Failed status must be recorded too
-    if (tokenInfo.currentToken == "failed")
-      status.failedProviders.push(provider);
+  copySurrogateToOrigin: function(providerWithMyApp, provider, status) {
+    // Copy to the provider, this includes both the token and the refresh info and the status of unset/failed
+    const tokenInfo = this.getOAuthTokenInfoByUid(providerWithMyApp);
+    if (tokenInfo == undefined) {
+      this.removeOAuthTokenInfoByUid(provider.uid);
+      status.unsetProviders.push(provider);
+    } else {
+      this.setOAuthTokenInfoByUid(provider.uid, tokenInfo);
+      if (tokenInfo.currentToken == "failed")
+        status.failedProviders.push(provider);
+    }
   },
   getOAuthEnabledProviders: function() {
     let providers = [];
@@ -97,9 +93,10 @@ const login = {
       }
     }
     // Adds the manager repo if it is also configured for oauth
-    const managerProvider = this.getManagerRepoProvider();
-    if (managerProvider.enabled && managerProvider.oauth)
+    if (config.data.managerRepo.enabled && config.data.managerRepo.oauth) {
+      const managerProvider = this.getManagerRepoProvider();
       providers.push(managerProvider);
+    }
     return providers;
   },
   getOauthEnabledProviderByUid: function (providerUid) {
@@ -108,6 +105,24 @@ const login = {
       if (provider.uid == providerUid)
         return provider;
     throw new Error(`Provider with uid=${providerUid} can't be found in the enabled providers`);
+  },
+
+  getOAuthSurrogates: function (providers) {
+    const surrogates = {}; // origin.uid -> surrogate.uid
+    // Follows the same procedure than PAT surrogates in Tokens module, but here the identity index is different
+    const potentialSurrogates = {}; // index -> provider.uid
+    for (const provider of providers) {
+      if (provider.enabled && provider.oauth) {
+        const providerConfig = this.getOAuthProviderConfig(provider);
+        const identityIndex = providerConfig.appName + "-" + provider.provider + "-" + provider.url
+          + "-" + providerConfig.clientId + "-" + providerConfig.tokenUrl;
+        if (potentialSurrogates[identityIndex])
+          surrogates[provider.uid] = potentialSurrogates[identityIndex].uid;
+        else
+          potentialSurrogates[identityIndex] = provider;
+      }
+    }
+    return surrogates;
   },
   
   // The manager repo (in config.data) has properties related to authentication with the same names than providers,
@@ -134,12 +149,10 @@ const login = {
   // Checks if there are any OAuth2 token that needs renewal and performs the renewal.
   refreshTokensForAllProviders: async function () {
     const providers = this.getOAuthEnabledProviders();
-    // map index->provider that act as surrogates of other providers with same key to do not repeat login (only copy token)
-    const surrogatesByIndex = {}; 
+    const surrogates = this.getOAuthSurrogates(providers);
     console.log("*** Checking expired tokens");
     for (const provider of providers) {
       console.log("Login.js: Provider " + provider.uid + " is configured for OAuth2, checking token expiration");
-      const providerConfig = this.getOAuthProviderConfig(provider);
       const tokenInfo = this.getOAuthTokenInfoByUid(provider.uid);
       if ((tokenInfo?.refreshToken ?? "") == "" || (tokenInfo?.refreshTime ?? "") == "") {
         console.log("login.js: Provider token does not have refresh info");
@@ -148,17 +161,13 @@ const login = {
       
       const needsRefresh = Date.now() > new Date(tokenInfo.refreshTime).getTime() - 5 * 60 * 1000;
       if (needsRefresh) {
-        const providerWithMyApp = surrogatesByIndex[providerConfig.appName + "-" + provider.provider + "-" + provider.url];
-        if (providerWithMyApp) { // Optimization to avoid multiple refresh for the same app
-          console.log(`- Provider ${provider.uid} authenticates with the same app than ${providerWithMyApp.uid}, which has been refreshed, set this token`);
-          const tokenInfoToCopy = this.getOAuthTokenInfoByUid(providerWithMyApp.uid);
+        if (surrogates[provider.uid]) { // Optimization to avoid multiple refresh for the same authenticated user
+          console.log(`- Provider ${provider.uid} authenticates with the same app than ${surrogates[provider.uid]}, which has been refreshed, set this token`);
+          const tokenInfoToCopy = this.getOAuthTokenInfoByUid(surrogates[provider.uid]);
           this.setOAuthTokenInfoByUid(provider.uid, tokenInfoToCopy);
         } else {
           console.log(`- Refreshing provider ${provider.uid} token with expiration date ${tokenInfo.refreshTime}`);
           await this.refreshTokenForProvider(provider, tokenInfo);
-
-          // to avoid repeat login if already logged in the same app, platform and url,
-          surrogatesByIndex[this.surrogateIndex(provider, providerConfig)] = provider;
         }
       }
     }

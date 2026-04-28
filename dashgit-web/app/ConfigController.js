@@ -24,6 +24,13 @@ $(document).on('click', '#config-reset', function (e) {
 });
 
 // actions on events
+$(document).on('change', '[id^="config-providers-enabled-"]', function (e) {
+  if ($(this).is(':checked'))
+    $(this).closest(".config-provider-card").removeClass("opacity-50");
+  else
+    $(this).closest(".config-provider-card").addClass("opacity-50");
+  e.stopPropagation();
+});
 $(document).on('click', '.config-btn-add-github', function (e) {
   configView.addProvider(config.setProviderDefaults({ provider: "GitHub" }));
   configValidation.installValidation();
@@ -43,7 +50,7 @@ $(document).on('click', '.config-btn-provider-up', function (e) {
 });
 
 //Events that are particular to some items in the configuration
-$(document).on('change', '#config-providers-enabled-mgrepo', function (e) {
+$(document).on('change', '#config-providers-enable-mgrepo', function (e) {
   configView.refreshAll();
 });
 $(document).on('change', '[id^="config-providers-auth-select-"]', function (e) {

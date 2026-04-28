@@ -110,7 +110,7 @@ const statusesCache = {
   // If call to graphql api fails to get statuses this method is invoked to override last refresh time to make 
   // the next refresh to be exactlly after statusCacheUpdateTime seconds
   scheduleNearRefresh: function (providerId) {
-    this.cachedModel[providerId].refreshTime = new Date(Date.now().getTime() - 1000 * config.data.statusCacheRefreshTime + 1000 * config.data.statusCacheUpdateTime);
+    this.cachedModel[providerId].refreshTime = new Date(Date.now() - 1000 * config.data.statusCacheRefreshTime + 1000 * config.data.statusCacheUpdateTime);
   },
   secondsBetweenDates: function (d2, d1) {
     let timeDiff = Math.abs(d2.getTime() - d1.getTime());

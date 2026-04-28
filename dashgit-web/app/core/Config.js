@@ -72,6 +72,11 @@ const config = {
     this.setDefault(data, "statusCacheUpdateTime", 30);
     this.setDefault(data, "statusCacheRefreshTime", 3600);
     this.setDefault(data, "maxAge", 0);
+    // Auto surrogates active by default, no configurable, set to false to revert
+    // Manual surrogates should be eventually removed
+    this.setDefault(data, "autoSurrogates", true);
+    data.autoSurrogates = true;
+
     this.setDefault(data, "managerRepo", {});
     this.setDefault(data.managerRepo, "enabled", false);
     this.setDefault(data.managerRepo, "name", "");

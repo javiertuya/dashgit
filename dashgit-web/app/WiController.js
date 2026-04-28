@@ -56,7 +56,7 @@ const wiController = {
       statusIndex.reset();
       labelsCache.reset();
     }
-    surrogates.reset(config.data.providers);
+    surrogates.reset(config.data.providers, config.data.autoSurrogates);
   },
   updateTarget: function (target, sorting) {
     console.log(`**** Trigger update to target: ${target}`);
@@ -89,7 +89,7 @@ const wiController = {
     if (!provider.oauth) // PAT token is always considered valid for path authentication (even if emtpy)
       return true;
     const token = login.getProviderToken(provider);
-    console.log(`Check OAuth token for provider ${provider.uid}: ${token ? token.substring(0, 4) + "..." : "not found"}`);
+    // NOSONAR console.log(`Check OAuth token for provider ${provider.uid}: ${token ? token.substring(0, 4) + "..." : "not found"}`);
     return token && token !== "failed"; // OAuth must have a valid value
   },
 

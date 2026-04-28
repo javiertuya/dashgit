@@ -1,4 +1,5 @@
 import { config } from "./core/Config.js"
+import { surrogates } from "./core/Surrogates.js"
 import { configValidation } from "./ConfigValidation.js"
 
 /**
@@ -80,7 +81,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
         </div>
 
         <div class="card-subtitle h6 mb-1 mt-1 text-body-secondary">
-          ${this.check2html(`config-providers-enabled-mgrepo`, 
+          ${this.check2html(`config-providers-enable-mgrepo`, 
             `Enable a Manager Repository for advanced functions <a href="${config.param.readmeManagerRepo}" target="_blank">[learn more]</a>`, 
             data.managerRepo.enabled,
             "Manager repository set up is requred to automatically create and merge combined dependency updates and for follow-up management", true)}
@@ -100,8 +101,8 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
   },
   provider2html: function (provider, key) {
     return `
-    <div class="card mt-2 config-provider-card">
-      <div class="card-body pt-2 pb-2 config-provider-panel" prov="${provider.provider}" key="${key}">
+    <div class="card mt-2 config-provider-card${provider.enabled ? '' : ' opacity-50'}">
+      <div class="card-body pt-2 pb-2 config-provider-panel" prov="${provider.provider}" key="${key}" uid="${key}-${provider.provider.toLowerCase()}">
         <div class="row">
           <div class="col-auto">
             <p class="card-title h4">${this.provider2icon(provider.provider)} ${provider.provider}</p>
@@ -126,9 +127,11 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
 
         ${this.matchCriterion2html(provider, key)}
 
-        <div class="row">
+        <div class="row config-providers-graphql-header">
           <div class="col-auto card-subtitle h6 mt-2 text-body-secondary">GraphQL API parameters:</div>
-          ${this.check2html(`config-providers-surrogate-enabled-${key}`, "Use a status surrogate", provider.statusSurrogateUser != "", "", true)}
+          ${config.data.autoSurrogates 
+            ? ""
+            : this.check2html(`config-providers-surrogate-enabled-${key}`, "Use a status surrogate", provider.statusSurrogateUser != "", "", true)}
           ${provider.provider == "GitHub"
             ? this.check2html(`config-providers-deprecated-graphqlV1-${key}`, "Use deprecated GraphQL query (before V1.6)", provider.graphql.deprecatedGraphqlV1)
             : ""}
@@ -160,8 +163,12 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
                 "Include PRs from other repositories that are out of the scope. Specify the repos by full name (OWNER/REPO) and separated by spaces") )
           }
         </div>
-        <div class="row config-providers-surrogate-settings">
-          ${this.input2html(`config-providers-statusSurrogateUser-${key}`, "text", "Username of the status surrogate provider", provider.statusSurrogateUser, 'required', "350", "150",
+        <div class="row config-providers-surrogate-footer" style="display: none;" >
+        ${config.data.autoSurrogates
+          ? "<p class='text-secondary mb-1 small'><em>This provider does not have GraphQL configurable settings. </em>"
+            + this.infoIcon("When multiple providers in the same repository share the authenticated user (same PAT token or OAuth login), only the first provider (surrogate) allows you to configure GraphQL parameters. This provider shares statuses and notifications with the others. Note that changes do not take effect until the configuration is saved.") 
+            + "</p>"
+          : this.input2html(`config-providers-statusSurrogateUser-${key}`, "text", "Username of the status surrogate provider", provider.statusSurrogateUser, 'required', "350", "150",
             "The provider with this username and same repository url will be used to get the statuses, instead of calling the GraphQL API",
             "Enter the username of one of the other enabled providers in this platform")}
         </div>
@@ -265,7 +272,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
     data.maxAge = age == "" ? 0 : age;
     data.statusCacheUpdateTime = $("#config-common-statusCacheUpdateTime").val().trim();
     data.statusCacheRefreshTime = $("#config-common-statusCacheRefreshTime").val().trim();
-    data.managerRepo.enabled = $("#config-providers-enabled-mgrepo").is(':checked');
+    data.managerRepo.enabled = $("#config-providers-enable-mgrepo").is(':checked');
     data.managerRepo.name = $("#config-providers-name-mgrepo").val().trim();
     this.html2authprovider(data.managerRepo, "mgrepo")
     return data;
@@ -297,7 +304,8 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
       provider.match.org = this.str2array($(`#config-providers-match-org-${id}`).val());
     }
     provider.enableNotifications = $(`#config-providers-enableNotifications-${id}`).is(':checked');
-    provider.statusSurrogateUser = $(`#config-providers-statusSurrogateUser-${id}`).val().trim();
+    if (!config.data.autoSurrogates)
+      provider.statusSurrogateUser = $(`#config-providers-statusSurrogateUser-${id}`).val().trim();
 
     provider.graphql.maxProjects = $(`#config-graphql-maxProjects-${id}`).val().trim();
     provider.graphql.maxBranches = $(`#config-graphql-maxBranches-${id}`).val().trim();
@@ -333,13 +341,16 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
     this.refreshAuthenticationMethods();
     this.refreshUpdateManagerRepo();
     this.refreshProviderDefaults();
-    this.refreshProviderSurrogates();
+    if (config.data.autoSurrogates)
+      this.refreshProviderSurrogatesAuto();
+    else
+      this.refreshProviderSurrogates();
     this.refreshMoveStatus();
     this.refreshAuthenticationStatus();
   },
   // refresh for changes on the enabled states of the manager repository
   refreshUpdateManagerRepo: function () {
-    if ($(`#config-providers-enabled-mgrepo`).is(':checked')) {
+    if ($(`#config-providers-enable-mgrepo`).is(':checked')) {
       $(`#config-providers-all-mgrepo`).show();
       $(`.config-provider-updates-div-container`).show();
       configValidation.onShowInstallValidation($(`#config-providers-name-mgrepo`))
@@ -391,6 +402,27 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
         $(url).closest(".col-auto").hide();
     }
   },
+  // When surrogates are auto, 
+  refreshProviderSurrogatesAuto: function () {
+    const surrogatesAuto = surrogates.getSurrogates(config.data.providers)
+    for (let provider of config.data.providers) {
+      if (!provider.enabled)
+        continue;
+      const providerRoot = $(`div[uid=${provider.uid}]`)
+      if (surrogatesAuto[provider.uid]) { // surrogate, don't allow configure graphql nor notifications
+        $(providerRoot).find('.config-providers-graphql-header').hide();
+        $(providerRoot).find('.config-providers-graphql-settings').hide();
+        $(providerRoot).find('.config-providers-surrogate-footer').show();
+        $(providerRoot).find('[id^="config-providers-enableNotifications-"]').hide();
+      } else { //config-providers-enableNotifications
+        $(providerRoot).find('.config-providers-graphql-header').show();
+        $(providerRoot).find('.config-providers-graphql-settings').show();
+        $(providerRoot).find('.config-providers-surrogate-footer').hide();
+        $(providerRoot).find('[id^="config-providers-enableNotifications-"]').show();
+      }
+    }
+  },
+  // Below methods on manual surrogates should be removed eventually (and related UI, tests...)
   // Toggle between visibility of graphql parameters and surrogate user.
   // This depends on a check that is on when the surrogate user is empty.
   // Hides the toggle when there is no posibility to have surrogates (e.g. only one provider)
@@ -415,7 +447,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
     const surrogateUser = $(providerRoot).find('input[id^="config-providers-statusSurrogateUser-"]');
     if (checked) {
       $(providerRoot).find(".config-providers-graphql-settings").hide();
-      $(providerRoot).find(".config-providers-surrogate-settings").show();
+      $(providerRoot).find(".config-providers-surrogate-footer").show();
       // Before installing validation, sets the appropriate validation attributes in the dom
       const allowedSurrogates = this.getSurrogateCandidateNames(providerRoot);
       surrogateUser.attr("pattern", allowedSurrogates.join("|"));
@@ -428,7 +460,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
       surrogateUser.removeAttr("required");
       surrogateUser.removeAttr("pattern");
       $(providerRoot).find(".config-providers-graphql-settings").show();
-      $(providerRoot).find(".config-providers-surrogate-settings").hide();
+      $(providerRoot).find(".config-providers-surrogate-footer").hide();
     }
   },
   // the usernames of all providers that could be designated as surrogate of this provider
