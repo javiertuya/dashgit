@@ -353,6 +353,12 @@ const wiView = {
       config.data.viewFilter[target].authorMe = $(`#wi-view-filter-${target}-authorMe`).is(':checked');
     if ($(`#wi-view-filter-${target}-authorOthers`).length > 0)
       config.data.viewFilter[target].authorOthers = $(`#wi-view-filter-${target}-authorOthers`).is(':checked');
+    if ($(`#wi-view-filter-${target}-assignedMe`).length > 0)
+      config.data.viewFilter[target].assignedMe = $(`#wi-view-filter-${target}-assignedMe`).is(':checked');
+    if ($(`#wi-view-filter-${target}-assignedOthers`).length > 0)
+      config.data.viewFilter[target].assignedOthers = $(`#wi-view-filter-${target}-assignedOthers`).is(':checked');
+    if ($(`#wi-view-filter-${target}-assignedNone`).length > 0)
+      config.data.viewFilter[target].assignedNone = $(`#wi-view-filter-${target}-assignedNone`).is(':checked');
     if ($(`#wi-view-filter-${target}-compact`).length > 0)
       config.data.viewFilter[target].compact = $(`#wi-view-filter-${target}-compact`).is(':checked');
     if ($(`#wi-view-filter-${target}-exclude`).length > 0)

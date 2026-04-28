@@ -109,26 +109,17 @@ const wiHeaders = {
 
     let header= "";
     if (viewFilters.authorMe !== undefined)
-      header += `
-        <div class="form-check form-check-inline">
-        <input class="form-check-input wi-view-filter-clickable" type="checkbox" ${viewFilters.authorMe ? "checked" : ""} value="" id="wi-view-filter-${target}-authorMe">
-        <label class="form-check-label" for="wi-view-filter-${target}-authorMe">Authored by me</label>
-        </div>
-      `;
+      header += this.viewFilterHeaderCheck(target, viewFilters.authorMe, "authorMe", "Authored by me");
     if (viewFilters.authorOthers !== undefined)
-      header += `
-        <div class="form-check form-check-inline">
-        <input class="form-check-input wi-view-filter-clickable" type="checkbox" value="" ${viewFilters.authorOthers ? "checked" : ""} id="wi-view-filter-${target}-authorOthers">
-        <label class="form-check-label" for="wi-view-filter-${target}-authorOthers">Authored by others</label>
-        </div>
-      `;
-    if (viewFilters.compact !== undefined) // compact view (only for branches)
-      header += `
-        <div class="form-check form-check-inline">
-        <input class="form-check-input wi-view-filter-clickable" type="checkbox" ${viewFilters.compact ? "checked" : ""} value="" id="wi-view-filter-${target}-compact">
-        <label class="form-check-label" for="wi-view-filter-${target}-compact">Compact view (any status)</label>
-        </div>
-      `;
+      header += this.viewFilterHeaderCheck(target, viewFilters.authorOthers, "authorOthers", "Authored by others");
+    if (viewFilters.assignedMe !== undefined)
+      header += this.viewFilterHeaderCheck(target, viewFilters.assignedMe, "assignedMe", "Assigned to me");
+    if (viewFilters.assignedOthers !== undefined)
+      header += this.viewFilterHeaderCheck(target, viewFilters.assignedOthers, "assignedOthers", "Assigned to others");
+    if (viewFilters.assignedNone !== undefined)
+      header += this.viewFilterHeaderCheck(target, viewFilters.assignedNone, "assignedNone", "Unassigned");
+    if (viewFilters.compact !== undefined)
+      header += this.viewFilterHeaderCheck(target, viewFilters.compact, "compact", "Compact view (any status)");
     if (viewFilters.exclude !== undefined) // opposite to search, exclude based on repo name
       header += `
         <div class="form-input form-check-inline">
@@ -141,6 +132,14 @@ const wiHeaders = {
       header = `<div class="col-auto mb-0"><div style="padding-left:8px">${header}</div></div>`;
     return header;
   },
+  viewFilterHeaderCheck: function (target, defaultValue, name, label) {
+    return `
+        <div class="form-check form-check-inline">
+        <input class="form-check-input wi-view-filter-clickable" type="checkbox" ${defaultValue ? "checked" : ""} value="" id="wi-view-filter-${target}-${name}">
+        <label class="form-check-label" for="wi-view-filter-${target}-${name}">${label}</label>
+        </div>
+      `;
+  }
 
 }
 

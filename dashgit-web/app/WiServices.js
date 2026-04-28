@@ -52,7 +52,7 @@ const wiServices = {
     }
     return items;
   },
-  filterItem: function (target, user, today, maxAge, labelToFilter, targetViewFilter, item) {
+  filterItem: function (target, user, today, maxAge, labelToFilter, targetViewFilter, item) { // NOSONAR
       if (maxAge > 0 && this.daysBetweenDates(new Date(item.updated_at), today) > maxAge) { //filter by age
         //console.log(`Filtering item by date: ${item.repo_name} ${item.title}`)
         return true;
@@ -65,6 +65,11 @@ const wiServices = {
       } else if ((target == "involved" || target == "unassigned") && user != undefined // filter by author (filters out if filter value is false)
         && ( !targetViewFilter.authorMe && item.author == user || !targetViewFilter.authorOthers && item.author != user )) {
           return true;
+      } else if (target == "dependabot" && user != undefined // filter by assignee (filters out if filter value is false)
+        && (!targetViewFilter.assignedMe && ` ${item.assignees}`.includes(user) //assignees are a string in the model (separted by spaces)
+          || !targetViewFilter.assignedOthers && !` ${item.assignees}`.includes(user) && item.assignees.trim() != "" // there are assignees, but not me
+          || !targetViewFilter.assignedNone && item.assignees.trim() == "")) {
+        return true;
       } else if (labelToFilter != "") { //filter by label
         for (let label of item.labels)
           if (label.name == labelToFilter) {

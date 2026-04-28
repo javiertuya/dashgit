@@ -248,8 +248,8 @@ describe("TestView - Main processing in the view module", function () {
         assert.deepEqual(['pr001', 'pr002', 'pr003'], items.map(a => a.title));
     });
 
-    it("Filter model items by who authored", function () {
-        //author: dependabot/dependa[bot]/other, pr/issue(no filter), target=unassigned/other(no filter)
+    it("Filter model items by who authored (triage/unassigned)", function () {
+        //author: dependabot/dependa[bot]/other, pr/issue(no filter)
         let mod = new Model().setHeader("GitHub", "0-github", "usr", "");
         mod.addItem({ repo_name: "repo1", type: "branch", iid: "001", title: "pr001", author: "usr" });
         mod.addItem({ repo_name: "repo2", type: "pr", iid: "002", title: "pr002", author: "otheruser" });
@@ -265,7 +265,7 @@ describe("TestView - Main processing in the view module", function () {
         assert.deepEqual([ ], items.map(a => a.title));
     });
 
-    it("Filter dependabot authored only at unassigned target", function () {
+    it("Filter dependabot authored PRs should not appear in other targets", function () {
         //author: dependabot/dependa[bot]/other, pr/issue(no filter), target=unassigned/other(no filter)
         let mod = new Model().setHeader("GitHub", "0-github", "usr", "");
         mod.addItem({ repo_name: "repo1", type: "branch", iid: "001", title: "pr001", author: "me" });
@@ -285,6 +285,29 @@ describe("TestView - Main processing in the view module", function () {
         targetViewFilter = { compact: true };
         items = wiServices.filterBy("statuses", "usr", new Date(), 0, "", undefined, targetViewFilter, JSON.parse(modStr).items);
         assert.deepEqual(['pr001', 'pr002', 'pr003', 'pr004', 'is005'], items.map(a => a.title));
+    });
+
+    it("Filter model items by who is assigned (dependabot)", function () {
+        //single assignee: me/other/none, multiple assignees: includes me/does not, pr(only)
+        let mod = new Model().setHeader("GitHub", "0-github", "usr", "");
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "001", title: "pr001", assignees: " usr " });
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "002", title: "pr002", assignees: " otheruser " });
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "003", title: "pr003", assignees: " " });
+        mod.addItem({ repo_name: "repo2", type: "pr", iid: "201", title: "pr201", assignees: " usr otheruser2" });
+        mod.addItem({ repo_name: "repo2", type: "pr", iid: "202", title: "pr202", assignees: " otheruser2 otheruser3 " });
+        let modStr = JSON.stringify(mod);
+
+        let items = wiServices.filterBy("dependabot", "usr", new Date(), 0, "", undefined, { assignedMe: true, assignedOthers: true, assignedNone: true }, JSON.parse(modStr).items);
+        assert.deepEqual(['pr001', 'pr002', 'pr003', 'pr201', 'pr202'], items.map(a => a.title));
+        // Base false, individual filters to true are disjoint
+        items = wiServices.filterBy("dependabot", "usr", new Date(), 0, "", undefined, { assignedMe: false, assignedOthers: false, assignedNone: false }, JSON.parse(modStr).items);
+        assert.deepEqual([], items.map(a => a.title));
+        items = wiServices.filterBy("dependabot", "usr", new Date(), 0, "", undefined, { assignedMe: true, assignedOthers: false, assignedNone: false }, JSON.parse(modStr).items);
+        assert.deepEqual(['pr001', 'pr201'], items.map(a => a.title));
+        items = wiServices.filterBy("dependabot", "usr", new Date(), 0, "", undefined, { assignedMe: false, assignedOthers: true, assignedNone: false }, JSON.parse(modStr).items);
+        assert.deepEqual(['pr002', 'pr202'], items.map(a => a.title));
+        items = wiServices.filterBy("dependabot", "usr", new Date(), 0, "", undefined, { assignedMe: false, assignedOthers: false, assignedNone: true }, JSON.parse(modStr).items);
+        assert.deepEqual(['pr003'], items.map(a => a.title));
     });
 
     // TODO filter by match criterion
