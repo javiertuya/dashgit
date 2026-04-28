@@ -176,7 +176,7 @@ const login = {
     // This is fully synchronous, without callbacks, handles here the token update and errors
     const response = await loginController.refreshExpiredToken(tokenInfo);
     if (response.error) {
-      console.error(`- Refresh failure. ${response.error} - Configuration: ${JSON.stringify(oaconfig, null, 2)}`);
+      console.error(`- Refresh failure. ${response.error} - Configuration: ${JSON.stringify(oaconfig.getConfig(), null, 2)}`);
       await this.failedLogin(provider.uid);
     } else {
       await this.successfulLogin(response.access_token, response.refresh_token, response.expires_in, provider);
@@ -237,14 +237,11 @@ const login = {
   // OAuth2 configuration
   ////////////////////////////////////////////////////////////////////////////
  
-  getDashGitUrl: function() {
-    return globalThis.location.protocol + "//" + globalThis.location.host  + globalThis.location.pathname;
-  },
   getOAuthProviderConfig: function (provider) {
     // Currently only supporting single app name
     const appName = provider.provider.toLowerCase();
-    const thisUrl = this.getDashGitUrl();
-    return this.getOAuthAppConfig(appName, provider.provider, provider.url, thisUrl, oaconfig, provider.oacustom);
+    const thisUrl = oaconfig.getCurrentUrl();
+    return this.getOAuthAppConfig(appName, provider.provider, provider.url, thisUrl, oaconfig.getConfig(thisUrl), provider.oacustom);
   },
 
   // Creates the configuration required for 

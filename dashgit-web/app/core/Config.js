@@ -130,6 +130,7 @@ const config = {
       this.setDefault(element.graphql, "maxBranches", 10);
     } else if (element.provider == "GitLab") {
       this.setDefault(element, "url", "");
+      element["url"] = element["url"].replace(/\/$/, ''); // remove trailing slash if any
       this.setDefault(element, "dependabotUser", "dependabot");
       this.setDefault(element, "graphql", {});
       this.setDefault(element.graphql, "maxProjects", 20);

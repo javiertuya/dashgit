@@ -4,6 +4,7 @@ import { createMockSessionStorage } from "./MockSessionStorage.js";
 import { config } from "../app/core/Config.js"
 import { login } from "../app/login/Login.js"
 import { loginController } from "../app/login/LoginController.js"
+import { oaconfig } from "../app/login/OAConfig.js"
 
 /**
  * Test the main interaction points between the controller and the login module that manages 
@@ -13,12 +14,12 @@ import { loginController } from "../app/login/LoginController.js"
  * - The renewal of expired tokens
  * As this is not testing the controller, a main utility method (loadPage) simulates the controller flow.
  */
-let getDashGitUrl;
+let getCurrentUrl;
 beforeEach(function () {
   // Where tokens are stored, as from node there is no a window object, this mocks the session storage implementation
   globalThis.sessionStorage = createMockSessionStorage();
   // Needed to know the current url where DashGit is running, used when building the OAuth configuration
-  getDashGitUrl = sinon.stub(login, "getDashGitUrl").resolves(Promise.resolve("https://dashgit.domain/dashgit"));
+  getCurrentUrl = sinon.stub(oaconfig, "getCurrentUrl").returns("https://dashgit.domain/dashgit");
   // Additional mock is needed to handle token renewals, but only in the specific tests.
 });
 afterEach(function () {

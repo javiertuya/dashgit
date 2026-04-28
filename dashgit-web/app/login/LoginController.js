@@ -1,4 +1,5 @@
 import { login } from "./Login.js"
+import { oaconfig } from "./OAConfig.js"
 import { startLogin, handleCallback, refreshToken } from "../oauth/OAuthApi.js"
 
 /**
@@ -111,7 +112,7 @@ const loginController = {
     sessionStorage.removeItem(PROVIDER_UID); // not needed anymore
     // If this is last callback, the page load will continue rendering the view with the 
     // query string parameers, hide query string parameters to avoid this
-    const thisUrl = login.getDashGitUrl();
+    const thisUrl = oaconfig.getCurrentUrl();
     history.replaceState(history.state, '', new URL(thisUrl));
 
     return response;
