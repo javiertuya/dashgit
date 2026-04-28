@@ -145,7 +145,8 @@ const wiController = {
 
   dispatchNotifications: function (target) {
     for (let provider of config.data.providers)
-      if (provider.enabled && provider.enableNotifications && this.tokenIsValid(provider)) {
+      if (provider.enabled && provider.enableNotifications && this.tokenIsValid(provider)
+          && !surrogates.hasSurrogate(provider.uid)) { // origins will be shared later when update the UI
         if (provider.provider.toLowerCase() == "github")
           gitHubApi.updateNotificationsAsync(target, provider);
         else if (provider.provider.toLowerCase() == "gitlab")
@@ -266,7 +267,13 @@ const wiController = {
       if (prop == providerId)
         thisMentions = mentions;
     }
-    wiView.updateNotifications(providerId, thisMentions, allMentions); //don't pass model as it is alredy in cache
+    // The order of updates to the view is different from the usual, it first displays the origins in order to count the mentions that they show,
+    // and the parameter thisMentions is set to 0 to do not display the mention count of closed work items.
+    // Later, the surrogate will discount the origin's mention count to handle the mentions that still are not displayed.
+    let originMentions = 0;
+    for (const origin of surrogates.getOrigins(providerId))
+      originMentions += wiView.updateNotifications(origin, 0, allMentions);
+    wiView.updateNotifications(providerId, thisMentions - originMentions, allMentions);
   },
   countProviderMentions: function (prop) {
     // counts only mentions, but across all providers that have notifications in cache
