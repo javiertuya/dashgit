@@ -32,9 +32,10 @@ const login = {
     let status = {
       unsetProviders: [], // providers that are not logged yet, to decide when the login process is finished
       failedProviders: [], // providers that failed to login, to skip and inform the user
-      alreadySetByApp: {}, // map app-provider that are already set, to do not repeat login for other providers using same app
     }
     const providers = this.getOAuthEnabledProviders();
+    // map index->provider that act as surrogates of other providers with same key to do not repeat login (only copy token)
+    const surrogatesByIndex = {}; 
     for (const provider of providers) {
       console.log("Login.js: Provider " + provider.uid + " is configured for OAuth2, checking token and status");
       let tokenInfo = this.getOAuthTokenInfoByUid(provider.uid);
@@ -48,7 +49,7 @@ const login = {
         tokenInfo = undefined;
       }
 
-      const providerWithMyApp = status.alreadySetByApp[providerConfig.appName + "-" + provider.provider + "-" + provider.url];
+      const providerWithMyApp = surrogatesByIndex[providerConfig.appName + "-" + provider.provider + "-" + provider.url];
       if (providerWithMyApp) { // Optimization to avoid multiple logins for the same app
         console.log(`- Provider ${provider.uid} authenticates with the same app than ${providerWithMyApp.uid}, which is known to be logged or failed, set this token`);
         this.copyFromAppAlreadySet(providerWithMyApp, provider, status);
@@ -60,13 +61,16 @@ const login = {
           console.log("- Already logged");
         }
         // to avoid repeat login if already logged in the same app, platform and url,
-        status.alreadySetByApp[providerConfig.appName + "-" + provider.provider + "-" + provider.url] = provider;
+        surrogatesByIndex[this.surrogateIndex(provider, providerConfig)] = provider;
       } else {
           console.log("- Requires login");
           status.unsetProviders.push(provider);
       }
     }
     return status;
+  },
+  surrogateIndex(provider, config) {
+    return config.appName + "-" + provider.provider + "-" + provider.url
   },
   hasTokenWithChangedConfig: async function(provider, currentConfig) {
     const tokenInfo = this.getOAuthTokenInfoByUid(provider.uid);
@@ -129,9 +133,10 @@ const login = {
   // Entry point called from the indexController before a view is generated and rendered
   // Checks if there are any OAuth2 token that needs renewal and performs the renewal.
   refreshTokensForAllProviders: async function () {
-    let alreadySetByApp = {}; // map app-provider that are already set, to do not repeat login for other providers using same app
-    console.log("*** Checking expired tokens");
     const providers = this.getOAuthEnabledProviders();
+    // map index->provider that act as surrogates of other providers with same key to do not repeat login (only copy token)
+    const surrogatesByIndex = {}; 
+    console.log("*** Checking expired tokens");
     for (const provider of providers) {
       console.log("Login.js: Provider " + provider.uid + " is configured for OAuth2, checking token expiration");
       const providerConfig = this.getOAuthProviderConfig(provider);
@@ -143,7 +148,7 @@ const login = {
       
       const needsRefresh = Date.now() > new Date(tokenInfo.refreshTime).getTime() - 5 * 60 * 1000;
       if (needsRefresh) {
-        const providerWithMyApp = alreadySetByApp[providerConfig.appName + "-" + provider.provider + "-" + provider.url];
+        const providerWithMyApp = surrogatesByIndex[providerConfig.appName + "-" + provider.provider + "-" + provider.url];
         if (providerWithMyApp) { // Optimization to avoid multiple refresh for the same app
           console.log(`- Provider ${provider.uid} authenticates with the same app than ${providerWithMyApp.uid}, which has been refreshed, set this token`);
           const tokenInfoToCopy = this.getOAuthTokenInfoByUid(providerWithMyApp.uid);
@@ -153,7 +158,7 @@ const login = {
           await this.refreshTokenForProvider(provider, tokenInfo);
 
           // to avoid repeat login if already logged in the same app, platform and url,
-          alreadySetByApp[providerConfig.appName + "-" + provider.provider + "-" + provider.url] = provider;
+          surrogatesByIndex[this.surrogateIndex(provider, providerConfig)] = provider;
         }
       }
     }
