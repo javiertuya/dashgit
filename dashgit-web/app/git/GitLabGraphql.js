@@ -34,7 +34,7 @@ const gitLabGraphql = {
   //Si se pone junto en una query aumenta mucho la complejidad y puede fallar la query
   getProjectsQuery: function (provider, maxProjects, includeAll) {
     return `{
-      projects (first:${maxProjects}, sort: "updated_desc") {
+      projects (first:${maxProjects}, membership: true, active:true, sort: "updated_desc") {
         nodes {
           id, archived, name, fullPath, createdAt, lastActivityAt, webUrl
           ${includeAll ? "," + this.getProjectsReposSubquery(provider) : ""}

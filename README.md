@@ -110,12 +110,13 @@ and the authenticated user (OAuth or PAT owner) defines the scope of the request
 Note that the username can be someone other than the authenticated user.
 
 - The scope of Assigned, Involved, and Created views is any repository visible to the authenticated user.
-- The scope of Triage (unassigned) and Dependabot views is restricted to the repository of the authenticated user.
+- Only on GitHub: The scope of Triage (unassigned) and Dependabot views is restricted to the repository of the authenticated user.
   If you need to include other users or organizations, you must set them in the `Add owners to triage` (unassigned)
   or `Add owners to dependabot` parameters, respectively.
 - The scope of the Branches view is handled differently, as data is obtained by GraphQL API requests instead of the REST API.
-  On GitHub, you have to specify one or more of the following scopes: OWNER, ORGANIZATION_MEMBER, or COLLABORATOR.
+  - On GitHub, you have to specify one or more of the following scopes: OWNER, ORGANIZATION_MEMBER, or COLLABORATOR.
   Optionally, you can include PRs from other repositories even if they are out of scope.
+  - On GitLab the scope is that of the projects the current authenticated user is a member of.
 - The branch/PR statuses obtained from the same query as the branches view.
 
 ### Filtering configuration

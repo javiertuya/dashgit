@@ -118,10 +118,12 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
         <div class="row">  
           ${this.input2html(`config-providers-filterIfLabel-${key}`, "text", "Filter if label", provider.filterIfLabel, '', "150", "150",
             "Filters out work items that contain the specified label.")}
-          ${this.array2html(`config-providers-unassignedAdditionalOwner-${key}`, "text", "Add owners to triage", provider.unassignedAdditionalOwner, '', "225", "150",
-            "The default scope of Triage view is restricted to the repository of the authenticated user. Here you can include other users or organizations (separated by spaces)")}
-          ${this.array2html(`config-providers-dependabotAdditionalOwner-${key}`, "text", "Add owners to dependabot", provider.dependabotAdditionalOwner, '', "225", "150",
-            "The default scope of Dependabot view is restricted to the repository of the authenticated user. Here you can include other users or organizations (separated by spaces)")}
+          ${ provider.provider == "GitHub" ?
+            this.array2html(`config-providers-unassignedAdditionalOwner-${key}`, "text", "Add owners to triage", provider.unassignedAdditionalOwner, '', "225", "150",
+              "The default scope of Triage view is restricted to the repository of the authenticated user. Here you can include other users or organizations (separated by spaces)")
+            + this.array2html(`config-providers-dependabotAdditionalOwner-${key}`, "text", "Add owners to dependabot", provider.dependabotAdditionalOwner, '', "225", "150",
+              "The default scope of Dependabot view is restricted to the repository of the authenticated user. Here you can include other users or organizations (separated by spaces)")
+            : ""}
           ${this.check2html(`config-providers-enableNotifications-${key}`, "Show notifications/mentions", provider.enableNotifications)}
         </div>
 
@@ -297,10 +299,9 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
     this.html2authprovider(provider, id);
 
     provider.filterIfLabel = $(`#config-providers-filterIfLabel-${id}`).val().trim();
-    provider.unassignedAdditionalOwner = this.str2array($(`#config-providers-unassignedAdditionalOwner-${id}`).val());
-    provider.dependabotAdditionalOwner = this.str2array($(`#config-providers-dependabotAdditionalOwner-${id}`).val());
-
     if (provider.provider == "GitHub") {
+      provider.unassignedAdditionalOwner = this.str2array($(`#config-providers-unassignedAdditionalOwner-${id}`).val());
+      provider.dependabotAdditionalOwner = this.str2array($(`#config-providers-dependabotAdditionalOwner-${id}`).val());
       provider.match.criterion = $(`#config-providers-match-criterion-${id}`).val()
       provider.match.user = this.str2array($(`#config-providers-match-user-${id}`).val());
       provider.match.org = this.str2array($(`#config-providers-match-org-${id}`).val());

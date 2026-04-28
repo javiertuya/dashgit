@@ -33,6 +33,10 @@ const gitLabApi = {
     const created = { state: "opened", author_username: provider.user, scope: "all", perPage: 100, maxPages: 1, order_by: sort, sort: order };
     const dependabot = { state: "opened", author_username: provider.dependabotUser, scope: "all", perPage: 100, maxPages: 1, order_by: sort, sort: order };
     const dependabotTest = { state: "opened", in: "Test pull Request for dependabot/testupdate" };
+    // Note: On gitlab.com, triage is deactivated and dependabot shows many items because the only query used is all merge requests.
+    // This should be restricted to have a like GitHub scope. If needed, consider the below in the future:
+    // According the doc, it is possible to list project and group merge requests separately, but not personal projects.
+    // But there is an undocumented option to get personal projects: https://gitlab.com/gitlab-org/gitlab/-/work_items/582636
 
     let promises = [];
     if (target == "assigned")

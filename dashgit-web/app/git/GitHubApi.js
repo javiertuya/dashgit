@@ -87,10 +87,10 @@ const gitHubApi = {
     //creates single result with all responses
     let allResponses = [];
     for (let response of responses)
-      if (response.followUp != undefined) // follow-ups have different structure than other items
-        allResponses.push(...response.followUp);
-      else
+      if (response.followUp == undefined) // follow-ups have different structure than other items
         allResponses.push(...response.data.items);
+      else
+        allResponses.push(...response.followUp);
     let model = gitHubAdapter.workitems2model(provider, allResponses);
     model.header.target = target;
     return model;
