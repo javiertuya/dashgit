@@ -215,7 +215,7 @@ const indexController = {
   updateAndRender: async function () {
     wiView.resetAlerts();
     if (config.appUpdateEvent())
-      wiView.renderAlert("info", `Dashgit version has been updated to ${config.appVersion}. See the release notes at <a target="_blank" href="https://github.com/javiertuya/dashgit/releases">https://github.com/javiertuya/dashgit/releases</a>`);
+      wiView.renderAlert("info", `Dashgit version has been updated to ${config.appVersion}. Now supporting OAuth2. See the release notes at <a target="_blank" href="https://github.com/javiertuya/dashgit/releases">https://github.com/javiertuya/dashgit/releases</a>`);
 
     indexController.renderMainFilters();
     let target = $(".nav-link.active").attr("aria-controls");
