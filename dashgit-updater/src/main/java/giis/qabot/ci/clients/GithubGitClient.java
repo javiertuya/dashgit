@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.kohsuke.github.GHFileNotFoundException;
+import org.kohsuke.github.GHIOException;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHPullRequest.MergeMethod;
 import org.kohsuke.github.GHRepository;
@@ -245,6 +246,11 @@ public class GithubGitClient implements IGitClient {
 			GHUser ghuser = api.getUser(assignee);
 			ghpr.assignTo(ghuser);
 			return;
+		} catch (GHIOException e0) {
+			// Exception org.kohsuke.github.GHIOException: Failed to set the custom verb
+			// is already fixed in github-api 2.0-rc.6, for now, this removes the stacktrace
+			// Do not throw here to avoid process interruption, fallback will be tried
+			log.error(e0.toString());
 		} catch (Exception e1) {
 			log.error("Can't set the assignee for this pull request", e1);
 		}
