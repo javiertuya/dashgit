@@ -37,7 +37,7 @@ const gitLabAdapter = {
         iidstr: iidstr, url: item.web_url, repo_url: common.repoUrl,
         labels: []
       });
-      // GitLab does not store label colors in response, get the labels from the parameter
+      // GitLab may return labels as strings or as objects when with_labels_details=true
       let issueTypeLabel = this.issueTypeLabel(item);
       if (issueTypeLabel != null)
         model.addLastItemLabel(issueTypeLabel.name, issueTypeLabel.color, true);
@@ -91,10 +91,19 @@ const gitLabAdapter = {
 
   getLabelsForItem: function (repoName, item, allLabels, model) {
     for (let label of this.safe(item?.labels)) {
-      let color = ""; //default if not found
-      if (allLabels?.[this.getLabelId(repoName, label)] != undefined)
-        color = allLabels[this.getLabelId(repoName, label)].color;
-      model.addLastItemLabel(label, color.replace("#", ""));
+      let name = "";
+      let color = "";
+      if (typeof label === "string") {
+        name = label;
+        if (allLabels?.[this.getLabelId(repoName, name)] != undefined)
+          color = allLabels[this.getLabelId(repoName, name)].color;
+      } else if (label != null && typeof label === "object") {
+        name = label.name ?? "";
+        color = label.color ?? "";
+      }
+      if (name === "")
+        continue;
+      model.addLastItemLabel(name, String(color).replace("#", ""));
     }
   },
 

@@ -31,6 +31,10 @@
         {
           "name": "BLOCKING",
           "color": "FF0000"
+        },
+        {
+          "name": "urgent",
+          "color": "000000"
         }
       ],
       "uid": "org-proj_issue_1"

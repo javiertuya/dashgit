@@ -5,7 +5,6 @@ import { gitStoreApi } from "./GitStoreApi.js"
 import { log } from "./Log.js"
 import { wiController } from "../WiController.js"
 import { config } from "../core/Config.js"
-import { labelsCache } from "../core/LabelsCache.js"
 import { login } from "../login/Login.js"
 
 /**
@@ -27,12 +26,12 @@ const gitLabApi = {
     // issue #116 set sorting criteria to match the selected in the UI
     const sort = (sorting ?? "").includes("updated") ? "updated_at" : "created_at";
     const order = (sorting ?? "").includes("descending") ? "desc" : "asc";
-    const assigned = { state: "opened", assignee_username: provider.user, scope: "all", perPage: 100, maxPages: 1, order_by: sort, sort: order };
-    const unassigned = { state: "opened", assignee_id: "None", scope: "all", perPage: 100, maxPages: 1, order_by: sort, sort: order };
-    const reviewer = { state: "opened", reviewer_username: provider.user, scope: "all", perPage: 100, maxPages: 1, order_by: sort, sort: order };
-    const created = { state: "opened", author_username: provider.user, scope: "all", perPage: 100, maxPages: 1, order_by: sort, sort: order };
-    const dependabot = { state: "opened", author_username: provider.dependabotUser, scope: "all", perPage: 100, maxPages: 1, order_by: sort, sort: order };
-    const dependabotTest = { state: "opened", in: "Test pull Request for dependabot/testupdate" };
+    const assigned = { state: "opened", assignee_username: provider.user, scope: "all", with_labels_details: true, perPage: 100, maxPages: 1, order_by: sort, sort: order };
+    const unassigned = { state: "opened", assignee_id: "None", scope: "all", with_labels_details: true, perPage: 100, maxPages: 1, order_by: sort, sort: order };
+    const reviewer = { state: "opened", reviewer_username: provider.user, scope: "all", with_labels_details: true, perPage: 100, maxPages: 1, order_by: sort, sort: order };
+    const created = { state: "opened", author_username: provider.user, scope: "all", with_labels_details: true, perPage: 100, maxPages: 1, order_by: sort, sort: order };
+    const dependabot = { state: "opened", author_username: provider.dependabotUser, scope: "all", with_labels_details: true, perPage: 100, maxPages: 1, order_by: sort, sort: order };
+    const dependabotTest = { state: "opened", with_labels_details: true, in: "Test pull Request for dependabot/testupdate" };
     // Note: On gitlab.com, triage is deactivated and dependabot shows many items because the only query used is all merge requests.
     // This should be restricted to have a like GitHub scope. If needed, consider the below in the future:
     // According the doc, it is possible to list project and group merge requests separately, but not personal projects.
@@ -101,7 +100,7 @@ const gitLabApi = {
         allResponses.push(...response.followUp);
       else
         allResponses.push(...response);
-    let model = gitLabAdapter.workitems2model(provider, allResponses, labelsCache.data[provider.uid]);
+    let model = gitLabAdapter.workitems2model(provider, allResponses, {});
     model.header.target = target;
     model.header.message = promises.length == 0 ? `Target ${target} not implemented for this provider` : ``;
     if (target == "involved")
@@ -115,7 +114,7 @@ const gitLabApi = {
       })
   },
   emptyModel: function (provider, message) {
-    let model = gitLabAdapter.workitems2model(provider, [], labelsCache.data[provider.uid]);
+    let model = gitLabAdapter.workitems2model(provider, [], {});
     model.header.message = message;
     return model;
   },
@@ -161,10 +160,6 @@ const gitLabApi = {
     //From now on, all calls are related to the project gids determined here (excluding archived)
     const gids = gitLabAdapter.model4projectIds(model0);
 
-    //First time that page loads: determine info about labels (to set their color)
-    if (labelsCache.data[provider.uid] == undefined)
-      this.updateLabelsAsync(provider, gids);
-
     // Now gets the statuses of all pipelines and complete the model
     let query = gitLabGraphql.getStatusesQuery(provider, "ids:" + JSON.stringify(gids));
     let gqlresponse = await gitLabGraphql.callGraphqlApi(provider, query, true);
@@ -185,16 +180,6 @@ const gitLabApi = {
         break;
       }
     }
-  },
-
-  updateLabelsAsync: async function (provider, gids) {
-    labelsCache.data[provider.uid] = {}; // don't enter here any more
-    let queryx = gitLabGraphql.getLabelsQuery("ids:" + JSON.stringify(gids));
-    //this call may intermitently fail on gitlab.com due to insufficient permssions (do not show altert)
-    let gqlresponsex = await gitLabGraphql.callGraphqlApi(provider, queryx, false);
-    log.debug(provider.uid, "Labels graphql model (projects):", gqlresponsex);
-    let labels = gitLabAdapter.labels2model(gqlresponsex);
-    wiController.updateLabels(provider.uid, labels);
   },
 
   //Keeps only projects updated at since the date specified
