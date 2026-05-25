@@ -618,6 +618,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
       <div class="input-group input-group-sm">
         <span class="input-group-text" id="${id}-label" ${labelStyle}>${label}${this.infoIcon(info)}</span>
         <input id="${id}" type="${type}" value="${value ?? ''}" ${validation} ${valueStyle}
+          autocapitalize="off" autocorrect="off"
           class="form-control ${label == 'Username' ? ' fw-bold' : ''}" aria-label="${label}" aria-describedby="${id}-label">
       </div>
       ${ validation && validation != "" ? '<div class="text-danger small d-none">' + invalidMsg + '</div>' : ""}
@@ -636,7 +637,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
         <label for="${id}" class="col-form-label">${label}</label>
       </div>
       <div class="col-auto">
-        <input id="${id}" type="${type}" class="form-control form-control-sm" aria-label="${label}" required></input>
+        <input id="${id}" type="${type}" autocapitalize="off" autocorrect="off" class="form-control form-control-sm" aria-label="${label}" required></input>
       </div>
     `;
   },

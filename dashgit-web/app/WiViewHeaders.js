@@ -124,7 +124,7 @@ const wiHeaders = {
       header += `
         <div class="form-input form-check-inline">
         <label for="wi-view-filter-${target}-exclude" class="col-form-label">Exclude Repos:&nbsp; </label>
-        <input id="wi-view-filter-${target}-exclude" value="${viewFilters.exclude}" type="search" class="wi-view-filter-input d-inline-block form-control" placeholder="(exclude)" style="color:red;font-size:0.875rem;width:300px;height:24px;padding-left:4px" aria-label="Exclude:"></input>
+        <input id="wi-view-filter-${target}-exclude" value="${viewFilters.exclude}" type="search" autocapitalize="off" autocorrect="off" class="wi-view-filter-input d-inline-block form-control" placeholder="(exclude)" style="color:red;font-size:0.875rem;width:300px;height:24px;padding-left:4px" aria-label="Exclude:"></input>
         </div>
       `;
 

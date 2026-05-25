@@ -36,6 +36,8 @@
     integrity="sha512-a+SUDuwNzXDvz4XrIcXHuCf089/iJAoN4lmrXJg18XnduKK6YlDHNRalv4yd1N40OKI80tFidF+rqTFKGPoWFQ=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
+  <link rel="stylesheet" href="assets/dashgit.css">
+  
   <script type="module">
     import { indexController } from "./IndexController.js"
     $(document).ready(async function () {
@@ -44,33 +46,8 @@
   </script>
 </head>
 
-<style>
-  .col-auto {
-    margin: 3px;
-    padding-left: 2px;
-    padding-right: 2px;
-  }
-
-  .nav-link {
-    padding-top: 4px;
-    padding-bottom: 4px;
-  }
-
-  .accordion-body {
-    padding: 6px
-  }
-
-  .accordion-button {
-    padding: 6px
-  }
-
-  input[type="checkbox"] {
-    border-color: #888888
-  }
-</style>
-
-<body style="overflow-x: hidden;"><!-- overflow-x to remove bootstrap horizontal scroll bar -->
-  <div class="sticky-md-top text-bg-light" style="padding:4px 4px 0px 4px;">
+<body>
+  <div class="sticky-md-top text-bg-light">
     <div id="alert-div"></div>
 
     <span style="float:right; padding-top:4px">&nbsp;
@@ -112,10 +89,10 @@
     <div id="header-content" class="form-group row align-items-center" style="display:none">
 
       <div class="col-auto" id="loadingIcon" style="visibility:hidden;">
-        &nbsp;<img src="assets/icons/loading.gif" width="22" height="22" alt="progress">
+        <img src="assets/icons/loading.gif" width="22" height="22" alt="progress">
       </div>
       <div class="col-auto" id="reloadIcon">
-        &nbsp;<i class="fa-solid fa-arrow-rotate-right" style="width:22px"></i>
+        <i class="fa-solid fa-arrow-rotate-right" style="width:22px"></i>
       </div>
 
       <div class="col-auto">

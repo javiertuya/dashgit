@@ -1,0 +1,59 @@
+.col-auto {
+  margin: 3px;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+
+.nav-link {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+body {
+  overflow-x: hidden; /* overflow-x to remove bootstrap horizontal scroll bar */
+}
+
+.sticky-md-top {
+  padding: 4px 4px 0px 12px;
+}
+
+.accordion-body {
+  padding: 6px;
+}
+
+.accordion-button {
+  padding: 6px;
+}
+
+input[type="checkbox"] {
+  border-color: #888888;
+}
+
+td.wi-item-column-clickable {
+  width: 24px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* @media (max-width: 767.98px) { */
+@media (max-width: 575.98px) {
+  td.wi-item-column-clickable {
+    width: 18px;
+    min-width: 18px;
+    text-align: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+/*
+  td.wi-item-column-clickable > i {
+    display: inline-block;
+    width: 18px;
+    text-align: center;
+  }*/
+
+  td.wi-item-column-content {
+    padding-left: 1;
+  }
+
+}

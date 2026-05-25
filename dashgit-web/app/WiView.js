@@ -100,7 +100,7 @@ const wiView = {
             <span class='h4'>${wiRender.provider2html(header.provider)} ${header.provider} - ${header.user}</span>
             <span class='h6'>${wiServices.filterMatchItemSummary(provider)}</span>
             <span class='h6'>${header.url != "" ? " &nbsp; at " + header.url.replace("https://", "") : ""}</span>
-            <span id="wi-badges-${this.getId(target, header.uid, "all")}" style='position:relative; bottom:4px;'></span>
+            <span id="wi-badges-${this.getId(target, header.uid, "all")}" style='position:relative; bottom:2px;'></span>
             <!--
             <span id="wi-spinner-${this.getId(target, header.uid, "all")}" style='position:relative; bottom:2px;'> ${target != "statuses" ? wiRender.spinnerIcon : ""}</span>
             -->
@@ -159,14 +159,14 @@ const wiView = {
         itemtype="${item.type}"
         itemiid="${item.iid}"
         class="wi-status-class-any wi-status-class-${wiRender.status2class(item.type, header.uid, item.uid)}">
-      <td style="width:24px;" class="wi-item-column-clickable">${wiRender.status2html(item.type, header.uid, item.uid, this.getId(target, header.uid, item.uid))}</td>
-      <td style="width:24px;" class="wi-item-column-clickable">${wiRender.type2html(item.type, new Date(item.updated_at) > highlightSince)}</td>
-      <td style="width:24px; color:${wiRender.gitColor};" 
+      <td class="wi-item-column-clickable">${wiRender.status2html(item.type, header.uid, item.uid, this.getId(target, header.uid, item.uid))}</td>
+      <td class="wi-item-column-clickable">${wiRender.type2html(item.type, new Date(item.updated_at) > highlightSince)}</td>
+      <td style="color:${wiRender.gitColor};" 
         class="wi-item-column-clickable wi-notifications-${this.getId(target, header.uid, 'all')}" 
         id="wi-notifications-${this.getId(target, header.uid, item.uid)}">
         ${wiRender.notifications2html(header.uid, item.uid)}
       </td>
-      <td>
+      <td class="wi-item-column-content">
         ${wiRender.updateCheck2html(target, header.uid, item.repo_name, item.iid)}
         ${wiRender.actions2html(item.actions)}
         ${grouping ? "" : wiRender.repourl2html(item.repo_url, item.repo_name)}
