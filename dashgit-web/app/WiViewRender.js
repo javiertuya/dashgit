@@ -112,7 +112,7 @@ const wiRender = {
   labels2html: function (repoName, labels) {
     let html = "";
     for (let label of labels)
-      html += " " + this.gitlabel2html(repoName, label.name, label.color);
+      html += " " + this.gitlabel2html(repoName, label.name, label.color, label.isIssueType === true);
     return html;
   },
 
@@ -158,18 +158,41 @@ const wiRender = {
       return `opacity:0.9`;
   },
 
-  gitlabel2html: function (repoName, name, color) {
+  gitlabel2html: function (repoName, name, color, isIssueType = false) {
     let cssClass = "badge rounded-pill";
     if (color == "") {
-      color = "888888"; //default if no color found
+      color = "#888888"; //default if no color found
       cssClass += " badge-color-undefined"; //to be replaced later (only GitLab)
     }
+    let normalizedColor = this.normalizeColor(color);
+    let style;
+    if (isIssueType) {
+      style = `background-color:#ffffff; color:${normalizedColor}; border:1px solid ${normalizedColor};`;
+    } else {
+      style = this.getLabelStyle(name, normalizedColor);
+    }
     //a custom attribute colorkey is set to allow locate labels in data from cache
-    return `<span class="${cssClass}" style="${this.getLabelStyle(name, color)}" data-colorkey="${repoName}-${name}">${name}</span>`;
+    return `<span class="${cssClass}" style="${style}" data-colorkey="${repoName}-${name}">${name}</span>`;
+  },
+  normalizeColor: function (color) {
+    if (color == undefined || color == null)
+      return "#888888";
+    if (typeof color !== "string")
+      return "#888888";
+    if (color.startsWith("#"))
+      return color;
+    if (/^[0-9A-Fa-f]{6}$/.test(color))
+      return `#${color}`;
+    return color;
   },
   getLabelStyle: function (name, color) {
-    let foreground = this.getColorLuma(color) > 140.0 ? "000000" : "ffffff";
-    return `background-color:#${color}; color:#${foreground};`;
+    if (typeof color !== "string")
+      color = "#888888";
+    if (/^#[0-9A-Fa-f]{6}$/.test(color)) {
+      let foreground = this.getColorLuma(color.substring(1)) > 140 ? "000000" : "ffffff";
+      return `background-color:${color}; color:#${foreground};`;
+    }
+    return `background-color:${color}; color:#000000;`;
   },
   getColorLuma: function (color) {
     //https://stackoverflow.com/questions/12043187/how-to-check-if-hex-color-is-too-black

@@ -27,6 +27,11 @@ const gitHubAdapter = {
         assignees += assignee.login + " ";
       let iidstr = "#" + item.number;
       let actions = item.custom_actions == undefined ? {} : item.custom_actions;
+
+      // If issue has an issue type the api returned type is an object. We will represent it as a label
+      // with an attribute isIssueType to allow different rendering
+      let issueTypeLabel = this.issueTypeLabel(item);
+
       m.addItem({
         repo_name: repoName, type: type, iid: item.number,
         title: item.title, actions: actions,
@@ -34,9 +39,13 @@ const gitHubAdapter = {
         iidstr: iidstr, url: item.html_url, repo_url: repoUrl,
         labels: []
       });
-      for (let label of item.labels) {
-        m.addLastItemLabel(label.name, label.color);
-      }
+      let labels = [];
+      if (issueTypeLabel != null)
+        labels.push({ ...issueTypeLabel, isIssueType: true });
+      for (let label of item.labels ?? [])
+        labels.push(label);
+      for (let label of labels)
+        m.addLastItemLabel(label.name, label.color, label.isIssueType === true);
     }
     return m;
   },
@@ -46,6 +55,22 @@ const gitHubAdapter = {
         item["custom_actions"] = {};
       item.custom_actions[action] = true;
     }
+  },
+
+  issueTypeLabel: function (item) {
+    if (item.type == undefined)
+      return null;
+    if (typeof item.type === "string") {
+      if (item.type.toLowerCase() == "issue")
+        return null;
+      return { name: item.type, color: "" };
+    }
+    if (item.type.name != undefined) {
+      if (String(item.type.name).toLowerCase() == "issue")
+        return null;
+      return { name: item.type.name, color: item.type.color ?? "" };
+    }
+    return null;
   },
 
   notifications2model: function (response) {

@@ -40,6 +40,18 @@ describe("TestGitHubAdapter - Model transformations from GitHub API results", fu
         assert.deepEqual(expected, actual);
     });
 
+    it("Transform GitHub REST API results with issue type objects", function () {
+        let input = JSON.parse(fs.readFileSync("./input/github-rest-result1-type-object.json"));
+        let provider = { provider: "GitHub", uid: "0-github", user: "usr1", url: 'https://github.com', api: 'https://api.github.com' };
+        let actual = gitHubAdapter.workitems2model(provider, input);
+        fs.writeFileSync("./actual/github-rest-model1-type-object.json", JSON.stringify(actual, null, 2));
+        let expected = JSON.parse(fs.readFileSync("./expected/github-rest-model1-type-object.json"));
+        assert.deepEqual(expected, actual);
+        assert.equal(actual.items[1].labels[0].isIssueType, true);
+        assert.equal(actual.items[1].labels[0].name, 'bug');
+        assert.equal(actual.items[1].labels[1].name, 'question');
+    });
+
     //Data about follow ups is stored in the manager repository, but it is transformed to models as it if where from the GitHub api
     it("Transform GitHub Follow up results from GitStoreApi", function () {
         let input = JSON.parse(fs.readFileSync("./input/gitstore-follow-up-result.json"));
