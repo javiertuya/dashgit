@@ -166,13 +166,32 @@ const wiRender = {
     }
     let normalizedColor = this.normalizeColor(color);
     let style;
+    let displayName = name;
     if (isIssueType) {
+      if (normalizedColor == "yellow") // to give more contrast with white background
+        normalizedColor = "orange";
       style = `background-color:#ffffff; color:${normalizedColor}; border:1px solid ${normalizedColor};`;
+      
+      const icon = this.knownIssueTypeIcon(name);
+      if (icon != "")
+        displayName = icon + " " + name;
     } else {
       style = this.getLabelStyle(name, normalizedColor);
     }
     //a custom attribute colorkey is set to allow locate labels in data from cache
-    return `<span class="${cssClass}" style="${style}" data-colorkey="${repoName}-${name}">${name}</span>`;
+    return `<span class="${cssClass}" style="${style}" data-colorkey="${repoName}-${name}">${displayName}</span>`;
+  },
+  knownIssueTypeIcon: function(name) {
+    if (name.toLowerCase() == "bug")
+      return '<i class="fa-solid fa-bug"></i>';
+    else if (name.toLowerCase() == "enhancement")
+      return '<i class="fa-regular fa-square-plus"></i>';
+    else if (name.toLowerCase() == "task")
+      return '<i class="fa-regular fa-square-check"></i>';
+    else if (name.toLowerCase() == "incident")
+      return '<i class="fa-solid fa-triangle-exclamation"></i>';
+    else
+      return '';
   },
   normalizeColor: function (color) {
     if (color == undefined || color == null)
