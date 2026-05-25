@@ -1,0 +1,28 @@
+[
+  {
+    "type": "ISSUE",
+    "references": { "full": "org/proj#1" },
+    "web_url": "https://mygitlab.com/org/proj/-/issues/1",
+    "assignees": [],
+    "iid": 1,
+    "title": "Incident issue",
+    "author": { "username": "usr1" },
+    "created_at": "2026-01-01T00:00:00Z",
+    "updated_at": "2026-01-01T00:00:00Z",
+    "labels": ["BLOCKING"],
+    "issue_type": "incident"
+  },
+  {
+    "type": "ISSUE",
+    "references": { "full": "org/proj#2" },
+    "web_url": "https://mygitlab.com/org/proj/-/issues/2",
+    "assignees": [],
+    "iid": 2,
+    "title": "Task issue",
+    "author": { "username": "usr1" },
+    "created_at": "2026-01-01T00:00:00Z",
+    "updated_at": "2026-01-01T00:00:00Z",
+    "labels": ["BLOCKING"],
+    "issue_type": "task"
+  }
+]

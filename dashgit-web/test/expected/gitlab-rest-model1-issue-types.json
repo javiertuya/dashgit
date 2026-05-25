@@ -1,0 +1,65 @@
+{
+  "header": {
+    "provider": "GitLab",
+    "uid": "0-gitlab",
+    "user": "usr1",
+    "url": "https://mygitlab.com",
+    "repo_names": [],
+    "target": "",
+    "message": ""
+  },
+  "items": [
+    {
+      "repo_name": "org/proj",
+      "type": "issue",
+      "iid": 1,
+      "title": "Incident issue",
+      "actions": {},
+      "author": "usr1",
+      "assignees": "",
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "iidstr": "#1",
+      "url": "https://mygitlab.com/org/proj/-/issues/1",
+      "repo_url": "https://mygitlab.com/org/proj",
+      "labels": [
+        {
+          "name": "incident",
+          "color": "red",
+          "isIssueType": true
+        },
+        {
+          "name": "BLOCKING",
+          "color": "FF0000"
+        }
+      ],
+      "uid": "org-proj_issue_1"
+    },
+    {
+      "repo_name": "org/proj",
+      "type": "issue",
+      "iid": 2,
+      "title": "Task issue",
+      "actions": {},
+      "author": "usr1",
+      "assignees": "",
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "iidstr": "#2",
+      "url": "https://mygitlab.com/org/proj/-/issues/2",
+      "repo_url": "https://mygitlab.com/org/proj",
+      "labels": [
+        {
+          "name": "task",
+          "color": "orange",
+          "isIssueType": true
+        },
+        {
+          "name": "BLOCKING",
+          "color": "FF0000"
+        }
+      ],
+      "uid": "org-proj_issue_2"
+    }
+  ]
+}

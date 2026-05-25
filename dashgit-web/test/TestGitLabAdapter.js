@@ -40,6 +40,23 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
         assert.deepEqual(expected, actual);
     });
 
+    it("Transform Gitlab REST API results with issue type labels", function () {
+        let labels = { "org/proj-BLOCKING": { "color": "#FF0000" } };
+        let input = JSON.parse(fs.readFileSync("./input/gitlab-rest-result1-issue-types.json"));
+        let provider = { provider: "GitLab", uid: "0-gitlab", user: "usr1", url: 'https://mygitlab.com' };
+
+        let actual = gitLabAdapter.workitems2model(provider, input, labels);
+        fs.writeFileSync("./actual/gitlab-rest-model1-issue-types.json", JSON.stringify(actual, null, 2));
+        let expected = JSON.parse(fs.readFileSync("./expected/gitlab-rest-model1-issue-types.json"));
+        assert.deepEqual(expected, actual);
+        assert.strictEqual(actual.items[0].labels[0].isIssueType, true);
+        assert.strictEqual(actual.items[0].labels[0].name, "incident");
+        assert.strictEqual(actual.items[0].labels[1].name, "BLOCKING");
+        assert.strictEqual(actual.items[1].labels[0].isIssueType, true);
+        assert.strictEqual(actual.items[1].labels[0].name, "task");
+        assert.strictEqual(actual.items[1].labels[1].name, "BLOCKING");
+    });
+
     it("Transform Gitlab REST API results from review requests", function () {
         // Review requests wrap an api response that selects where user is a reviewer to add the review request custom action
         // Just check that the custom action is added to a response and then to the adapted model items

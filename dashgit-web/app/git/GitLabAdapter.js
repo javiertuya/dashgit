@@ -38,6 +38,9 @@ const gitLabAdapter = {
         labels: []
       });
       // GitLab does not store label colors in response, get the labels from the parameter
+      let issueTypeLabel = this.issueTypeLabel(item);
+      if (issueTypeLabel != null)
+        model.addLastItemLabel(issueTypeLabel.name, issueTypeLabel.color, true);
       this.getLabelsForItem(common.repoName, item, allLabels, model);
     }
     return model;
@@ -94,6 +97,19 @@ const gitLabAdapter = {
       model.addLastItemLabel(label, color.replace("#", ""));
     }
   },
+
+  issueTypeLabel: function (item) {
+    let issueType = item?.issue_type;
+    if (typeof issueType !== "string")
+      return null;
+    issueType = issueType.toLowerCase();
+    if (issueType === "incident")
+      return { name: issueType, color: "red" };
+    if (issueType === "task")
+      return { name: issueType, color: "orange" };
+    return null;
+  },
+
   getLabelId: function (repoName, title) {
     return `${repoName}-${title}`;
   },
