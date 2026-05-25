@@ -1,5 +1,5 @@
-import { Model } from './Model.js'
-import { surrogates } from './Surrogates.js'
+import { Model } from "./Model.js"
+import { surrogates } from "./Surrogates.js"
 
 /**
  * Stores notifications that are obtained asynchronously to get displayed by the UI.
