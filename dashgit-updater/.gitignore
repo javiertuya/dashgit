@@ -1,2 +1,6 @@
 target
 it.properties
+
+.project
+.settings
+.classpath

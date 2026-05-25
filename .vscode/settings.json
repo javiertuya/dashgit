@@ -10,5 +10,10 @@
   ],
   "mochaExplorer.env": {
     "NODE_ENV": "test"
-  }
+  },
+
+  "java.server.launchMode": "Standard",
+  "java.project.sourcePaths": [
+    "dashgit-updater"
+  ]
 }
