@@ -50,7 +50,7 @@ const gitLabAdapter = {
     let common = { isIssue: false, repoName: "", repoUrl: "", item: null };
 
     if (item.target == undefined) { // from api.Issues.all or api.MergeRequests.all
-      if (item.type == "ISSUE" || item.type == "INCIDENT") //mr do not have this attribute
+      if (item.type == "ISSUE" || item.type == "INCIDENT" || item.type == "TASK") //mr do not have this attribute
         common.isIssue = true;
       common.repoName = item.references.full.substring(0, item.references.full.indexOf(common.isIssue ? "#" : "!"));
       common.repoUrl = item.web_url.substring(0, item.web_url.indexOf(common.isIssue ? "/-/issues/" : "/-/merge_requests/"));

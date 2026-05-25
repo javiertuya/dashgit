@@ -41,7 +41,7 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
     });
 
     it("Transform Gitlab REST API results with issue type labels", function () {
-        let labels = { "org/proj-BLOCKING": { "color": "#FF0000" } };
+        let labels = { "org/proj-BLOCKING": { "color": "#FF0000" }, "org/proj-urgent": { "color": "#000000" } };
         let input = JSON.parse(fs.readFileSync("./input/gitlab-rest-result1-issue-types.json"));
         let provider = { provider: "GitLab", uid: "0-gitlab", user: "usr1", url: 'https://mygitlab.com' };
 
@@ -55,6 +55,14 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
         assert.strictEqual(actual.items[1].labels[0].isIssueType, true);
         assert.strictEqual(actual.items[1].labels[0].name, "task");
         assert.strictEqual(actual.items[1].labels[1].name, "BLOCKING");
+        assert.strictEqual(actual.items[2].labels[0].isIssueType, true);
+        assert.strictEqual(actual.items[2].labels[0].name, "incident");
+        assert.strictEqual(actual.items[2].labels[1].name, "BLOCKING");
+        assert.strictEqual(actual.items[2].labels[2].name, "urgent");
+        assert.strictEqual(actual.items[2].labels[2].color, "000000");
+        assert.strictEqual(actual.items[3].type, "pr");
+        assert.strictEqual(actual.items[3].iidstr, "!4");
+        assert.strictEqual(actual.items[3].labels[0].name, "BLOCKING");
     });
 
     it("Transform Gitlab REST API results from review requests", function () {

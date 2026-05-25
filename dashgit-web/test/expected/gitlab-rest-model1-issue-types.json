@@ -64,6 +64,57 @@
         }
       ],
       "uid": "org-proj_issue_2"
+    },
+    {
+      "repo_name": "org/proj",
+      "type": "issue",
+      "iid": 3,
+      "title": "Incident issue",
+      "actions": {},
+      "author": "usr1",
+      "assignees": "",
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "iidstr": "#3",
+      "url": "https://mygitlab.com/org/proj/-/issues/3",
+      "repo_url": "https://mygitlab.com/org/proj",
+      "labels": [
+        {
+          "name": "incident",
+          "color": "red",
+          "isIssueType": true
+        },
+        {
+          "name": "BLOCKING",
+          "color": "FF0000"
+        },
+        {
+          "name": "urgent",
+          "color": "000000"
+        }
+      ],
+      "uid": "org-proj_issue_3"
+    },
+    {
+      "repo_name": "org/proj",
+      "type": "pr",
+      "iid": 4,
+      "title": "Merge request",
+      "actions": {},
+      "author": "usr1",
+      "assignees": "",
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "iidstr": "!4",
+      "url": "https://mygitlab.com/org/proj/-/merge_requests/4",
+      "repo_url": "https://mygitlab.com/org/proj",
+      "labels": [
+        {
+          "name": "BLOCKING",
+          "color": "FF0000"
+        }
+      ],
+      "uid": "org-proj_pr_4"
     }
   ]
 }
