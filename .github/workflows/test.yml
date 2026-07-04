@@ -23,7 +23,7 @@ jobs:
           echo "fork: ${{ github.event.pull_request.head.repo.fork }}"
           echo "head ref: ${{ github.head_ref }}"
       - name: Checkout GitHub repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Use Node.js
         uses: actions/setup-node@v6
         with:
@@ -93,7 +93,7 @@ jobs:
     #if: ${{ false }}
     if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/')))
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - run: echo "current branch ${{ github.ref_name }}"
     - uses: dorny/paths-filter@v4.0.1
       id: filter
@@ -118,7 +118,7 @@ jobs:
     needs:  test-it-trigger
     if: needs.test-it-trigger.outputs.output1 == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # workaround #35, avoid infinite loop of ben-z/gh-action-mutex, issue #15
       - if: github.event.pull_request.head.repo.fork
@@ -167,7 +167,7 @@ jobs:
 
       - name: Generate report checks - ${{ matrix.scope }}
         if: success() || failure()
-        uses: mikepenz/action-junit-report@v6.4.1
+        uses: mikepenz/action-junit-report@v6.4.2
         with:
           check_name: "test-it-result-${{ matrix.scope }}"
           report_paths: "**/surefire-reports/TEST-*.xml"
