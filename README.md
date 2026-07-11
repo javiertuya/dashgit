@@ -225,4 +225,7 @@ The following table summarizes the test strategy (explained below):
    Run in CI as part of the IT jobs.
 4. Combined updates: Only automates the test data preparation using a JUnit test in `dashgit-updater`: `TestE2eLiveUpdatesSetup.java`.
    Follow the instructions in this test class.
-5. Manual tests: Not yet automated.
+5. End-to-end: A Playwright smoke test in `dashgit-web/e2e` boots the app in a browser and checks
+   that it loads with an empty configuration and that a provider added through the Configure form persists.
+   It needs internet access (CDN assets) but no credentials. Run locally with `npm install` and `npm test`
+   from `dashgit-web/e2e` (not yet run in CI). Remaining manual system tests are not yet automated.

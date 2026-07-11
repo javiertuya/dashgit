@@ -54,6 +54,14 @@ This is a multi-component workspace. There is **no `package.json` at the reposit
   npm run report     # same, with the mochawesome HTML reporter
   ```
   Tests cover API-response-to-model transformations, rendering, and configuration. Test files are `Test*.js` (e.g. `TestGitHubAdapter.js`, `TestWiViewRender.js`, `TestConfig.js`, `TestOALogin.js`). Some tests compare generated output under `test/actual/` against golden files in `test/expected/`; create `test/actual/` if it does not exist. VS Code Mocha Explorer is preconfigured in `.vscode/settings.json`.
+- **End-to-end smoke test** (Playwright) runs from `dashgit-web/e2e/` — a separate, self-contained package that boots the real app in a browser:
+  ```
+  cd dashgit-web/e2e
+  npm install
+  npx playwright install chromium   # one-time browser download
+  npm test                          # runs: playwright test
+  ```
+  `playwright.config.js` launches a static server (`http-server`) against `dashgit-web/app/`. The tests (`*.spec.js`, e.g. `smoke.spec.js`) verify the app boots with empty local storage (all tabs render, "no providers" warning) and that a GitHub provider added through the Configure form persists to local storage. **No GitHub/GitLab credentials are needed** (empty config makes no API calls, and git-API hosts are blocked in the test), but the app pulls CDN assets (jQuery, Bootstrap, crypto-js, esm.sh) so **internet access is required**. Not wired into CI yet. Gotcha: the Configure form validates on `keyup`, so type into inputs with `pressSequentially`, not `fill`, or the save is blocked. With the VS Code **Playwright Test** extension (`ms-playwright.playwright`, recommended in `.vscode/extensions.json`), the tests appear in the Testing panel and **Debug Test** runs them headed (visible browser) with breakpoints.
 
 ### Updater (Java)
 From `dashgit-updater/`:

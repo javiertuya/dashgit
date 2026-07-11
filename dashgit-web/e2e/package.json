@@ -1,0 +1,15 @@
+{
+  "name": "dashgit-e2e",
+  "description": "DashGit - A Dashboard for GitHub and GitLab - End-to-end smoke tests (Playwright)",
+  "author": "Javier Tuya <tuya@uniovi.es>",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "http-server": "14.1.1"
+  }
+}
