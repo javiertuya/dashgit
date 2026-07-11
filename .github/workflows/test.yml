@@ -125,7 +125,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
     - run: echo "current branch ${{ github.ref_name }}"
-    - uses: dorny/paths-filter@v4.0.1
+    - uses: dorny/paths-filter@v4.0.2
       id: filter
       with:
         base: ${{ github.ref_name }}
