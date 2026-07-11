@@ -1,7 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: 'npm'
-    directories: ['dashgit-web/test/', 'oauth-exchange/']
+    directories: ['dashgit-web/test/', 'dashgit-web/e2e/', 'oauth-exchange/']
     schedule:
       interval: weekly
       day: "friday"
