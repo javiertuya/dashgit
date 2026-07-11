@@ -3,7 +3,8 @@ updates:
   - package-ecosystem: 'npm'
     directories: ['dashgit-web/test/', 'oauth-exchange/']
     schedule:
-      interval: 'monthly'
+      interval: weekly
+      day: "friday"
     open-pull-requests-limit: 20
 
   # app dependencies are grouped and should be manually updated in the index.html importmap
@@ -14,7 +15,8 @@ updates:
         patterns:
           - "*"
     schedule:
-      interval: 'monthly'
+      interval: weekly
+      day: "friday"
     open-pull-requests-limit: 20
 
   - package-ecosystem: maven
@@ -26,5 +28,6 @@ updates:
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: 'monthly'
+      interval: weekly
+      day: "friday"
     open-pull-requests-limit: 20
