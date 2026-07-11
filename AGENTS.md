@@ -77,7 +77,7 @@ From `dashgit-updater/`:
 From `oauth-exchange/`: `npm install` then run `server.js` with the required OAuth environment variables set.
 
 ## CI/CD (`.github/workflows/`)
-- `test.yml` — on push/PR: `test-ut` (web Mocha tests, Node 18), `sonarqube` analysis, and a `test-it` matrix (GitHub/GitLab integration tests, only when files under `dashgit-updater/**` change).
+- `test.yml` — on push/PR: `test-ut` (web Mocha tests, Node 24), `test-e2e` (Playwright e2e, Node 24), `sonarqube` analysis, and a `test-it` matrix (GitHub/GitLab integration tests, only when files under `dashgit-updater/**` change).
 - `release.yml` — on GitHub Release: runs `prepare-release.sh` and deploys `dashgit-web/dist/` to GitHub Pages.
 - Sonar configuration is in `sonar-project.properties` (analyzes `dashgit-web/app` and `dashgit-updater/src/main/java`).
 
