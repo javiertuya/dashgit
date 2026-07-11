@@ -19,6 +19,9 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:8080",
     trace: "on-first-retry",
+    // Record a video of every test run; saved under test-results/ (and uploaded as a CI artifact).
+    // Use "retain-on-failure" instead to keep videos only for failing tests.
+    video: "on",
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
