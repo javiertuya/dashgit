@@ -13,7 +13,8 @@ export default defineConfig({
   testMatch: "*.spec.js",
   timeout: 30000,
   expect: { timeout: 10000 },
-  retries: 0,
+  // Retry in CI to absorb transient CDN/network hiccups (the app loads assets from CDNs)
+  retries: process.env.CI ? 2 : 0,
   reporter: "html",
   use: {
     baseURL: "http://localhost:8080",
