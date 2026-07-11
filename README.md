@@ -213,7 +213,7 @@ The following table summarizes the test strategy (explained below):
 | Combined updates    |      | (2)        | (4)          |
 | Merge conflicts     | (3)  | (2)        |              |
 
-1. View work items & configuration: Mocha tests in `dashgit-web/test-web/test`.
+1. View work items & configuration: Mocha tests in `dashgit-web/test`.
    Transformations from API responses to the model displayed in the UI and functions related to the configuration.
    Run in CI, job `test-ut`.
 2. Combined updates: JUnit tests in `dashgit-updater`: `TestIt*`.
