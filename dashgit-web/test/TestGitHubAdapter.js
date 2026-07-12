@@ -170,4 +170,31 @@ describe("TestGitHubAdapter - Model transformations from GitHub API results", fu
         ], actual);
     });
 
+    // Approved but still open PRs (pending merge) are surfaced both when the user authored them and
+    // when the user only reviewed them. The pending_merge action is carried into the model in both
+    // situations (the role only differs in the item author).
+    it("Transform GitHub approved PRs pending merge for author and reviewer", function () {
+        let provider = { provider: "GitHub", uid: "0-github", user: "usr1", url: 'https://github.com', api: 'https://api.github.com' };
+        // Situation 1: I (usr1) am the author of an approved PR
+        let authored = {
+            number: 10, title: "My approved PR", pull_request: {}, repository_url: "https://api.github.com/repos/org/repo1",
+            user: { login: "usr1" }, assignees: [], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-02T00:00:00Z",
+            html_url: "https://github.com/org/repo1/pull/10", labels: []
+        };
+        // Situation 2: I (usr1) am a reviewer of someone else's approved PR
+        let reviewed = {
+            number: 20, title: "PR I reviewed", pull_request: {}, repository_url: "https://api.github.com/repos/org/repo2",
+            user: { login: "other" }, assignees: [], created_at: "2024-01-01T00:00:00Z", updated_at: "2024-01-02T00:00:00Z",
+            html_url: "https://github.com/org/repo2/pull/20", labels: []
+        };
+        let input = [authored, reviewed];
+        gitHubAdapter.addActionToPullRequestItems(input, "pending_merge");
+        let actual = gitHubAdapter.workitems2model(provider, input);
+        assert.equal(2, actual.items.length);
+        assert.equal("usr1", actual.items[0].author); // author role
+        assert.equal(true, actual.items[0].actions.pending_merge);
+        assert.equal("other", actual.items[1].author); // reviewer role
+        assert.equal(true, actual.items[1].actions.pending_merge);
+    });
+
 });

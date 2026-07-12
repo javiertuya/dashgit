@@ -45,9 +45,12 @@ const gitHubApi = {
         //To allow the ui to mark this as a review request, the api call is wrapped to add a special attribute (called custom_actions) to the response
         this.wrapIssuesAndPullRequestsCall(octokit, reviewer, "review_request"),
         this.wrapIssuesAndPullRequestsCall(octokit, revise, "changes_requested"),
-        //Approved but still open PRs (I authored or I reviewed): surface them so they are not lost before merge
-        this.wrapIssuesAndPullRequestsCall(octokit, mergeAuthor, "pending_merge"),
-        this.wrapIssuesAndPullRequestsCall(octokit, mergeReviewer, "pending_merge"),
+        //Approved but still open PRs (I authored or I reviewed): surface them so they are not lost before merge.
+        //Opt-out per provider (enablePendingMerge) because it adds two extra search queries.
+        ...(provider.enablePendingMerge ? [
+          this.wrapIssuesAndPullRequestsCall(octokit, mergeAuthor, "pending_merge"),
+          this.wrapIssuesAndPullRequestsCall(octokit, mergeReviewer, "pending_merge"),
+        ] : []),
         //Also show work items that need follow-up
         gitStoreApi.followUpAll(provider, true),
       ];

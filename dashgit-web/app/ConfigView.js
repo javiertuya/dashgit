@@ -125,6 +125,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
               "The default scope of Dependabot view is restricted to the repository of the authenticated user. Here you can include other users or organizations (separated by spaces)")
             : ""}
           ${this.check2html(`config-providers-enableNotifications-${key}`, "Show notifications/mentions", provider.enableNotifications)}
+          ${this.check2html(`config-providers-enablePendingMerge-${key}`, "Show approved PRs pending merge", provider.enablePendingMerge, "Adds approved but still open PRs (that you authored or reviewed) to the Assigned view, so they are not lost before merge. It requires two extra search queries per refresh.")}
         </div>
 
         ${this.matchCriterion2html(provider, key)}
@@ -307,6 +308,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
       provider.match.org = this.str2array($(`#config-providers-match-org-${id}`).val());
     }
     provider.enableNotifications = $(`#config-providers-enableNotifications-${id}`).is(':checked');
+    provider.enablePendingMerge = $(`#config-providers-enablePendingMerge-${id}`).is(':checked');
     if (!config.data.autoSurrogates)
       provider.statusSurrogateUser = $(`#config-providers-statusSurrogateUser-${id}`).val().trim();
 

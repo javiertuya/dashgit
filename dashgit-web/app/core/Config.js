@@ -105,6 +105,9 @@ const config = {
     this.setAuthProviderDefaults(element);
     this.setDefault(element, "enabled", true);
     this.setDefault(element, "enableNotifications", true);
+    // Opt-out: surface approved-but-open PRs (pending merge) in the Assigned view. Enabled by default;
+    // it adds two extra search queries, so it can be turned off per provider.
+    this.setDefault(element, "enablePendingMerge", true);
     this.setDefault(element, "filterIfLabel", "");
     this.setDefault(element, "statusSurrogateUser", "");
     // match filters are only for github, but empty filter is included also in gitlab to handle it in the same way

@@ -41,4 +41,11 @@ describe('TestWiViewRender - Label rendering', function () {
     assert.ok(wiRender.getColorLuma('#888888') < 140);
     assert.ok(wiRender.getColorLuma('#eeeeee') > 140);
   });
+
+  it('renders the pending merge badge for approved PRs awaiting merge', function () {
+    const html = wiRender.actions2html({ pending_merge: true });
+    assert.ok(html.includes('pending merge'));
+    assert.ok(html.includes('bg-success'));
+    assert.ok(html.includes('fa-code-merge'));
+  });
 });
