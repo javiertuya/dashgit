@@ -90,10 +90,12 @@ class Model {
       this.#index[item.uid] = item;
   }
 
-  addLastItemLabel(name, color, isIssueType = false) {
+  addLastItemLabel(name, color, isIssueType = false, isPriority = false) {
     let label = { name: name, color: color };
     if (isIssueType)
       label.isIssueType = true;
+    if (isPriority)
+      label.isPriority = true;
     this.items.at(-1).labels.push(label);
   }
 

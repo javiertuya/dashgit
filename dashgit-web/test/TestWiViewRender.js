@@ -16,6 +16,15 @@ describe('TestWiViewRender - Label rendering', function () {
     assert.ok(html.includes('border:1px solid #ff0000;'));
   });
 
+  it('renders priority labels with white background, colored border and known icon', function () {
+    const html = wiRender.gitlabel2html('giis-uniovi/test-update', 'High', 'd93f0b', false, true);
+    assert.ok(html.includes('background-color:#ffffff;'));
+    assert.ok(html.includes('color:#d93f0b;'));
+    assert.ok(html.includes('border:1px solid #d93f0b;'));
+    assert.ok(html.includes('fa-arrow-up'));
+    assert.ok(html.includes('High'));
+  });
+
   it('uses white text on dark label backgrounds based on luma', function () {
     const style = wiRender.getLabelStyle('Bug', '#000000');
     assert.strictEqual(style, 'background-color:#000000; color:#ffffff;');

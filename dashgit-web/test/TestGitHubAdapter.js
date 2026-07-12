@@ -49,7 +49,9 @@ describe("TestGitHubAdapter - Model transformations from GitHub API results", fu
         assert.deepEqual(expected, actual);
         assert.equal(actual.items[1].labels[0].isIssueType, true);
         assert.equal(actual.items[1].labels[0].name, 'bug');
-        assert.equal(actual.items[1].labels[1].name, 'question');
+        assert.equal(actual.items[1].labels[1].isPriority, true);
+        assert.equal(actual.items[1].labels[1].name, 'High');
+        assert.equal(actual.items[1].labels[2].name, 'question');
     });
 
     //Data about follow ups is stored in the manager repository, but it is transformed to models as it if where from the GitHub api

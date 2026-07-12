@@ -112,7 +112,7 @@ const wiRender = {
   labels2html: function (repoName, labels) {
     let html = "";
     for (let label of labels)
-      html += " " + this.gitlabel2html(repoName, label.name, label.color, label.isIssueType === true);
+      html += " " + this.gitlabel2html(repoName, label.name, label.color, label.isIssueType === true, label.isPriority === true);
     return html;
   },
 
@@ -158,7 +158,7 @@ const wiRender = {
       return `opacity:0.9`;
   },
 
-  gitlabel2html: function (repoName, name, color, isIssueType = false) {
+  gitlabel2html: function (repoName, name, color, isIssueType = false, isPriority = false) {
     let cssClass = "badge rounded-pill";
     if (color == "") {
       color = "#888888"; //default if no color found
@@ -167,12 +167,16 @@ const wiRender = {
     let normalizedColor = this.normalizeColor(color);
     let style;
     let displayName = name;
-    if (isIssueType) {
+    if (isIssueType || isPriority) {
+      // Issue types and priority (issue field) are rendered with a white background and a colored
+      // border/text, each with its own set of known icons
       if (normalizedColor == "yellow") // to give more contrast with white background
-        normalizedColor = "orange";
+        normalizedColor = "#ff5f1f"; // neon orange
+      else if (normalizedColor == "pink") // pink is too light on white background
+        normalizedColor = "#bf00ff"; // bright purple
       style = `background-color:#ffffff; color:${normalizedColor}; border:1px solid ${normalizedColor};`;
-      
-      const icon = this.knownIssueTypeIcon(name);
+
+      const icon = isPriority ? this.knownPriorityIcon(name) : this.knownIssueTypeIcon(name);
       if (icon != "")
         displayName = icon + " " + name;
     } else {
@@ -190,6 +194,19 @@ const wiRender = {
       return '<i class="fa-regular fa-square-check"></i>';
     else if (name.toLowerCase() == "incident")
       return '<i class="fa-solid fa-triangle-exclamation"></i>';
+    else
+      return '';
+  },
+  knownPriorityIcon: function(name) {
+    // Default GitHub Priority issue field options: Urgent, High, Medium, Low
+    if (name.toLowerCase() == "urgent")
+      return '<i class="fa-solid fa-angles-up"></i>';
+    else if (name.toLowerCase() == "high")
+      return '<i class="fa-solid fa-arrow-up"></i>';
+    else if (name.toLowerCase() == "medium")
+      return '<i class="fa-solid fa-equals"></i>';
+    else if (name.toLowerCase() == "low")
+      return '<i class="fa-solid fa-arrow-down"></i>';
     else
       return '';
   },

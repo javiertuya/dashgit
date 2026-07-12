@@ -28,10 +28,6 @@ const gitHubAdapter = {
       let iidstr = "#" + item.number;
       let actions = item.custom_actions == undefined ? {} : item.custom_actions;
 
-      // If issue has an issue type the api returned type is an object. We will represent it as a label
-      // with an attribute isIssueType to allow different rendering
-      let issueTypeLabel = this.issueTypeLabel(item);
-
       m.addItem({
         repo_name: repoName, type: type, iid: item.number,
         title: item.title, actions: actions,
@@ -39,15 +35,30 @@ const gitHubAdapter = {
         iidstr: iidstr, url: item.html_url, repo_url: repoUrl,
         labels: []
       });
-      let labels = [];
-      if (issueTypeLabel != null)
-        labels.push({ ...issueTypeLabel, isIssueType: true });
-      for (let label of item.labels ?? [])
-        labels.push(label);
-      for (let label of labels)
-        m.addLastItemLabel(label.name, label.color, label.isIssueType === true);
+      this.addItemLabels(m, item);
     }
     return m;
+  },
+
+  // Adds the labels of an item to the last item in the model: an optional issue type and an
+  // optional priority (issue field), rendered specially, followed by the regular repo labels.
+  addItemLabels: function (m, item) {
+    // If issue has an issue type the api returned type is an object. We will represent it as a label
+    // with an attribute isIssueType to allow different rendering
+    let issueTypeLabel = this.issueTypeLabel(item);
+    // Issue fields (e.g. the default Priority single-select field) are represented as labels too,
+    // with an attribute isPriority to allow different rendering
+    let priorityLabel = this.priorityLabel(item);
+
+    let labels = [];
+    if (issueTypeLabel != null)
+      labels.push({ ...issueTypeLabel, isIssueType: true });
+    if (priorityLabel != null)
+      labels.push({ ...priorityLabel, isPriority: true });
+    for (let label of item.labels ?? [])
+      labels.push(label);
+    for (let label of labels)
+      m.addLastItemLabel(label.name, label.color, label.isIssueType === true, label.isPriority === true);
   },
   addActionToPullRequestItems: function (responseItems, action) {
     for (let item of responseItems) {
@@ -69,6 +80,25 @@ const gitHubAdapter = {
       if (String(item.type.name).toLowerCase() == "issue")
         return null;
       return { name: item.type.name, color: item.type.color ?? "" };
+    }
+    return null;
+  },
+
+  // The Priority issue field (single-select) is returned inside the issue_field_values array.
+  // Each entry has issue_field_name, data_type and a single_select_option with { name, color }.
+  priorityLabel: function (item) {
+    if (!Array.isArray(item.issue_field_values))
+      return null;
+    for (let field of item.issue_field_values) {
+      if (String(field.issue_field_name).toLowerCase() != "priority")
+        continue;
+      if (field.data_type != "single_select" || field.single_select_option == null)
+        continue;
+      let option = field.single_select_option;
+      let name = option.name ?? field.value;
+      if (name == undefined || String(name) == "")
+        return null;
+      return { name: String(name), color: option.color ?? "" };
     }
     return null;
   },

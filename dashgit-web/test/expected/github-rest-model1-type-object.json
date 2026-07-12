@@ -45,6 +45,11 @@
           "isIssueType": true
         },
         {
+          "name": "High",
+          "color": "d93f0b",
+          "isPriority": true
+        },
+        {
           "name": "question",
           "color": "d876e3"
         }

@@ -20,6 +20,14 @@
         "user": { "login": "user2" },
         "labels": [ { "name": "question", "color": "d876e3" } ],
         "type": { "name": "bug", "color": "d876e3" },
+        "issue_field_values": [
+            {
+                "issue_field_name": "Priority",
+                "data_type": "single_select",
+                "value": "High",
+                "single_select_option": { "name": "High", "color": "d93f0b" }
+            }
+        ],
         "state": "open",
         "assignees": [ { "login": "myuser" }, { "login": "user2" } ],
         "created_at": "2024-01-08T14:49:48Z",
