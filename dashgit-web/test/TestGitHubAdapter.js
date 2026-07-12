@@ -144,4 +144,30 @@ describe("TestGitHubAdapter - Model transformations from GitHub API results", fu
         });
     });
 
+    // Decide whether the author's "changes requested" badge must be muted (a re-review is pending).
+    // - reviewRequests not empty -> muted (author re-requested review, ball is with the reviewer)
+    // - reviewRequests empty -> not muted (author still has to act)
+    // - missing/inaccessible pullRequest (null repo) or missing nodes -> not muted (safe default)
+    it("Decide muting of changes-requested badges from reviewRequests", function () {
+        let prs = [
+            { uid: "r1/p#1", alias: "pr0" }, // pending re-review -> muted
+            { uid: "r1/p#2", alias: "pr1" }, // no pending -> not muted
+            { uid: "r1/p#3", alias: "pr2" }, // inaccessible repo (null) -> not muted
+            { uid: "r1/p#4", alias: "pr3" }, // pullRequest without reviewRequests -> not muted
+        ];
+        let gqlResponse = {
+            pr0: { pullRequest: { number: 1, reviewRequests: { nodes: [{ requestedReviewer: { login: "usr1" } }] } } },
+            pr1: { pullRequest: { number: 2, reviewRequests: { nodes: [] } } },
+            pr2: null,
+            pr3: { pullRequest: { number: 4 } },
+        };
+        let actual = gitHubAdapter.reviewRequests2decisions(prs, gqlResponse);
+        assert.deepEqual([
+            { uid: "r1/p#1", muted: true },
+            { uid: "r1/p#2", muted: false },
+            { uid: "r1/p#3", muted: false },
+            { uid: "r1/p#4", muted: false },
+        ], actual);
+    });
+
 });

@@ -95,6 +95,31 @@ const gitHubApi = {
     model.header.target = target;
     return model;
   },
+  // ASYNC refinement of the "changes requested" action badge (issue: symmetric review workflow).
+  // The search query review:changes_requested keeps returning a PR even after the author has
+  // re-requested review (ball back to the reviewer). We query reviewRequests for those PRs and,
+  // when a re-review is pending, ask the view to mute the badge (no action needed by the author).
+  // Called after the synchronous paint, so it never delays the Assigned view.
+  updateReviewStatesAsync: function (provider, prItems) {
+    if (prItems == undefined || prItems.length == 0)
+      return;
+    const prs = prItems.map((it, i) => {
+      const idx = it.repo_name.indexOf("/");
+      return { uid: it.uid, owner: it.repo_name.substring(0, idx), repo: it.repo_name.substring(idx + 1), number: it.iid, alias: `pr${i}` };
+    });
+    log.debug(provider.uid, `ASYNC Get review requests for ${prs.length} changes-requested PR(s)`);
+    const query = gitHubGraphql.getReviewRequestsQuery(prs);
+    const graphql = gitHubGraphql.getGraphQlApi(provider);
+    const t0 = Date.now();
+    graphql(query).then(function (response) {
+      log.debug(provider.uid, `ASYNC review requests response [${Date.now() - t0}ms]:`, response);
+      const decisions = gitHubAdapter.reviewRequests2decisions(prs, response);
+      wiController.updateReviewStates(provider.uid, decisions);
+    }).catch(function (error) {
+      console.error("GitHub review-requests GraphQL call failed");
+      console.error(error);
+    });
+  },
   issuesAndPullRequests: function (octokit, token, query) {
     // Issue #129 Although documentation says that search query returns both issues and prs if no 'is:*' is specified,
     // this is not true when using fine grained tokens, that requires separate queries for issues and prs.

@@ -253,6 +253,22 @@ const wiView = {
     this.updateStatusVisibility();
     $(`#${this.getPanelId(this.selectActiveTarget(), providerId)} .wi-status-icon`).tooltip({ delay: 200 });
   },
+  // Mutes the "changes requested" badge of a PR (author already re-requested review, so no action is
+  // needed for now). The row is kept (the author may also be the assignee): only the badge is dimmed
+  // and relabelled "in review". Rows always carry the "assigned" target in their id, so it is used
+  // directly. The tooltip is replaced via dispose + reinit (the same jQuery API used to initialize the
+  // action badges) so the previous Bootstrap tooltip does not linger next to a native one.
+  muteChangesRequestedBadge: function (providerId, itemId) {
+    const id = this.getId("assigned", providerId, itemId);
+    const badge = $(`#wi-item-${id} .wi-action-changes-requested`);
+    if (badge.length == 0)
+      return;
+    badge.removeClass("bg-primary text-light").addClass("bg-secondary text-light opacity-50");
+    badge.html(`<i class="fa-regular fa-comment"></i> in review`);
+    badge.tooltip("dispose");
+    badge.attr("title", "You have already re-requested review; waiting for the reviewer, no action needed for now");
+    badge.tooltip({ delay: 200 });
+  },
   upateStatusIcon: function (status, providerId, itemId) {
     const target = this.selectActiveTarget();
     const id = this.getId(target, providerId, itemId);

@@ -114,6 +114,19 @@ const gitHubGraphql = {
       }
     }`;
   },
+  // Query the pending review requests of a set of PRs, one aliased repository/pullRequest block each
+  // (prs = [{ owner, repo, number, alias }]). Used to decide whether the author's "changes requested"
+  // badge should be muted (a re-review is pending). Does not depend on GraphQL node ids.
+  getReviewRequestsQuery: function (prs) {
+    return `{
+      ${prs.map(p => `${p.alias}: repository(owner: "${p.owner}", name: "${p.repo}") {
+        pullRequest(number: ${p.number}) {
+          number
+          reviewRequests(first: 20) { nodes { requestedReviewer { ... on User { login } } } }
+        }
+      }`).join("\n      ")}
+    }`;
+  },
   getUserSpecReposSubquery: function (provider, reposStr, includeAll) {
     if (reposStr == undefined)
       return "";

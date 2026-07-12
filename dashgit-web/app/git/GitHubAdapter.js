@@ -67,6 +67,19 @@ const gitHubAdapter = {
       item.custom_actions[action] = true;
     }
   },
+  // Decides, for each PR that carries a "changes requested" badge (author role), whether to mute it.
+  // The badge is muted when a re-review is pending (reviewRequests not empty): the author already
+  // re-requested review, so the ball is back with the reviewer and no action is needed for now.
+  // prs = [{ uid, alias }]; gqlResponse = { <alias>: { pullRequest: { reviewRequests: { nodes } } } }.
+  reviewRequests2decisions: function (prs, gqlResponse) {
+    let decisions = [];
+    for (let pr of prs) {
+      const pullRequest = gqlResponse?.[pr.alias]?.pullRequest;
+      const pending = pullRequest?.reviewRequests?.nodes ?? [];
+      decisions.push({ uid: pr.uid, muted: pending.length > 0 });
+    }
+    return decisions;
+  },
 
   issueTypeLabel: function (item) {
     if (item.type == undefined)

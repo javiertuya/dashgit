@@ -93,7 +93,7 @@ const wiRender = {
     if (actions["review_request"])
   html += `<span class="wi-item-column-clickable badge text-dark bg-info wi-action-badge" title="A review has been requested for this PR"><i class="fa-solid fa-magnifying-glass"></i> review request</span> `;
     if (actions["changes_requested"])
-  html += `<span class="wi-item-column-clickable badge text-light bg-primary wi-action-badge" title="A reviewer has commented and requested changes on this PR"><i class="fa-regular fa-comment"></i> changes requested</span> `;
+  html += `<span class="wi-item-column-clickable badge text-light bg-primary wi-action-badge wi-action-changes-requested" title="A reviewer has commented and requested changes on this PR"><i class="fa-regular fa-comment"></i> changes requested</span> `;
     if (actions["follow_up"]) {
       let message = actions["follow_up_message"];
       message = $("<p>").text(message).html(); //sanitized

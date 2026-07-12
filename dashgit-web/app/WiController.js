@@ -131,6 +131,7 @@ const wiController = {
     // Subsequent async calls (when finish, they will invoque the update* methods)
     this.dispatchNotifications(target);
     this.dispatchStatuses(target);
+    this.dispatchReviewStates(target, models);
 
     // Sync view updates
     wiView.updateStatusVisibility();
@@ -158,6 +159,26 @@ const wiController = {
         if (provider.enabled && this.tokenIsValid(provider)) {
           this.dispatchProviderStatuses(provider);
         }
+  },
+  // ASYNC refinement of the "changes requested" badges in the Assigned view: for each GitHub provider,
+  // collect the PRs that came from the review:changes_requested query and let the api decide (via the
+  // reviewRequests) whether the badge should be muted because the author already re-requested review.
+  // GitLab is handled later (Fase 3).
+  dispatchReviewStates: function (target, models) {
+    if (target != "assigned")
+      return;
+    for (let provider of config.data.providers) {
+      if (!provider.enabled || !this.tokenIsValid(provider) || provider.provider.toLowerCase() != "github")
+        continue;
+      const model = models.find(m => m.header.uid == provider.uid);
+      if (model == undefined)
+        continue;
+      const prItems = model.items
+        .filter(it => it.type == "pr" && it.actions?.changes_requested)
+        .map(it => ({ uid: it.uid, repo_name: it.repo_name, iid: it.iid }));
+      if (prItems.length > 0)
+        gitHubApi.updateReviewStatesAsync(provider, prItems);
+    }
   },
   dispatchProviderStatuses: function(provider) {
           if (surrogates.hasSurrogate(provider.uid)) {
@@ -250,6 +271,14 @@ const wiController = {
   updateLabels: function (providerId, labels) {
     labelsCache.setLabels(providerId, labels)
     wiView.updateLabelColors(providerId, labels);
+  },
+
+  // Callback from updateReviewStatesAsync: mutes the "changes requested" badge of the PRs whose
+  // author already re-requested review (decisions with muted == true).
+  updateReviewStates: function (providerId, decisions) {
+    for (let decision of decisions)
+      if (decision.muted)
+        wiView.muteChangesRequestedBadge(providerId, decision.uid);
   },
 
   updateNotifications: function (providerId, notifModel) {
