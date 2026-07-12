@@ -50,10 +50,14 @@ const gitLabAdapter = {
     let common = { isIssue: false, repoName: "", repoUrl: "", item: null };
 
     if (item.target == undefined) { // from api.Issues.all or api.MergeRequests.all
-      if (item.type == "ISSUE" || item.type == "INCIDENT" || item.type == "TASK") //mr do not have this attribute
-        common.isIssue = true;
+      // Tell issues from merge requests by the reference delimiter ('#' vs '!'), the canonical
+      // GitLab notation. Do not rely on the "type" attribute nor on the web_url path segment:
+      // when GitLab migrated issues to work items the url changed from /-/issues/ to
+      // /-/work_items/, which left repo name/url empty (issues #296, #312). The repo url is the
+      // web_url up to the universal '/-/' separator, present in every item url.
+      common.isIssue = item.references.full.includes("#");
       common.repoName = item.references.full.substring(0, item.references.full.indexOf(common.isIssue ? "#" : "!"));
-      common.repoUrl = item.web_url.substring(0, item.web_url.indexOf(common.isIssue ? "/-/issues/" : "/-/merge_requests/"));
+      common.repoUrl = item.web_url.substring(0, item.web_url.indexOf("/-/"));
       common.item = item; // rest of attributes still are in the item
     } else { // from api.TodoLists.all
       if (item.target_type == "Issue")

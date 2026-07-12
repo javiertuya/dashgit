@@ -63,6 +63,19 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
         assert.strictEqual(actual.items[3].type, "pr");
         assert.strictEqual(actual.items[3].iidstr, "!4");
         assert.strictEqual(actual.items[3].labels[0].name, "BLOCKING");
+        // issue #312: the repo name and url must be resolved for both url shapes that GitLab
+        // returns for issues, never left empty:
+        // - item[0]: older GitLab returns a /-/issues/ url
+        assert.strictEqual(actual.items[0].url, "https://mygitlab.com/org/proj/-/issues/1");
+        assert.strictEqual(actual.items[0].repo_name, "org/proj");
+        assert.strictEqual(actual.items[0].repo_url, "https://mygitlab.com/org/proj");
+        // - item[4]: recent GitLab migrated issues to work items, returning a /-/work_items/ url
+        //   (and the response may omit the "type" attribute)
+        assert.strictEqual(actual.items[4].url, "https://mygitlab.com/org/proj/-/work_items/5");
+        assert.strictEqual(actual.items[4].type, "issue");
+        assert.strictEqual(actual.items[4].iidstr, "#5");
+        assert.strictEqual(actual.items[4].repo_name, "org/proj");
+        assert.strictEqual(actual.items[4].repo_url, "https://mygitlab.com/org/proj");
     });
 
     it("Transform Gitlab REST API results from review requests", function () {

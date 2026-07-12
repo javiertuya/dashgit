@@ -115,6 +115,27 @@
         }
       ],
       "uid": "org-proj_pr_4"
+    },
+    {
+      "repo_name": "org/proj",
+      "type": "issue",
+      "iid": 5,
+      "title": "Work item with /-/work_items/ url and no type attribute",
+      "actions": {},
+      "author": "usr1",
+      "assignees": "",
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z",
+      "iidstr": "#5",
+      "url": "https://mygitlab.com/org/proj/-/work_items/5",
+      "repo_url": "https://mygitlab.com/org/proj",
+      "labels": [
+        {
+          "name": "BLOCKING",
+          "color": "FF0000"
+        }
+      ],
+      "uid": "org-proj_issue_5"
     }
   ]
 }
