@@ -29,6 +29,10 @@ const gitHubApi = {
     const unassigned = { q: `is:open no:assignee owner:placeholder ${matchFilter} archived:false`, per_page: 100, ...options };
     const reviewer = { q: `is:open is:pr user-review-requested:${provider.user} ${matchFilter} archived:false`, ...options };
     const revise = { q: `is:open is:pr review:changes_requested author:${provider.user} ${matchFilter} archived:false`, ...options };
+    // Approved but still open PRs would otherwise disappear from everyone's view; surface them (as
+    // both the author and the reviewer, since either may be in charge of merging) with a pending_merge badge
+    const mergeAuthor = { q: `is:open is:pr author:${provider.user} review:approved ${matchFilter} archived:false`, ...options };
+    const mergeReviewer = { q: `is:open is:pr reviewed-by:${provider.user} review:approved ${matchFilter} archived:false`, ...options };
     const created = { q: `is:open author:${provider.user} ${matchFilter} archived:false`, ...options };
     const involved = { q: `is:open involves:${provider.user} ${matchFilter} archived:false`, ...options };
     const dependabot = { q: `is:open is:pr author:app/dependabot owner:placeholder ${matchFilter} archived:false`, per_page: 100, ...options };
@@ -41,6 +45,9 @@ const gitHubApi = {
         //To allow the ui to mark this as a review request, the api call is wrapped to add a special attribute (called custom_actions) to the response
         this.wrapIssuesAndPullRequestsCall(octokit, reviewer, "review_request"),
         this.wrapIssuesAndPullRequestsCall(octokit, revise, "changes_requested"),
+        //Approved but still open PRs (I authored or I reviewed): surface them so they are not lost before merge
+        this.wrapIssuesAndPullRequestsCall(octokit, mergeAuthor, "pending_merge"),
+        this.wrapIssuesAndPullRequestsCall(octokit, mergeReviewer, "pending_merge"),
         //Also show work items that need follow-up
         gitStoreApi.followUpAll(provider, true),
       ];
