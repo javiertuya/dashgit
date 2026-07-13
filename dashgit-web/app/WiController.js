@@ -160,24 +160,37 @@ const wiController = {
           this.dispatchProviderStatuses(provider);
         }
   },
-  // ASYNC refinement of the "changes requested" badges in the Assigned view: for each GitHub provider,
-  // collect the PRs that came from the review:changes_requested query and let the api decide (via the
-  // reviewRequests) whether the badge should be muted because the author already re-requested review.
-  // GitLab is handled later (Fase 3).
+  // ASYNC refinement of the review action badges in the Assigned view. The kind of badge to refine and
+  // the role differ per provider (GitHub/GitLab mirror, but on opposite sides of the workflow):
+  // - GitHub (author role): collect the PRs from the review:changes_requested query and let the api
+  //   decide (via reviewRequests) whether the "changes requested" badge should be muted because the
+  //   author already re-requested review.
+  // - GitLab (reviewer role): collect the MRs from the reviewer_username query and let the api decide
+  //   (via my reviewState) whether the "review request" badge should be muted because I already
+  //   requested changes (ball back with the author).
   dispatchReviewStates: function (target, models) {
     if (target != "assigned")
       return;
     for (let provider of config.data.providers) {
-      if (!provider.enabled || !this.tokenIsValid(provider) || provider.provider.toLowerCase() != "github")
+      if (!provider.enabled || !this.tokenIsValid(provider))
         continue;
       const model = models.find(m => m.header.uid == provider.uid);
       if (model == undefined)
         continue;
-      const prItems = model.items
-        .filter(it => it.type == "pr" && it.actions?.changes_requested)
-        .map(it => ({ uid: it.uid, repo_name: it.repo_name, iid: it.iid }));
-      if (prItems.length > 0)
-        gitHubApi.updateReviewStatesAsync(provider, prItems);
+      const providerType = provider.provider.toLowerCase();
+      if (providerType == "github") {
+        const prItems = model.items
+          .filter(it => it.type == "pr" && it.actions?.changes_requested)
+          .map(it => ({ uid: it.uid, repo_name: it.repo_name, iid: it.iid }));
+        if (prItems.length > 0)
+          gitHubApi.updateReviewStatesAsync(provider, prItems);
+      } else if (providerType == "gitlab") {
+        const prItems = model.items
+          .filter(it => it.type == "pr" && it.actions?.review_request)
+          .map(it => ({ uid: it.uid, repo_name: it.repo_name, iid: it.iid }));
+        if (prItems.length > 0)
+          gitLabApi.updateReviewStatesAsync(provider, prItems);
+      }
     }
   },
   dispatchProviderStatuses: function(provider) {
@@ -279,6 +292,13 @@ const wiController = {
     for (let decision of decisions)
       if (decision.muted)
         wiView.muteChangesRequestedBadge(providerId, decision.uid);
+  },
+  // Callback from GitLab updateReviewStatesAsync: mutes the "review request" badge of the MRs where I
+  // (the reviewer) already requested changes (decisions with muted == true).
+  updateReviewRequestStates: function (providerId, decisions) {
+    for (let decision of decisions)
+      if (decision.muted)
+        wiView.muteReviewRequestBadge(providerId, decision.uid);
   },
 
   updateNotifications: function (providerId, notifModel) {

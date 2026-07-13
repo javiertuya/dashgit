@@ -119,6 +119,28 @@ const gitLabApi = {
     return model;
   },
 
+  // ASYNC refinement of the "review request" action badge (symmetric review workflow, reviewer role).
+  // The reviewer_username query keeps returning an MR even after I (the reviewer) requested changes
+  // (ball back with the author). We query my per-MR reviewState for those MRs and, when it is
+  // REQUESTED_CHANGES, ask the view to mute the badge (no action needed by me for now).
+  // Called after the synchronous paint, so it never delays the Assigned view.
+  updateReviewStatesAsync: function (provider, prItems) {
+    if (prItems == undefined || prItems.length == 0)
+      return;
+    const prs = prItems.map((it, i) => ({ uid: it.uid, fullPath: it.repo_name, iid: it.iid, alias: `mr${i}` }));
+    log.debug(provider.uid, `ASYNC Get review states for ${prs.length} review-request MR(s)`);
+    const query = gitLabGraphql.getReviewStatesQuery(prs);
+    const t0 = Date.now();
+    gitLabGraphql.callGraphqlApi(provider, query, false).then(function (response) {
+      log.debug(provider.uid, `ASYNC review states response [${Date.now() - t0}ms]:`, response);
+      const decisions = gitLabAdapter.reviewStates2decisions(prs, response, provider.user);
+      wiController.updateReviewRequestStates(provider.uid, decisions);
+    }).catch(function (error) {
+      console.error("GitLab review-states GraphQL call failed");
+      console.error(error);
+    });
+  },
+
   updateNotificationsAsync: async function (target, provider) {
     log.debug(provider.uid, "ASYNC Get Notifications from the REST api");
     const api = await this.getGitLabApi(provider);

@@ -66,6 +66,20 @@ const gitLabGraphql = {
       }
     }`;
   },
+  // Query the per-reviewer review state of a set of MRs, one aliased project/mergeRequest block each
+  // (prs = [{ fullPath, iid, alias }]). Used to decide whether the reviewer's "review request" badge
+  // should be muted (I already requested changes, ball is with the author). GitLab paths may contain
+  // subgroups, so fullPath is used directly (not split into owner/repo).
+  getReviewStatesQuery: function (prs) {
+    return `{
+      ${prs.map(p => `${p.alias}: project(fullPath: "${p.fullPath}") {
+        mergeRequest(iid: "${p.iid}") {
+          iid
+          reviewers { nodes { username, mergeRequestInteraction { reviewState } } }
+        }
+      }`).join("\n      ")}
+    }`;
+  },
   getLabelsQuery: function (selectCriterion) {
     return `{
       projects (${selectCriterion}, sort: "updated_desc") {

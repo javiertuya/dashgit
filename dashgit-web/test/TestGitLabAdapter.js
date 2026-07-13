@@ -211,4 +211,34 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
         });
     });
 
+    // Decide whether the reviewer's "review request" badge must be muted (I already requested changes).
+    // - my reviewState REQUESTED_CHANGES -> muted (ball back with the author)
+    // - my reviewState other (UNREVIEWED, REVIEWED...) -> not muted (I still have to act)
+    // - I am not among the reviewers -> not muted (safe default)
+    // - inaccessible project (null) or missing reviewers nodes -> not muted (safe default)
+    it("Decide muting of review-request badges from the reviewer review state", function () {
+        let prs = [
+            { uid: "g/p!1", alias: "mr0" }, // I requested changes -> muted
+            { uid: "g/p!2", alias: "mr1" }, // I have not reviewed yet -> not muted
+            { uid: "g/p!3", alias: "mr2" }, // another reviewer requested changes, not me -> not muted
+            { uid: "g/p!4", alias: "mr3" }, // inaccessible project (null) -> not muted
+            { uid: "g/p!5", alias: "mr4" }, // mergeRequest without reviewers -> not muted
+        ];
+        let gqlResponse = { data: {
+            mr0: { mergeRequest: { iid: "1", reviewers: { nodes: [{ username: "usr1", mergeRequestInteraction: { reviewState: "REQUESTED_CHANGES" } }] } } },
+            mr1: { mergeRequest: { iid: "2", reviewers: { nodes: [{ username: "usr1", mergeRequestInteraction: { reviewState: "UNREVIEWED" } }] } } },
+            mr2: { mergeRequest: { iid: "3", reviewers: { nodes: [{ username: "other", mergeRequestInteraction: { reviewState: "REQUESTED_CHANGES" } }] } } },
+            mr3: null,
+            mr4: { mergeRequest: { iid: "5" } },
+        } };
+        let actual = gitLabAdapter.reviewStates2decisions(prs, gqlResponse, "usr1");
+        assert.deepEqual([
+            { uid: "g/p!1", muted: true },
+            { uid: "g/p!2", muted: false },
+            { uid: "g/p!3", muted: false },
+            { uid: "g/p!4", muted: false },
+            { uid: "g/p!5", muted: false },
+        ], actual);
+    });
+
 });

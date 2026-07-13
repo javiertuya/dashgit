@@ -48,4 +48,10 @@ describe('TestWiViewRender - Label rendering', function () {
     assert.ok(html.includes('bg-success'));
     assert.ok(html.includes('fa-code-merge'));
   });
+
+  it('renders the review request badge with a locatable class for async muting', function () {
+    const html = wiRender.actions2html({ review_request: true });
+    assert.ok(html.includes('review request'));
+    assert.ok(html.includes('wi-action-review-request'));
+  });
 });

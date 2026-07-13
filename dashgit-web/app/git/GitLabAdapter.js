@@ -93,6 +93,22 @@ const gitLabAdapter = {
     return response;
   },
 
+  // Decides, for each MR that carries a "review request" badge (reviewer role), whether to mute it.
+  // The badge is muted when my own reviewState is REQUESTED_CHANGES: I already requested changes, so
+  // the ball is back with the author and no action is needed from me until the author re-requests review
+  // (GitLab resets my reviewState to UNREVIEWED then). prs = [{ uid, alias }]; user = current username;
+  // gqlResponse = { data: { <alias>: { mergeRequest: { reviewers: { nodes: [{ username, mergeRequestInteraction: { reviewState } }] } } } } }.
+  reviewStates2decisions: function (prs, gqlResponse, user) {
+    let decisions = [];
+    for (let pr of prs) {
+      const reviewers = gqlResponse?.data?.[pr.alias]?.mergeRequest?.reviewers?.nodes ?? [];
+      const mine = reviewers.find(r => r?.username == user);
+      const reviewState = mine?.mergeRequestInteraction?.reviewState;
+      decisions.push({ uid: pr.uid, muted: reviewState == "REQUESTED_CHANGES" });
+    }
+    return decisions;
+  },
+
   getLabelsForItem: function (repoName, item, allLabels, model) {
     for (let label of this.safe(item?.labels)) {
       let name = "";

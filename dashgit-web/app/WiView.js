@@ -269,6 +269,21 @@ const wiView = {
     badge.attr("title", "You have already re-requested review; waiting for the reviewer, no action needed for now");
     badge.tooltip({ delay: 200 });
   },
+  // Mutes the "review request" badge of an MR (GitLab reviewer role): I already requested changes, so
+  // the ball is with the author and no action is needed from me for now. The row is kept (I may also be
+  // the assignee): only the badge is dimmed and relabelled "changes requested". Same dispose + reinit
+  // tooltip handling as muteChangesRequestedBadge.
+  muteReviewRequestBadge: function (providerId, itemId) {
+    const id = this.getId("assigned", providerId, itemId);
+    const badge = $(`#wi-item-${id} .wi-action-review-request`);
+    if (badge.length == 0)
+      return;
+    badge.removeClass("bg-info text-dark").addClass("bg-secondary text-light opacity-50");
+    badge.html(`<i class="fa-regular fa-comment"></i> changes requested`);
+    badge.tooltip("dispose");
+    badge.attr("title", "You have requested changes; waiting for the author to update the merge request, no action needed for now");
+    badge.tooltip({ delay: 200 });
+  },
   upateStatusIcon: function (status, providerId, itemId) {
     const target = this.selectActiveTarget();
     const id = this.getId(target, providerId, itemId);

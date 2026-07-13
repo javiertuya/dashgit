@@ -91,7 +91,7 @@ const wiRender = {
       return "";
     let html = "";
     if (actions["review_request"])
-  html += `<span class="wi-item-column-clickable badge text-dark bg-info wi-action-badge" title="A review has been requested for this PR"><i class="fa-solid fa-magnifying-glass"></i> review request</span> `;
+  html += `<span class="wi-item-column-clickable badge text-dark bg-info wi-action-badge wi-action-review-request" title="A review has been requested for this PR"><i class="fa-solid fa-magnifying-glass"></i> review request</span> `;
     if (actions["changes_requested"])
   html += `<span class="wi-item-column-clickable badge text-light bg-primary wi-action-badge wi-action-changes-requested" title="A reviewer has commented and requested changes on this PR"><i class="fa-regular fa-comment"></i> changes requested</span> `;
     if (actions["pending_merge"])
