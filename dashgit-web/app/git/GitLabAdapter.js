@@ -93,18 +93,37 @@ const gitLabAdapter = {
     return response;
   },
 
-  // Decides, for each MR that carries a "review request" badge (reviewer role), whether to mute it.
-  // The badge is muted when my own reviewState is REQUESTED_CHANGES: I already requested changes, so
-  // the ball is back with the author and no action is needed from me until the author re-requests review
-  // (GitLab resets my reviewState to UNREVIEWED then). prs = [{ uid, alias }]; user = current username;
+  // For my authored MRs (author role): flag with a muted "in review" badge only those that already have
+  // reviewers assigned (ball with the reviewer). MRs with no reviewers get no badge (pure WIP of mine).
+  // The async reviewState refinement later upgrades "in review" to an active "changes requested" badge
+  // when a reviewer has requested changes.
+  addInReviewActionToMergeRequests: function (response) {
+    for (let item of this.safe(response))
+      if (Array.isArray(item.reviewers) && item.reviewers.length > 0) {
+        if (item.custom_actions == undefined) //create if does not exist
+          item["custom_actions"] = {};
+        item.custom_actions["in_review"] = true;
+      }
+    return response;
+  },
+
+  // Decides, for each MR that carries a review action badge, what to do based on the reviewers' states.
+  // The two roles are mutually exclusive (you can't review your own MR):
+  // - role "reviewer": mute the "review request" badge when MY own reviewState is REQUESTED_CHANGES
+  //   (I already requested changes, so the ball is back with the author until a re-request resets my
+  //   reviewState to UNREVIEWED).
+  // - role "author": add a "changes requested" badge when ANY reviewer's reviewState is
+  //   REQUESTED_CHANGES (a reviewer wants changes, ball is with me; GitLab drops it on re-request).
+  // prs = [{ uid, alias, role }]; user = current username;
   // gqlResponse = { data: { <alias>: { mergeRequest: { reviewers: { nodes: [{ username, mergeRequestInteraction: { reviewState } }] } } } } }.
   reviewStates2decisions: function (prs, gqlResponse, user) {
     let decisions = [];
     for (let pr of prs) {
       const reviewers = gqlResponse?.data?.[pr.alias]?.mergeRequest?.reviewers?.nodes ?? [];
-      const mine = reviewers.find(r => r?.username == user);
-      const reviewState = mine?.mergeRequestInteraction?.reviewState;
-      decisions.push({ uid: pr.uid, muted: reviewState == "REQUESTED_CHANGES" });
+      const requestedChanges = r => r?.mergeRequestInteraction?.reviewState == "REQUESTED_CHANGES";
+      const muted = pr.role == "reviewer" && requestedChanges(reviewers.find(r => r?.username == user));
+      const changesRequested = pr.role == "author" && reviewers.some(requestedChanges);
+      decisions.push({ uid: pr.uid, muted: muted, changesRequested: changesRequested });
     }
     return decisions;
   },

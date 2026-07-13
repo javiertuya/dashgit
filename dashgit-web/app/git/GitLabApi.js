@@ -42,6 +42,13 @@ const gitLabApi = {
       promises = [
         api.MergeRequests.all(assigned),
         api.Issues.all(assigned),
+        // Also include the MRs I authored (deduped/merged with the assigned ones by wiServices.merge).
+        // Unlike GitHub, GitLab has no server-side "changes requested" filter, so we surface my open MRs
+        // here -what I am working on- and mark the ones that already have reviewers with a muted
+        // "in review" badge (ball with the reviewer). The async reviewState refinement later upgrades it
+        // to an active "changes requested" badge if a reviewer actually requested changes. This keeps
+        // Assigned as the single "what needs my action" list.
+        this.wrapAuthoredReviewCall(api, created),
         //Unlike GitHub, GitLab only can search for assigned as reviewer, but not as assigned to revise.
         this.wrapReviewRequestCall(api, reviewer, "review_request"),
         //Also show work items that need follow-up
@@ -113,22 +120,30 @@ const gitLabApi = {
         return gitLabAdapter.addActionToMergeRequestItems(response, action);
       })
   },
+  // Wraps the authored-MRs call to synchronously flag the ones that already have reviewers with a muted
+  // "in review" badge (see the comment at the assigned target). MRs without reviewers get no badge.
+  wrapAuthoredReviewCall: async function (api, query) {
+    return api.MergeRequests.all(query)
+      .then(async function (response) {
+        return gitLabAdapter.addInReviewActionToMergeRequests(response);
+      })
+  },
   emptyModel: function (provider, message) {
     let model = gitLabAdapter.workitems2model(provider, [], {});
     model.header.message = message;
     return model;
   },
 
-  // ASYNC refinement of the "review request" action badge (symmetric review workflow, reviewer role).
-  // The reviewer_username query keeps returning an MR even after I (the reviewer) requested changes
-  // (ball back with the author). We query my per-MR reviewState for those MRs and, when it is
-  // REQUESTED_CHANGES, ask the view to mute the badge (no action needed by me for now).
-  // Called after the synchronous paint, so it never delays the Assigned view.
+  // ASYNC refinement of the review action badges (symmetric review workflow). Per-MR reviewer states
+  // are not in the REST responses, so we query them here after the synchronous paint (never delaying
+  // the Assigned view) and let the view react per role (prItems carry role "reviewer"/"author"):
+  // - reviewer: mute the "review request" badge once I have requested changes (ball back with author).
+  // - author: add a "changes requested" badge once a reviewer has requested changes (ball with me).
   updateReviewStatesAsync: function (provider, prItems) {
     if (prItems == undefined || prItems.length == 0)
       return;
-    const prs = prItems.map((it, i) => ({ uid: it.uid, fullPath: it.repo_name, iid: it.iid, alias: `mr${i}` }));
-    log.debug(provider.uid, `ASYNC Get review states for ${prs.length} review-request MR(s)`);
+    const prs = prItems.map((it, i) => ({ uid: it.uid, fullPath: it.repo_name, iid: it.iid, alias: `mr${i}`, role: it.role }));
+    log.debug(provider.uid, `ASYNC Get review states for ${prs.length} review MR(s)`);
     const query = gitLabGraphql.getReviewStatesQuery(prs);
     const t0 = Date.now();
     gitLabGraphql.callGraphqlApi(provider, query, false).then(function (response) {

@@ -185,9 +185,13 @@ const wiController = {
         if (prItems.length > 0)
           gitHubApi.updateReviewStatesAsync(provider, prItems);
       } else if (providerType == "gitlab") {
+        // Two roles refined by the same reviewState query (mutually exclusive: you can't review your
+        // own MR). Reviewer: MRs carrying review_request. Author: my own MRs that already have reviewers
+        // (carrying the sync "in review" badge); the query decides if a reviewer requested changes.
         const prItems = model.items
-          .filter(it => it.type == "pr" && it.actions?.review_request)
-          .map(it => ({ uid: it.uid, repo_name: it.repo_name, iid: it.iid }));
+          .filter(it => it.type == "pr" && (it.actions?.review_request || it.actions?.in_review))
+          .map(it => ({ uid: it.uid, repo_name: it.repo_name, iid: it.iid,
+            role: it.actions?.review_request ? "reviewer" : "author" }));
         if (prItems.length > 0)
           gitLabApi.updateReviewStatesAsync(provider, prItems);
       }
@@ -293,12 +297,17 @@ const wiController = {
       if (decision.muted)
         wiView.muteChangesRequestedBadge(providerId, decision.uid);
   },
-  // Callback from GitLab updateReviewStatesAsync: mutes the "review request" badge of the MRs where I
-  // (the reviewer) already requested changes (decisions with muted == true).
+  // Callback from GitLab updateReviewStatesAsync. Per decision (see reviewStates2decisions):
+  // - muted: I am the reviewer and already requested changes -> mute the "review request" badge.
+  // - changesRequested: I am the author and a reviewer requested changes -> upgrade my authored MR's
+  //   muted "in review" badge to an active "changes requested" badge (ball back with me).
   updateReviewRequestStates: function (providerId, decisions) {
-    for (let decision of decisions)
+    for (let decision of decisions) {
       if (decision.muted)
         wiView.muteReviewRequestBadge(providerId, decision.uid);
+      else if (decision.changesRequested)
+        wiView.activateChangesRequestedBadge(providerId, decision.uid);
+    }
   },
 
   updateNotifications: function (providerId, notifModel) {

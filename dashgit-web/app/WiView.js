@@ -284,6 +284,30 @@ const wiView = {
     badge.attr("title", "You have requested changes; waiting for the author to update the merge request, no action needed for now");
     badge.tooltip({ delay: 200 });
   },
+  // Upgrades the muted "in review" badge of one of my authored MRs (GitLab author role) to an active
+  // "changes requested" badge: a reviewer has requested changes, so the ball is now with me. Mirrors
+  // muteReviewRequestBadge (dispose + reinit tooltip) but in the activating direction. GitLab drops it
+  // back to "in review" on the next refresh once no reviewer is in REQUESTED_CHANGES (author re-requested
+  // review -> reviewState UNREVIEWED). If the sync "in review" badge is missing (e.g. reviewers not yet
+  // in the REST list), a fresh "changes requested" badge is injected instead.
+  activateChangesRequestedBadge: function (providerId, itemId) {
+    const id = this.getId("assigned", providerId, itemId);
+    const row = $(`#wi-item-${id}`);
+    const badge = row.find(".wi-action-in-review");
+    if (badge.length > 0) {
+      badge.removeClass("bg-secondary opacity-50 wi-action-in-review").addClass("bg-primary wi-action-changes-requested");
+      badge.html(`<i class="fa-regular fa-comment"></i> changes requested`);
+      badge.tooltip("dispose");
+      badge.attr("title", "A reviewer has requested changes on this merge request");
+      badge.tooltip({ delay: 200 });
+    } else { // no in-review badge to upgrade: inject a fresh one
+      const cell = row.find(".wi-item-column-content");
+      if (cell.length == 0 || cell.find(".wi-action-changes-requested").length > 0)
+        return;
+      cell.prepend(wiRender.actions2html({ changes_requested: true }));
+      cell.find(".wi-action-changes-requested").tooltip({ delay: 200 });
+    }
+  },
   upateStatusIcon: function (status, providerId, itemId) {
     const target = this.selectActiveTarget();
     const id = this.getId(target, providerId, itemId);

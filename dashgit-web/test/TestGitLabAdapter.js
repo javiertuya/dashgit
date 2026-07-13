@@ -211,18 +211,38 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
         });
     });
 
-    // Decide whether the reviewer's "review request" badge must be muted (I already requested changes).
+    // Authored MRs get a muted "in review" action only when they already have reviewers assigned.
+    it("Flag authored MRs with reviewers as in review", function () {
+        let response = [
+            { iid: 1, reviewers: [{ username: "rev1" }] },                 // has reviewers -> in_review
+            { iid: 2, reviewers: [] },                                     // no reviewers -> untouched
+            { iid: 3 },                                                    // missing reviewers -> untouched
+            { iid: 4, reviewers: [{ username: "rev1" }], custom_actions: { review_request: true } }, // keeps existing action
+        ];
+        let actual = gitLabAdapter.addInReviewActionToMergeRequests(response);
+        assert.deepEqual({ in_review: true }, actual[0].custom_actions);
+        assert.equal(undefined, actual[1].custom_actions);
+        assert.equal(undefined, actual[2].custom_actions);
+        assert.deepEqual({ review_request: true, in_review: true }, actual[3].custom_actions);
+    });
+
+    // Decide the per-role action from the reviewers' review states.
+    // Reviewer role (mute my own "review request" badge when I requested changes):
     // - my reviewState REQUESTED_CHANGES -> muted (ball back with the author)
-    // - my reviewState other (UNREVIEWED, REVIEWED...) -> not muted (I still have to act)
-    // - I am not among the reviewers -> not muted (safe default)
-    // - inaccessible project (null) or missing reviewers nodes -> not muted (safe default)
-    it("Decide muting of review-request badges from the reviewer review state", function () {
+    // - my reviewState other / I am not among reviewers / null project / no reviewers -> not muted
+    // Author role (add a "changes requested" badge when any reviewer requested changes):
+    // - any reviewer REQUESTED_CHANGES -> changesRequested (ball with me)
+    // - no reviewer requested changes / null project / no reviewers -> not changesRequested
+    it("Decide review-badge actions from the reviewers review states (reviewer and author roles)", function () {
         let prs = [
-            { uid: "g/p!1", alias: "mr0" }, // I requested changes -> muted
-            { uid: "g/p!2", alias: "mr1" }, // I have not reviewed yet -> not muted
-            { uid: "g/p!3", alias: "mr2" }, // another reviewer requested changes, not me -> not muted
-            { uid: "g/p!4", alias: "mr3" }, // inaccessible project (null) -> not muted
-            { uid: "g/p!5", alias: "mr4" }, // mergeRequest without reviewers -> not muted
+            { uid: "g/p!1", alias: "mr0", role: "reviewer" }, // I requested changes -> muted
+            { uid: "g/p!2", alias: "mr1", role: "reviewer" }, // I have not reviewed yet -> not muted
+            { uid: "g/p!3", alias: "mr2", role: "reviewer" }, // another reviewer requested changes, not me -> not muted
+            { uid: "g/p!4", alias: "mr3", role: "reviewer" }, // inaccessible project (null) -> not muted
+            { uid: "g/p!5", alias: "mr4", role: "reviewer" }, // mergeRequest without reviewers -> not muted
+            { uid: "g/p!6", alias: "mr5", role: "author" },   // a reviewer requested changes -> changesRequested
+            { uid: "g/p!7", alias: "mr6", role: "author" },   // reviewers exist but none requested changes -> not
+            { uid: "g/p!8", alias: "mr7", role: "author" },   // no reviewers -> not
         ];
         let gqlResponse = { data: {
             mr0: { mergeRequest: { iid: "1", reviewers: { nodes: [{ username: "usr1", mergeRequestInteraction: { reviewState: "REQUESTED_CHANGES" } }] } } },
@@ -230,14 +250,23 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
             mr2: { mergeRequest: { iid: "3", reviewers: { nodes: [{ username: "other", mergeRequestInteraction: { reviewState: "REQUESTED_CHANGES" } }] } } },
             mr3: null,
             mr4: { mergeRequest: { iid: "5" } },
+            mr5: { mergeRequest: { iid: "6", reviewers: { nodes: [
+                { username: "rev1", mergeRequestInteraction: { reviewState: "REVIEWED" } },
+                { username: "rev2", mergeRequestInteraction: { reviewState: "REQUESTED_CHANGES" } },
+            ] } } },
+            mr6: { mergeRequest: { iid: "7", reviewers: { nodes: [{ username: "rev1", mergeRequestInteraction: { reviewState: "UNREVIEWED" } }] } } },
+            mr7: { mergeRequest: { iid: "8", reviewers: { nodes: [] } } },
         } };
         let actual = gitLabAdapter.reviewStates2decisions(prs, gqlResponse, "usr1");
         assert.deepEqual([
-            { uid: "g/p!1", muted: true },
-            { uid: "g/p!2", muted: false },
-            { uid: "g/p!3", muted: false },
-            { uid: "g/p!4", muted: false },
-            { uid: "g/p!5", muted: false },
+            { uid: "g/p!1", muted: true, changesRequested: false },
+            { uid: "g/p!2", muted: false, changesRequested: false },
+            { uid: "g/p!3", muted: false, changesRequested: false },
+            { uid: "g/p!4", muted: false, changesRequested: false },
+            { uid: "g/p!5", muted: false, changesRequested: false },
+            { uid: "g/p!6", muted: false, changesRequested: true },
+            { uid: "g/p!7", muted: false, changesRequested: false },
+            { uid: "g/p!8", muted: false, changesRequested: false },
         ], actual);
     });
 

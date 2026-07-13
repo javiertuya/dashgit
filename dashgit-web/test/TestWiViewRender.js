@@ -54,4 +54,11 @@ describe('TestWiViewRender - Label rendering', function () {
     assert.ok(html.includes('review request'));
     assert.ok(html.includes('wi-action-review-request'));
   });
+
+  it('renders the muted in-review badge with a locatable class for async upgrading', function () {
+    const html = wiRender.actions2html({ in_review: true });
+    assert.ok(html.includes('in review'));
+    assert.ok(html.includes('wi-action-in-review'));
+    assert.ok(html.includes('opacity-50'));
+  });
 });

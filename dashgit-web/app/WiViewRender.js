@@ -94,6 +94,8 @@ const wiRender = {
   html += `<span class="wi-item-column-clickable badge text-dark bg-info wi-action-badge wi-action-review-request" title="A review has been requested for this PR"><i class="fa-solid fa-magnifying-glass"></i> review request</span> `;
     if (actions["changes_requested"])
   html += `<span class="wi-item-column-clickable badge text-light bg-primary wi-action-badge wi-action-changes-requested" title="A reviewer has commented and requested changes on this PR"><i class="fa-regular fa-comment"></i> changes requested</span> `;
+    if (actions["in_review"])
+  html += `<span class="wi-item-column-clickable badge text-light bg-secondary opacity-50 wi-action-badge wi-action-in-review" title="This PR is under review; waiting for the reviewer, no action needed for now"><i class="fa-solid fa-magnifying-glass"></i> in review</span> `;
     if (actions["pending_merge"])
   html += `<span class="wi-item-column-clickable badge text-light bg-success wi-action-badge" title="This PR is approved and pending merge"><i class="fa-solid fa-code-merge"></i> pending merge</span> `;
     if (actions["follow_up"]) {
