@@ -10,9 +10,11 @@ import { githubItemsForQuery, githubReviewRequests, githubEmptyStatuses, githubC
  * the author (provider seeded with the author user) and the reviewer (seeded with the reviewer user).
  * The expected badge per state/perspective lives in review-workflow.js (shared with the GitLab spec).
  *
- * On GitHub the badges are produced synchronously by separate /search/issues queries and the async
- * GraphQL reviewRequests refinement only mutes "changes requested" -> "in review" (S4). No real
- * credentials are used; the app still loads its libraries from CDNs, so internet is required.
+ * On GitHub the base badges are produced synchronously by separate /search/issues queries (including my
+ * authored PRs, so what I am working on shows in Assigned) and the async GraphQL reviewRequests refinement
+ * adds the "in review" badge to an authored PR under review (S2) and mutes "changes requested" -> "in
+ * review" once I re-requested review (S4). No real credentials are used; the app still loads its libraries
+ * from CDNs, so internet is required.
  */
 
 async function setup(page, perspective) {

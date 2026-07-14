@@ -33,6 +33,8 @@ const gitHubApi = {
     // both the author and the reviewer, since either may be in charge of merging) with a pending_merge badge
     const mergeAuthor = { q: `is:open is:pr author:${provider.user} review:approved ${matchFilter} archived:false`, ...options };
     const mergeReviewer = { q: `is:open is:pr reviewed-by:${provider.user} review:approved ${matchFilter} archived:false`, ...options };
+    // All my open authored PRs, surfaced in the Assigned view (see the assigned target below)
+    const authored = { q: `is:open is:pr author:${provider.user} ${matchFilter} archived:false`, ...options };
     const created = { q: `is:open author:${provider.user} ${matchFilter} archived:false`, ...options };
     const involved = { q: `is:open involves:${provider.user} ${matchFilter} archived:false`, ...options };
     const dependabot = { q: `is:open is:pr author:app/dependabot owner:placeholder ${matchFilter} archived:false`, per_page: 100, ...options };
@@ -45,6 +47,12 @@ const gitHubApi = {
         //To allow the ui to mark this as a review request, the api call is wrapped to add a special attribute (called custom_actions) to the response
         this.wrapIssuesAndPullRequestsCall(octokit, reviewer, "review_request"),
         this.wrapIssuesAndPullRequestsCall(octokit, revise, "changes_requested"),
+        // Also include ALL my open authored PRs (deduped/merged with the above by wiServices.merge), so the
+        // Assigned view shows what I am working on -mirror of GitLab-, keeping it the single "what needs my
+        // action" list. PRs still under review (reviewers assigned, no changes requested yet) get a muted
+        // "in review" badge added by the async reviewRequests refinement (updateReviewStatesAsync), since
+        // the search response does not carry the requested reviewers.
+        this.octokitSearchIssues(octokit, authored),
         //Approved but still open PRs (I authored or I reviewed): surface them so they are not lost before merge.
         //Opt-out per provider (enablePendingMerge) because it adds two extra search queries.
         ...(provider.enablePendingMerge ? [
@@ -105,19 +113,22 @@ const gitHubApi = {
     model.header.target = target;
     return model;
   },
-  // ASYNC refinement of the "changes requested" action badge (issue: symmetric review workflow).
-  // The search query review:changes_requested keeps returning a PR even after the author has
-  // re-requested review (ball back to the reviewer). We query reviewRequests for those PRs and,
-  // when a re-review is pending, ask the view to mute the badge (no action needed by the author).
-  // Called after the synchronous paint, so it never delays the Assigned view.
+  // ASYNC refinement of the author's review action badges (symmetric review workflow). Per-PR pending
+  // review requests are not in the search responses, so we query reviewRequests here after the paint
+  // (never delaying the Assigned view) and let the view react per role (prItems carry role
+  // "changes_requested"/"author"):
+  // - "changes_requested": the review:changes_requested query keeps returning a PR even after the author
+  //   re-requested review; when a re-review is pending, mute the badge (no action needed by the author).
+  // - "author": my other open PRs carry no badge yet; when a review is pending (reviewers assigned, none
+  //   requested changes), add a muted "in review" badge.
   updateReviewStatesAsync: function (provider, prItems) {
     if (prItems == undefined || prItems.length == 0)
       return;
     const prs = prItems.map((it, i) => {
       const idx = it.repo_name.indexOf("/");
-      return { uid: it.uid, owner: it.repo_name.substring(0, idx), repo: it.repo_name.substring(idx + 1), number: it.iid, alias: `pr${i}` };
+      return { uid: it.uid, owner: it.repo_name.substring(0, idx), repo: it.repo_name.substring(idx + 1), number: it.iid, alias: `pr${i}`, role: it.role };
     });
-    log.debug(provider.uid, `ASYNC Get review requests for ${prs.length} changes-requested PR(s)`);
+    log.debug(provider.uid, `ASYNC Get review requests for ${prs.length} authored PR(s)`);
     const query = gitHubGraphql.getReviewRequestsQuery(prs);
     const graphql = gitHubGraphql.getGraphQlApi(provider);
     const t0 = Date.now();

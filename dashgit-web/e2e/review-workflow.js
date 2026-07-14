@@ -35,13 +35,13 @@ const STEPS = [
   {
     key: "S1", title: "wf-s1 created no reviewers",
     desc: "Created, no reviewers yet",
-    author: { github: "hidden", gitlab: { none: true } },
+    author: { github: { none: true }, gitlab: { none: true } },
     reviewer: { github: "hidden", gitlab: "hidden" },
   },
   {
     key: "S2", title: "wf-s2 review requested",
     desc: "Reviewers assigned, not yet reviewed",
-    author: { github: "hidden", gitlab: IN_REVIEW },
+    author: { github: IN_REVIEW, gitlab: IN_REVIEW },
     reviewer: { github: REVIEW_REQUEST, gitlab: REVIEW_REQUEST },
   },
   {

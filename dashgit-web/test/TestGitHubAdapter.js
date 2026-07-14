@@ -144,29 +144,41 @@ describe("TestGitHubAdapter - Model transformations from GitHub API results", fu
         });
     });
 
-    // Decide whether the author's "changes requested" badge must be muted (a re-review is pending).
-    // - reviewRequests not empty -> muted (author re-requested review, ball is with the reviewer)
-    // - reviewRequests empty -> not muted (author still has to act)
-    // - missing/inaccessible pullRequest (null repo) or missing nodes -> not muted (safe default)
-    it("Decide muting of changes-requested badges from reviewRequests", function () {
+    // Decide how each of my authored PRs' review badge reacts to the pending review requests, per role:
+    // - role "changes_requested": mute the badge when a re-review is pending (author re-requested review,
+    //   ball with the reviewer); not muted when no pending request (author still has to act).
+    // - role "author": add an "in review" badge when a review is pending (reviewers assigned, none
+    //   requested changes); no badge when there is no pending request.
+    // - a role other than "author" (incl. undefined) is treated as "changes_requested" for compatibility.
+    // - missing/inaccessible pullRequest (null repo) or missing nodes -> no pending (safe default).
+    it("Decide review badges of authored PRs from reviewRequests", function () {
         let prs = [
-            { uid: "r1/p#1", alias: "pr0" }, // pending re-review -> muted
-            { uid: "r1/p#2", alias: "pr1" }, // no pending -> not muted
-            { uid: "r1/p#3", alias: "pr2" }, // inaccessible repo (null) -> not muted
-            { uid: "r1/p#4", alias: "pr3" }, // pullRequest without reviewRequests -> not muted
+            { uid: "r1/p#1", alias: "pr0", role: "changes_requested" }, // pending re-review -> muted
+            { uid: "r1/p#2", alias: "pr1", role: "changes_requested" }, // no pending -> not muted
+            { uid: "r1/p#3", alias: "pr2", role: "author" }, // pending review -> in review
+            { uid: "r1/p#4", alias: "pr3", role: "author" }, // no pending -> no badge
+            { uid: "r1/p#5", alias: "pr4" }, // no role (compat) with pending -> muted
+            { uid: "r1/p#6", alias: "pr5", role: "author" }, // inaccessible repo (null) -> no badge
+            { uid: "r1/p#7", alias: "pr6", role: "changes_requested" }, // pullRequest without reviewRequests -> not muted
         ];
         let gqlResponse = {
             pr0: { pullRequest: { number: 1, reviewRequests: { nodes: [{ requestedReviewer: { login: "usr1" } }] } } },
             pr1: { pullRequest: { number: 2, reviewRequests: { nodes: [] } } },
-            pr2: null,
-            pr3: { pullRequest: { number: 4 } },
+            pr2: { pullRequest: { number: 3, reviewRequests: { nodes: [{ requestedReviewer: { login: "usr1" } }] } } },
+            pr3: { pullRequest: { number: 4, reviewRequests: { nodes: [] } } },
+            pr4: { pullRequest: { number: 5, reviewRequests: { nodes: [{ requestedReviewer: { login: "usr1" } }] } } },
+            pr5: null,
+            pr6: { pullRequest: { number: 7 } },
         };
         let actual = gitHubAdapter.reviewRequests2decisions(prs, gqlResponse);
         assert.deepEqual([
-            { uid: "r1/p#1", muted: true },
-            { uid: "r1/p#2", muted: false },
-            { uid: "r1/p#3", muted: false },
-            { uid: "r1/p#4", muted: false },
+            { uid: "r1/p#1", muted: true, inReview: false },
+            { uid: "r1/p#2", muted: false, inReview: false },
+            { uid: "r1/p#3", muted: false, inReview: true },
+            { uid: "r1/p#4", muted: false, inReview: false },
+            { uid: "r1/p#5", muted: true, inReview: false },
+            { uid: "r1/p#6", muted: false, inReview: false },
+            { uid: "r1/p#7", muted: false, inReview: false },
         ], actual);
     });
 

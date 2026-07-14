@@ -269,6 +269,20 @@ const wiView = {
     badge.attr("title", "You have already re-requested review; waiting for the reviewer, no action needed for now");
     badge.tooltip({ delay: 200 });
   },
+  // Adds a muted "in review" badge to one of my authored PRs (GitHub author role) that has a pending
+  // review request (reviewers assigned, none has requested changes yet -> ball with the reviewer).
+  // Injected after paint because the GitHub search response does not carry the requested reviewers.
+  // No-op if the row already shows a review action badge (changes requested, review request or pending
+  // merge), so it never overrides a more specific badge.
+  setInReviewBadge: function (providerId, itemId) {
+    const id = this.getId("assigned", providerId, itemId);
+    const cell = $(`#wi-item-${id} .wi-item-column-content`);
+    if (cell.length == 0
+      || cell.find(".wi-action-review-request, .wi-action-changes-requested, .wi-action-in-review, .wi-action-pending-merge").length > 0)
+      return;
+    cell.prepend(wiRender.actions2html({ in_review: true }));
+    cell.find(".wi-action-in-review").tooltip({ delay: 200 });
+  },
   // Mutes the "review request" badge of an MR (GitLab reviewer role): I already requested changes, so
   // the ball is with the author and no action is needed from me for now. The row is kept (I may also be
   // the assignee): only the badge is dimmed and relabelled "changes requested". Same dispose + reinit

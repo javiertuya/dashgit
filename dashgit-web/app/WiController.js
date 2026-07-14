@@ -181,13 +181,18 @@ const wiController = {
     else if (providerType == "gitlab")
       this.dispatchGitLabReviewStates(provider, model);
   },
-  // GitHub (author role): collect the PRs from the review:changes_requested query and let the api decide
-  // (via reviewRequests) whether the "changes requested" badge should be muted because the author already
-  // re-requested review.
+  // GitHub (author side): collect my authored PRs and let the api decide (via reviewRequests) how their
+  // review badge should react. Two mutually-exclusive roles per PR:
+  // - "changes_requested": PRs from the review:changes_requested query -> mute to "in review" once I have
+  //   re-requested review (ball back with the reviewer).
+  // - "author": my other open PRs (no changes_requested yet) -> add an "in review" badge when a review is
+  //   pending. Approved PRs (pending_merge) are excluded: they are already flagged and ready to merge.
   dispatchGitHubReviewStates: function (provider, model) {
     const prItems = model.items
-      .filter(it => it.type == "pr" && it.actions?.changes_requested)
-      .map(it => ({ uid: it.uid, repo_name: it.repo_name, iid: it.iid }));
+      .filter(it => it.type == "pr" && !it.actions?.pending_merge
+        && (it.actions?.changes_requested || it.author == provider.user))
+      .map(it => ({ uid: it.uid, repo_name: it.repo_name, iid: it.iid,
+        role: it.actions?.changes_requested ? "changes_requested" : "author" }));
     if (prItems.length > 0)
       gitHubApi.updateReviewStatesAsync(provider, prItems);
   },
@@ -300,12 +305,16 @@ const wiController = {
     wiView.updateLabelColors(providerId, labels);
   },
 
-  // Callback from updateReviewStatesAsync: mutes the "changes requested" badge of the PRs whose
-  // author already re-requested review (decisions with muted == true).
+  // Callback from GitHub updateReviewStatesAsync (author side). Per decision (see reviewRequests2decisions):
+  // - muted: my "changes requested" PR is waiting for the reviewer (I re-requested review) -> mute the badge.
+  // - inReview: one of my other open PRs has a pending review -> add a muted "in review" badge.
   updateReviewStates: function (providerId, decisions) {
-    for (let decision of decisions)
+    for (let decision of decisions) {
       if (decision.muted)
         wiView.muteChangesRequestedBadge(providerId, decision.uid);
+      else if (decision.inReview)
+        wiView.setInReviewBadge(providerId, decision.uid);
+    }
   },
   // Callback from GitLab updateReviewStatesAsync. Per decision (see reviewStates2decisions), highest
   // precedence first:
