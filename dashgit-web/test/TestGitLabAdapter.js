@@ -226,23 +226,24 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
         assert.deepEqual({ review_request: true, in_review: true }, actual[3].custom_actions);
     });
 
-    // Decide the per-role action from the reviewers' review states.
-    // Reviewer role (mute my own "review request" badge when I requested changes):
-    // - my reviewState REQUESTED_CHANGES -> muted (ball back with the author)
-    // - my reviewState other / I am not among reviewers / null project / no reviewers -> not muted
-    // Author role (add a "changes requested" badge when any reviewer requested changes):
-    // - any reviewer REQUESTED_CHANGES -> changesRequested (ball with me)
-    // - no reviewer requested changes / null project / no reviewers -> not changesRequested
-    it("Decide review-badge actions from the reviewers review states (reviewer and author roles)", function () {
+    // Decide the per-role action from the reviewers' review states and the approvals.
+    // Precedence: pendingMerge (approved and no changes requested) > muted/changesRequested.
+    // Reviewer role: muted when MY reviewState is REQUESTED_CHANGES. Author role: changesRequested when
+    // any reviewer requested changes. pendingMerge (either role) when there is an approval and no reviewer
+    // requests changes; only when enablePendingMerge is on.
+    it("Decide review-badge actions from the reviewers review states and approvals (both roles)", function () {
         let prs = [
             { uid: "g/p!1", alias: "mr0", role: "reviewer" }, // I requested changes -> muted
             { uid: "g/p!2", alias: "mr1", role: "reviewer" }, // I have not reviewed yet -> not muted
             { uid: "g/p!3", alias: "mr2", role: "reviewer" }, // another reviewer requested changes, not me -> not muted
-            { uid: "g/p!4", alias: "mr3", role: "reviewer" }, // inaccessible project (null) -> not muted
-            { uid: "g/p!5", alias: "mr4", role: "reviewer" }, // mergeRequest without reviewers -> not muted
+            { uid: "g/p!4", alias: "mr3", role: "reviewer" }, // inaccessible project (null) -> nothing
+            { uid: "g/p!5", alias: "mr4", role: "reviewer" }, // mergeRequest without reviewers -> nothing
             { uid: "g/p!6", alias: "mr5", role: "author" },   // a reviewer requested changes -> changesRequested
-            { uid: "g/p!7", alias: "mr6", role: "author" },   // reviewers exist but none requested changes -> not
-            { uid: "g/p!8", alias: "mr7", role: "author" },   // no reviewers -> not
+            { uid: "g/p!7", alias: "mr6", role: "author" },   // reviewers exist but none requested changes -> nothing
+            { uid: "g/p!8", alias: "mr7", role: "author" },   // no reviewers -> nothing
+            { uid: "g/p!9", alias: "mr8", role: "author" },   // approved, no changes -> pendingMerge
+            { uid: "g/p!10", alias: "mr9", role: "reviewer" },// approved, no changes -> pendingMerge (over review request)
+            { uid: "g/p!11", alias: "mr10", role: "author" }, // approved but a reviewer requested changes -> changesRequested
         ];
         let gqlResponse = { data: {
             mr0: { mergeRequest: { iid: "1", reviewers: { nodes: [{ username: "usr1", mergeRequestInteraction: { reviewState: "REQUESTED_CHANGES" } }] } } },
@@ -256,18 +257,34 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
             ] } } },
             mr6: { mergeRequest: { iid: "7", reviewers: { nodes: [{ username: "rev1", mergeRequestInteraction: { reviewState: "UNREVIEWED" } }] } } },
             mr7: { mergeRequest: { iid: "8", reviewers: { nodes: [] } } },
+            mr8: { mergeRequest: { iid: "9", approvedBy: { nodes: [{ username: "rev1" }] }, reviewers: { nodes: [{ username: "rev1", mergeRequestInteraction: { reviewState: "APPROVED" } }] } } },
+            mr9: { mergeRequest: { iid: "10", approvedBy: { nodes: [{ username: "usr1" }] }, reviewers: { nodes: [{ username: "usr1", mergeRequestInteraction: { reviewState: "APPROVED" } }] } } },
+            mr10: { mergeRequest: { iid: "11", approvedBy: { nodes: [{ username: "rev1" }] }, reviewers: { nodes: [{ username: "rev2", mergeRequestInteraction: { reviewState: "REQUESTED_CHANGES" } }] } } },
         } };
-        let actual = gitLabAdapter.reviewStates2decisions(prs, gqlResponse, "usr1");
+        let actual = gitLabAdapter.reviewStates2decisions(prs, gqlResponse, "usr1", true);
         assert.deepEqual([
-            { uid: "g/p!1", muted: true, changesRequested: false },
-            { uid: "g/p!2", muted: false, changesRequested: false },
-            { uid: "g/p!3", muted: false, changesRequested: false },
-            { uid: "g/p!4", muted: false, changesRequested: false },
-            { uid: "g/p!5", muted: false, changesRequested: false },
-            { uid: "g/p!6", muted: false, changesRequested: true },
-            { uid: "g/p!7", muted: false, changesRequested: false },
-            { uid: "g/p!8", muted: false, changesRequested: false },
+            { uid: "g/p!1", muted: true, changesRequested: false, pendingMerge: false },
+            { uid: "g/p!2", muted: false, changesRequested: false, pendingMerge: false },
+            { uid: "g/p!3", muted: false, changesRequested: false, pendingMerge: false },
+            { uid: "g/p!4", muted: false, changesRequested: false, pendingMerge: false },
+            { uid: "g/p!5", muted: false, changesRequested: false, pendingMerge: false },
+            { uid: "g/p!6", muted: false, changesRequested: true, pendingMerge: false },
+            { uid: "g/p!7", muted: false, changesRequested: false, pendingMerge: false },
+            { uid: "g/p!8", muted: false, changesRequested: false, pendingMerge: false },
+            { uid: "g/p!9", muted: false, changesRequested: false, pendingMerge: true },
+            { uid: "g/p!10", muted: false, changesRequested: false, pendingMerge: true },
+            { uid: "g/p!11", muted: false, changesRequested: true, pendingMerge: false },
         ], actual);
+    });
+
+    // With pending-merge disabled, an approved MR yields no pendingMerge (stays as its review state).
+    it("Does not flag pending merge when enablePendingMerge is off", function () {
+        let prs = [{ uid: "g/p!9", alias: "mr8", role: "author" }];
+        let gqlResponse = { data: {
+            mr8: { mergeRequest: { iid: "9", approvedBy: { nodes: [{ username: "rev1" }] }, reviewers: { nodes: [{ username: "rev1", mergeRequestInteraction: { reviewState: "APPROVED" } }] } } },
+        } };
+        let actual = gitLabAdapter.reviewStates2decisions(prs, gqlResponse, "usr1", false);
+        assert.deepEqual([{ uid: "g/p!9", muted: false, changesRequested: false, pendingMerge: false }], actual);
     });
 
 });

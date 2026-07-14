@@ -185,11 +185,16 @@ const wiController = {
         if (prItems.length > 0)
           gitHubApi.updateReviewStatesAsync(provider, prItems);
       } else if (providerType == "gitlab") {
-        // Two roles refined by the same reviewState query (mutually exclusive: you can't review your
-        // own MR). Reviewer: MRs carrying review_request. Author: my own MRs that already have reviewers
-        // (carrying the sync "in review" badge); the query decides if a reviewer requested changes.
+        // Two roles refined by the same reviewState + approvals query (mutually exclusive: you can't
+        // review your own MR). Reviewer: MRs carrying review_request. Author: my own MRs. When
+        // enablePendingMerge is on we must check approvals for ALL my MRs (an approved MR may have no
+        // assigned reviewers), otherwise only those already under review (carrying the sync in_review
+        // badge, enough for the changes-requested upgrade) to keep the query small.
+        const collectAuthored = provider.enablePendingMerge
+          ? (it => it.author == provider.user)
+          : (it => it.actions?.in_review);
         const prItems = model.items
-          .filter(it => it.type == "pr" && (it.actions?.review_request || it.actions?.in_review))
+          .filter(it => it.type == "pr" && (it.actions?.review_request || collectAuthored(it)))
           .map(it => ({ uid: it.uid, repo_name: it.repo_name, iid: it.iid,
             role: it.actions?.review_request ? "reviewer" : "author" }));
         if (prItems.length > 0)
@@ -297,13 +302,17 @@ const wiController = {
       if (decision.muted)
         wiView.muteChangesRequestedBadge(providerId, decision.uid);
   },
-  // Callback from GitLab updateReviewStatesAsync. Per decision (see reviewStates2decisions):
+  // Callback from GitLab updateReviewStatesAsync. Per decision (see reviewStates2decisions), highest
+  // precedence first:
+  // - pendingMerge: the MR is approved and ready -> show the green "pending merge" badge.
   // - muted: I am the reviewer and already requested changes -> mute the "review request" badge.
   // - changesRequested: I am the author and a reviewer requested changes -> upgrade my authored MR's
   //   muted "in review" badge to an active "changes requested" badge (ball back with me).
   updateReviewRequestStates: function (providerId, decisions) {
     for (let decision of decisions) {
-      if (decision.muted)
+      if (decision.pendingMerge)
+        wiView.setPendingMergeBadge(providerId, decision.uid);
+      else if (decision.muted)
         wiView.muteReviewRequestBadge(providerId, decision.uid);
       else if (decision.changesRequested)
         wiView.activateChangesRequestedBadge(providerId, decision.uid);

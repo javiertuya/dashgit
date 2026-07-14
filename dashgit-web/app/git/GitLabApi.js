@@ -148,7 +148,7 @@ const gitLabApi = {
     const t0 = Date.now();
     gitLabGraphql.callGraphqlApi(provider, query, false).then(function (response) {
       log.debug(provider.uid, `ASYNC review states response [${Date.now() - t0}ms]:`, response);
-      const decisions = gitLabAdapter.reviewStates2decisions(prs, response, provider.user);
+      const decisions = gitLabAdapter.reviewStates2decisions(prs, response, provider.user, provider.enablePendingMerge);
       wiController.updateReviewRequestStates(provider.uid, decisions);
     }).catch(function (error) {
       console.error("GitLab review-states GraphQL call failed");

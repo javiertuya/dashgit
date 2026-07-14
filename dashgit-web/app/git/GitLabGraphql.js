@@ -75,6 +75,7 @@ const gitLabGraphql = {
       ${prs.map(p => `${p.alias}: project(fullPath: "${p.fullPath}") {
         mergeRequest(iid: "${p.iid}") {
           iid
+          approvedBy { nodes { username } }
           reviewers { nodes { username, mergeRequestInteraction { reviewState } } }
         }
       }`).join("\n      ")}

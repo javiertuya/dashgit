@@ -107,23 +107,30 @@ const gitLabAdapter = {
     return response;
   },
 
-  // Decides, for each MR that carries a review action badge, what to do based on the reviewers' states.
-  // The two roles are mutually exclusive (you can't review your own MR):
+  // Decides, for each MR that carries a review action badge, what to do based on the reviewers' states
+  // and the approvals. The reviewer/author roles are mutually exclusive (you can't review your own MR).
+  // Precedence (highest first): pendingMerge > muted/changesRequested.
+  // - pendingMerge (either role, only when enablePendingMerge): the MR has at least one approval and no
+  //   reviewer currently requests changes -> approved and ready to merge (mirror of GitHub review:approved).
   // - role "reviewer": mute the "review request" badge when MY own reviewState is REQUESTED_CHANGES
-  //   (I already requested changes, so the ball is back with the author until a re-request resets my
-  //   reviewState to UNREVIEWED).
-  // - role "author": add a "changes requested" badge when ANY reviewer's reviewState is
-  //   REQUESTED_CHANGES (a reviewer wants changes, ball is with me; GitLab drops it on re-request).
+  //   (I already requested changes, so the ball is back with the author until a re-request resets it).
+  // - role "author": add a "changes requested" badge when ANY reviewer's reviewState is REQUESTED_CHANGES
+  //   (a reviewer wants changes, ball is with me; GitLab drops it on re-request).
   // prs = [{ uid, alias, role }]; user = current username;
-  // gqlResponse = { data: { <alias>: { mergeRequest: { reviewers: { nodes: [{ username, mergeRequestInteraction: { reviewState } }] } } } } }.
-  reviewStates2decisions: function (prs, gqlResponse, user) {
+  // gqlResponse = { data: { <alias>: { mergeRequest: { approvedBy: { nodes }, reviewers: { nodes:
+  //   [{ username, mergeRequestInteraction: { reviewState } }] } } } } }.
+  reviewStates2decisions: function (prs, gqlResponse, user, enablePendingMerge) {
     let decisions = [];
     for (let pr of prs) {
-      const reviewers = gqlResponse?.data?.[pr.alias]?.mergeRequest?.reviewers?.nodes ?? [];
+      const mr = gqlResponse?.data?.[pr.alias]?.mergeRequest;
+      const reviewers = mr?.reviewers?.nodes ?? [];
       const requestedChanges = r => r?.mergeRequestInteraction?.reviewState == "REQUESTED_CHANGES";
-      const muted = pr.role == "reviewer" && requestedChanges(reviewers.find(r => r?.username == user));
-      const changesRequested = pr.role == "author" && reviewers.some(requestedChanges);
-      decisions.push({ uid: pr.uid, muted: muted, changesRequested: changesRequested });
+      const anyRequestedChanges = reviewers.some(requestedChanges);
+      const hasApproval = (mr?.approvedBy?.nodes ?? []).length > 0;
+      const pendingMerge = enablePendingMerge === true && hasApproval && !anyRequestedChanges;
+      const muted = !pendingMerge && pr.role == "reviewer" && requestedChanges(reviewers.find(r => r?.username == user));
+      const changesRequested = !pendingMerge && pr.role == "author" && anyRequestedChanges;
+      decisions.push({ uid: pr.uid, muted: muted, changesRequested: changesRequested, pendingMerge: pendingMerge });
     }
     return decisions;
   },

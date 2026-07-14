@@ -61,4 +61,11 @@ describe('TestWiViewRender - Label rendering', function () {
     assert.ok(html.includes('wi-action-in-review'));
     assert.ok(html.includes('opacity-50'));
   });
+
+  it('pending merge takes precedence over review request and in review badges', function () {
+    const html = wiRender.actions2html({ review_request: true, in_review: true, pending_merge: true });
+    assert.ok(html.includes('pending merge'));
+    assert.ok(!html.includes('review request'));
+    assert.ok(!html.includes('in review'));
+  });
 });

@@ -308,6 +308,30 @@ const wiView = {
       cell.find(".wi-action-changes-requested").tooltip({ delay: 200 });
     }
   },
+  // Shows the green "pending merge" badge on an approved-but-open MR (GitLab, author or reviewer role):
+  // the MR is approved and no reviewer requests changes, so it is ready to merge. The MR already carries
+  // a sync "review request"/"in review" badge in the common case, which is transformed in place; if none
+  // is present (e.g. approved by someone who is not an assigned reviewer), a fresh badge is injected.
+  setPendingMergeBadge: function (providerId, itemId) {
+    const id = this.getId("assigned", providerId, itemId);
+    const row = $(`#wi-item-${id}`);
+    if (row.find(".wi-action-pending-merge").length > 0) // already shown
+      return;
+    let badge = row.find(".wi-action-review-request, .wi-action-in-review").first();
+    if (badge.length > 0) {
+      badge.attr("class", "wi-item-column-clickable badge text-light bg-success wi-action-badge wi-action-pending-merge");
+      badge.html(`<i class="fa-solid fa-code-merge"></i> pending merge`);
+      badge.tooltip("dispose");
+      badge.attr("title", "This merge request is approved and pending merge");
+      badge.tooltip({ delay: 200 });
+    } else { // no review badge to transform: inject a fresh one
+      const cell = row.find(".wi-item-column-content");
+      if (cell.length == 0)
+        return;
+      cell.prepend(wiRender.actions2html({ pending_merge: true }));
+      cell.find(".wi-action-pending-merge").tooltip({ delay: 200 });
+    }
+  },
   upateStatusIcon: function (status, providerId, itemId) {
     const target = this.selectActiveTarget();
     const id = this.getId(target, providerId, itemId);
