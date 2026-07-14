@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { blockGitApis, saveScreenshot } from "./mock-helpers.js";
 
 /**
  * End-to-end smoke tests for the DashGit web app.
@@ -24,7 +25,12 @@ const TAB_IDS = [
 
 test.beforeEach(async ({ page }) => {
   // Block only the git platform APIs, keep CDN assets working
-  await page.route(/(api\.github\.com|github\.com\/search|gitlab\.com\/api)/, (route) => route.abort());
+  await blockGitApis(page);
+});
+
+// Screenshot each test (pass or fail) for manual verification, saved under e2e/screenshots/.
+test.afterEach(async ({ page }, testInfo) => {
+  await saveScreenshot(page, testInfo);
 });
 
 test("app boots with empty configuration and no credentials", async ({ page }) => {

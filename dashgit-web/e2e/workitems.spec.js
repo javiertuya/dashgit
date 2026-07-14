@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { jsonRoute, saveScreenshot } from "./mock-helpers.js";
 import { searchInvolved, graphqlStatuses, notifications } from "./workitems.fixtures.js";
 
 /**
@@ -11,29 +12,9 @@ import { searchInvolved, graphqlStatuses, notifications } from "./workitems.fixt
  * The app still loads its libraries (octokit, Bootstrap...) from CDNs, so internet is required.
  *
  * CORS note: the mocked requests are cross-origin (localhost -> api.github.com) and octokit
- * sends an Authorization header, so the browser issues a preflight. Every mock therefore
- * answers OPTIONS with CORS headers and adds access-control-allow-origin to the real response.
+ * sends an Authorization header, so the browser issues a preflight. The jsonRoute helper (see
+ * mock-helpers.js) answers OPTIONS with CORS headers and adds access-control-allow-origin to responses.
  */
-
-const CORS = {
-  "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET,POST,OPTIONS",
-  "access-control-allow-headers": "*",
-};
-
-// Fulfills a matched route: CORS preflight for OPTIONS, otherwise the JSON body (+CORS).
-function jsonRoute(body, extraHeaders = {}) {
-  return (route) => {
-    if (route.request().method() === "OPTIONS")
-      return route.fulfill({ status: 204, headers: CORS });
-    return route.fulfill({
-      status: 200,
-      headers: { ...CORS, ...extraHeaders },
-      contentType: "application/json",
-      body: JSON.stringify(body),
-    });
-  };
-}
 
 const CONFIG = {
   version: 3,
@@ -64,6 +45,11 @@ test.beforeEach(async ({ page }) => {
     localStorage.setItem("dashgit-config", JSON.stringify(config));
     sessionStorage.setItem("dashgit-config-last-selected-tab", "involved");
   }, CONFIG);
+});
+
+// Screenshot each test (pass or fail) for manual verification, saved under e2e/screenshots/.
+test.afterEach(async ({ page }, testInfo) => {
+  await saveScreenshot(page, testInfo);
 });
 
 test("displays issues and PRs with notifications and build statuses", async ({ page }) => {

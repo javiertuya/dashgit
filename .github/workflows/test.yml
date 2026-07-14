@@ -73,6 +73,7 @@ jobs:
           path: |
             dashgit-web/e2e/playwright-report
             dashgit-web/e2e/test-results
+            dashgit-web/e2e/screenshots
 
   sonarqube:
     # As in test-ut, but excludes dependabot updates to remove duplicates on local prs
