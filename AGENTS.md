@@ -80,6 +80,9 @@ From `oauth-exchange/`: `npm install` then run `server.js` with the required OAu
 - `test.yml` — on push/PR: `test-ut` (web Mocha tests, Node 24), `test-e2e` (Playwright e2e, Node 24), `sonarqube` analysis, and a `test-it` matrix (GitHub/GitLab integration tests, only when files under `dashgit-updater/**` change).
 - `release.yml` — on GitHub Release: runs `prepare-release.sh` and deploys `dashgit-web/dist/` to GitHub Pages.
 - Sonar configuration is in `sonar-project.properties` (analyzes `dashgit-web/app` and `dashgit-updater/src/main/java`).
+- **Analysis runs on SonarCloud (public project key `my:dashgit`)**, so its API is reachable without auth — no token needed to read results. When the `sonarqube` job fails, `gh run view <id> --log-failed` only shows "Quality Gate has FAILED"; get the actual cause from the public API (URL-encode the `:` as `%3A`):
+  - Failing conditions: `curl -sS "https://sonarcloud.io/api/qualitygates/project_status?projectKey=my%3Adashgit&branch=<branch>"` — look for conditions with `"status":"ERROR"` (e.g. `new_code_smells > 0`).
+  - The offending issues (new code): `curl -sS "https://sonarcloud.io/api/issues/search?componentKeys=my%3Adashgit&branch=<branch>&resolved=false&inNewCodePeriod=true&types=CODE_SMELL"` — each issue has `rule`, `component`, `line`, `message`. The quality gate requires **zero** new code smells/issues.
 
 ## Frontend architecture (`dashgit-web/app`)
 
