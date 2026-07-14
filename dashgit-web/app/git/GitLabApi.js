@@ -42,12 +42,10 @@ const gitLabApi = {
       promises = [
         api.MergeRequests.all(assigned),
         api.Issues.all(assigned),
-        // Also include the MRs I authored (deduped/merged with the assigned ones by wiServices.merge).
-        // Unlike GitHub, GitLab has no server-side "changes requested" filter, so we surface my open MRs
-        // here -what I am working on- and mark the ones that already have reviewers with a muted
-        // "in review" badge (ball with the reviewer). The async reviewState refinement later upgrades it
-        // to an active "changes requested" badge if a reviewer actually requested changes. This keeps
-        // Assigned as the single "what needs my action" list.
+        // Also include the MRs I authored (deduped/merged with the assigned ones by wiServices.merge), so
+        // Assigned stays the single "what needs my action" list. GitLab has no server-side "changes
+        // requested" filter, so ones that already have reviewers get a muted "in review" badge here, later
+        // upgraded to "changes requested" by the async reviewState refinement if a reviewer asked for changes.
         this.wrapAuthoredReviewCall(api, created),
         //Unlike GitHub, GitLab only can search for assigned as reviewer, but not as assigned to revise.
         this.wrapReviewRequestCall(api, reviewer, "review_request"),

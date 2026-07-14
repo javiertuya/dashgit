@@ -226,11 +226,8 @@ describe("TestGitLabAdapter - Model transformations from GitLab API results", fu
         assert.deepEqual({ review_request: true, in_review: true }, actual[3].custom_actions);
     });
 
-    // Decide the per-role action from the reviewers' review states and the approvals.
-    // Precedence: pendingMerge (approved and no changes requested) > muted/changesRequested.
-    // Reviewer role: muted when MY reviewState is REQUESTED_CHANGES. Author role: changesRequested when
-    // any reviewer requested changes. pendingMerge (either role) when there is an approval and no reviewer
-    // requests changes; only when enablePendingMerge is on.
+    // Per-role decisions from the reviewers' states and approvals (see reviewStates2decisions). Each prs
+    // entry is annotated with the case it exercises.
     it("Decide review-badge actions from the reviewers review states and approvals (both roles)", function () {
         let prs = [
             { uid: "g/p!1", alias: "mr0", role: "reviewer" }, // I requested changes -> muted

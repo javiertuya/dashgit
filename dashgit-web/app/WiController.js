@@ -160,9 +160,9 @@ const wiController = {
           this.dispatchProviderStatuses(provider);
         }
   },
-  // ASYNC refinement of the review action badges in the Assigned view. The kind of badge to refine and
-  // the role differ per provider (GitHub/GitLab mirror, but on opposite sides of the workflow), so the
-  // per-provider collection is delegated to a helper each.
+  // ASYNC refinement of the review action badges in the Assigned view. The badge to refine and the role
+  // differ per provider (GitHub/GitLab mirror, but on opposite sides of the workflow), so each provider
+  // supplies its own role function (item -> role, or null to skip the item).
   dispatchReviewStates: function (target, models) {
     if (target != "assigned")
       return;
@@ -181,34 +181,37 @@ const wiController = {
     else if (providerType == "gitlab")
       this.dispatchGitLabReviewStates(provider, model);
   },
-  // GitHub (author side): collect my authored PRs and let the api decide (via reviewRequests) how their
-  // review badge should react. Two mutually-exclusive roles per PR:
-  // - "changes_requested": PRs from the review:changes_requested query -> mute to "in review" once I have
-  //   re-requested review (ball back with the reviewer).
-  // - "author": my other open PRs (no changes_requested yet) -> add an "in review" badge when a review is
-  //   pending. Approved PRs (pending_merge) are excluded: they are already flagged and ready to merge.
+  toReviewItems: function (items, roleOf) {
+    return items
+      .filter(it => it.type == "pr" && roleOf(it) != null)
+      .map(it => ({ uid: it.uid, repo_name: it.repo_name, iid: it.iid, role: roleOf(it) }));
+  },
+  // GitHub (author side). Two mutually-exclusive roles: "changes_requested" (PR from the
+  // review:changes_requested query -> mute to "in review" once I re-requested review) and "author" (my
+  // other open PRs -> add an "in review" badge when a review is pending). Approved PRs are skipped.
   dispatchGitHubReviewStates: function (provider, model) {
-    const prItems = model.items
-      .filter(it => it.type == "pr" && !it.actions?.pending_merge
-        && (it.actions?.changes_requested || it.author == provider.user))
-      .map(it => ({ uid: it.uid, repo_name: it.repo_name, iid: it.iid,
-        role: it.actions?.changes_requested ? "changes_requested" : "author" }));
+    const roleOf = function (it) {
+      if (it.actions?.pending_merge)
+        return null;
+      if (it.actions?.changes_requested)
+        return "changes_requested";
+      return it.author == provider.user ? "author" : null;
+    };
+    const prItems = this.toReviewItems(model.items, roleOf);
     if (prItems.length > 0)
       gitHubApi.updateReviewStatesAsync(provider, prItems);
   },
-  // GitLab: two roles refined by the same reviewState + approvals query (mutually exclusive: you can't
-  // review your own MR). Reviewer: MRs carrying review_request. Author: my own MRs. When
-  // enablePendingMerge is on we must check approvals for ALL my MRs (an approved MR may have no assigned
-  // reviewers), otherwise only those already under review (carrying the sync in_review badge, enough for
-  // the changes-requested upgrade) to keep the query small.
+  // GitLab. Two mutually-exclusive roles (you can't review your own MR): "reviewer" (MRs carrying
+  // review_request) and "author" (my own MRs). With enablePendingMerge on we check approvals for ALL my
+  // MRs (an approved one may have no reviewers); off, only those already under review, to keep it small.
   dispatchGitLabReviewStates: function (provider, model) {
-    const collectAuthored = provider.enablePendingMerge
-      ? (it => it.author == provider.user)
-      : (it => it.actions?.in_review);
-    const prItems = model.items
-      .filter(it => it.type == "pr" && (it.actions?.review_request || collectAuthored(it)))
-      .map(it => ({ uid: it.uid, repo_name: it.repo_name, iid: it.iid,
-        role: it.actions?.review_request ? "reviewer" : "author" }));
+    const roleOf = function (it) {
+      if (it.actions?.review_request)
+        return "reviewer";
+      const isAuthored = provider.enablePendingMerge ? it.author == provider.user : it.actions?.in_review;
+      return isAuthored ? "author" : null;
+    };
+    const prItems = this.toReviewItems(model.items, roleOf);
     if (prItems.length > 0)
       gitLabApi.updateReviewStatesAsync(provider, prItems);
   },
@@ -305,9 +308,7 @@ const wiController = {
     wiView.updateLabelColors(providerId, labels);
   },
 
-  // Callback from GitHub updateReviewStatesAsync (author side). Per decision (see reviewRequests2decisions):
-  // - muted: my "changes requested" PR is waiting for the reviewer (I re-requested review) -> mute the badge.
-  // - inReview: one of my other open PRs has a pending review -> add a muted "in review" badge.
+  // Callback from GitHub updateReviewStatesAsync (author side); decisions from reviewRequests2decisions.
   updateReviewStates: function (providerId, decisions) {
     for (let decision of decisions) {
       if (decision.muted)
@@ -316,12 +317,8 @@ const wiController = {
         wiView.setInReviewBadge(providerId, decision.uid);
     }
   },
-  // Callback from GitLab updateReviewStatesAsync. Per decision (see reviewStates2decisions), highest
-  // precedence first:
-  // - pendingMerge: the MR is approved and ready -> show the green "pending merge" badge.
-  // - muted: I am the reviewer and already requested changes -> mute the "review request" badge.
-  // - changesRequested: I am the author and a reviewer requested changes -> upgrade my authored MR's
-  //   muted "in review" badge to an active "changes requested" badge (ball back with me).
+  // Callback from GitLab updateReviewStatesAsync; decisions from reviewStates2decisions, highest
+  // precedence first (pendingMerge > muted review request > changesRequested upgrade).
   updateReviewRequestStates: function (providerId, decisions) {
     for (let decision of decisions) {
       if (decision.pendingMerge)

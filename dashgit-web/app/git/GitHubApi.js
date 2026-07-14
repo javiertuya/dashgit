@@ -47,11 +47,9 @@ const gitHubApi = {
         //To allow the ui to mark this as a review request, the api call is wrapped to add a special attribute (called custom_actions) to the response
         this.wrapIssuesAndPullRequestsCall(octokit, reviewer, "review_request"),
         this.wrapIssuesAndPullRequestsCall(octokit, revise, "changes_requested"),
-        // Also include ALL my open authored PRs (deduped/merged with the above by wiServices.merge), so the
-        // Assigned view shows what I am working on -mirror of GitLab-, keeping it the single "what needs my
-        // action" list. PRs still under review (reviewers assigned, no changes requested yet) get a muted
-        // "in review" badge added by the async reviewRequests refinement (updateReviewStatesAsync), since
-        // the search response does not carry the requested reviewers.
+        // Also include ALL my open authored PRs (deduped/merged with the above by wiServices.merge), so
+        // Assigned stays the single "what needs my action" list -mirror of GitLab-. Those still under
+        // review get a muted "in review" badge from the async reviewRequests refinement.
         this.octokitSearchIssues(octokit, authored),
         //Approved but still open PRs (I authored or I reviewed): surface them so they are not lost before merge.
         //Opt-out per provider (enablePendingMerge) because it adds two extra search queries.
@@ -113,14 +111,9 @@ const gitHubApi = {
     model.header.target = target;
     return model;
   },
-  // ASYNC refinement of the author's review action badges (symmetric review workflow). Per-PR pending
-  // review requests are not in the search responses, so we query reviewRequests here after the paint
-  // (never delaying the Assigned view) and let the view react per role (prItems carry role
-  // "changes_requested"/"author"):
-  // - "changes_requested": the review:changes_requested query keeps returning a PR even after the author
-  //   re-requested review; when a re-review is pending, mute the badge (no action needed by the author).
-  // - "author": my other open PRs carry no badge yet; when a review is pending (reviewers assigned, none
-  //   requested changes), add a muted "in review" badge.
+  // ASYNC refinement of the author's review badges: the search responses omit the per-PR pending review
+  // requests, so we query reviewRequests here after the paint (never delaying the Assigned view) and let
+  // reviewRequests2decisions + the view react per role. prItems = [{ uid, repo_name, iid, role }].
   updateReviewStatesAsync: function (provider, prItems) {
     if (prItems == undefined || prItems.length == 0)
       return;

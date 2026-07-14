@@ -67,13 +67,10 @@ const gitHubAdapter = {
       item.custom_actions[action] = true;
     }
   },
-  // Decides, for each of my authored PRs, how its review badge reacts to the pending review requests
-  // (reviewRequests = requested reviewers whose review is still pending). Two roles, carried in pr.role
-  // (a role other than "author" -incl. undefined- is treated as "changes_requested" for compatibility):
-  // - "changes_requested": the PR shows an active "changes requested" badge -> mute it when a re-review
-  //   is pending (the author already re-requested review, ball back with the reviewer).
-  // - "author": the PR shows no review badge yet -> add a muted "in review" badge when a review is
-  //   pending (reviewers assigned, none has requested changes). No pending request -> no badge.
+  // Per authored PR, decides how its review badge reacts to the pending review requests (requested
+  // reviewers still to review). Role in pr.role (anything but "author" -incl. undefined- is treated as
+  // "changes_requested"): "changes_requested" -> mute to "in review" when a re-review is pending;
+  // "author" -> mark inReview when a review is pending. No pending request -> no change.
   // prs = [{ uid, alias, role }]; gqlResponse = { <alias>: { pullRequest: { reviewRequests: { nodes } } } }.
   reviewRequests2decisions: function (prs, gqlResponse) {
     let decisions = [];

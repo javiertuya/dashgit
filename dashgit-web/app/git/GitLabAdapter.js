@@ -93,10 +93,9 @@ const gitLabAdapter = {
     return response;
   },
 
-  // For my authored MRs (author role): flag with a muted "in review" badge only those that already have
-  // reviewers assigned (ball with the reviewer). MRs with no reviewers get no badge (pure WIP of mine).
-  // The async reviewState refinement later upgrades "in review" to an active "changes requested" badge
-  // when a reviewer has requested changes.
+  // Flags my authored MRs that already have reviewers assigned with a muted "in review" badge (ball with
+  // the reviewer); MRs with no reviewers get no badge. The async reviewState refinement later upgrades it
+  // to an active "changes requested" badge when a reviewer has requested changes.
   addInReviewActionToMergeRequests: function (response) {
     for (let item of this.safe(response))
       if (Array.isArray(item.reviewers) && item.reviewers.length > 0) {
@@ -107,15 +106,12 @@ const gitLabAdapter = {
     return response;
   },
 
-  // Decides, for each MR that carries a review action badge, what to do based on the reviewers' states
-  // and the approvals. The reviewer/author roles are mutually exclusive (you can't review your own MR).
-  // Precedence (highest first): pendingMerge > muted/changesRequested.
-  // - pendingMerge (either role, only when enablePendingMerge): the MR has at least one approval and no
-  //   reviewer currently requests changes -> approved and ready to merge (mirror of GitHub review:approved).
-  // - role "reviewer": mute the "review request" badge when MY own reviewState is REQUESTED_CHANGES
-  //   (I already requested changes, so the ball is back with the author until a re-request resets it).
-  // - role "author": add a "changes requested" badge when ANY reviewer's reviewState is REQUESTED_CHANGES
-  //   (a reviewer wants changes, ball is with me; GitLab drops it on re-request).
+  // Per MR carrying a review badge, decides from the reviewers' states and approvals. Reviewer/author
+  // roles are mutually exclusive (you can't review your own MR). Precedence, highest first:
+  // - pendingMerge (either role, only when enablePendingMerge): >=1 approval and no reviewer requests
+  //   changes -> approved and ready to merge (mirror of GitHub review:approved).
+  // - "reviewer": mute the "review request" badge when MY reviewState is REQUESTED_CHANGES.
+  // - "author": mark changesRequested when ANY reviewer's reviewState is REQUESTED_CHANGES.
   // prs = [{ uid, alias, role }]; user = current username;
   // gqlResponse = { data: { <alias>: { mergeRequest: { approvedBy: { nodes }, reviewers: { nodes:
   //   [{ username, mergeRequestInteraction: { reviewState } }] } } } } }.

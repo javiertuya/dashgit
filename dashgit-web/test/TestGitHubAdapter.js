@@ -144,13 +144,8 @@ describe("TestGitHubAdapter - Model transformations from GitHub API results", fu
         });
     });
 
-    // Decide how each of my authored PRs' review badge reacts to the pending review requests, per role:
-    // - role "changes_requested": mute the badge when a re-review is pending (author re-requested review,
-    //   ball with the reviewer); not muted when no pending request (author still has to act).
-    // - role "author": add an "in review" badge when a review is pending (reviewers assigned, none
-    //   requested changes); no badge when there is no pending request.
-    // - a role other than "author" (incl. undefined) is treated as "changes_requested" for compatibility.
-    // - missing/inaccessible pullRequest (null repo) or missing nodes -> no pending (safe default).
+    // Per-role decisions from the pending reviewRequests (see reviewRequests2decisions). Each prs entry
+    // is annotated with the case it exercises.
     it("Decide review badges of authored PRs from reviewRequests", function () {
         let prs = [
             { uid: "r1/p#1", alias: "pr0", role: "changes_requested" }, // pending re-review -> muted

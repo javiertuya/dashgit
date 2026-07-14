@@ -253,11 +253,20 @@ const wiView = {
     this.updateStatusVisibility();
     $(`#${this.getPanelId(this.selectActiveTarget(), providerId)} .wi-status-icon`).tooltip({ delay: 200 });
   },
-  // Mutes the "changes requested" badge of a PR (author already re-requested review, so no action is
-  // needed for now). The row is kept (the author may also be the assignee): only the badge is dimmed
-  // and relabelled "in review". Rows always carry the "assigned" target in their id, so it is used
-  // directly. The tooltip is replaced via dispose + reinit (the same jQuery API used to initialize the
-  // action badges) so the previous Bootstrap tooltip does not linger next to a native one.
+  // Helpers shared by the async review-badge refinements below. Review rows always carry the "assigned"
+  // target in their id. Tooltips are replaced via dispose + reinit (the jQuery API that initialized the
+  // badges) so a stale Bootstrap tooltip does not linger; fresh badges are injected via actions2html.
+  resetBadgeTooltip: function (badge, title) {
+    badge.tooltip("dispose");
+    badge.attr("title", title);
+    badge.tooltip({ delay: 200 });
+  },
+  injectActionBadge: function (cell, action) {
+    cell.prepend(wiRender.actions2html({ [action]: true }));
+    cell.find(`.wi-action-${action.replaceAll("_", "-")}`).tooltip({ delay: 200 });
+  },
+  // Mutes the active "changes requested" badge to "in review" (GitHub author already re-requested review:
+  // ball back with the reviewer, no action needed for now). The row stays; only the badge is dimmed.
   muteChangesRequestedBadge: function (providerId, itemId) {
     const id = this.getId("assigned", providerId, itemId);
     const badge = $(`#wi-item-${id} .wi-action-changes-requested`);
@@ -265,28 +274,21 @@ const wiView = {
       return;
     badge.removeClass("bg-primary text-light").addClass("bg-secondary text-light opacity-50");
     badge.html(`<i class="fa-regular fa-comment"></i> in review`);
-    badge.tooltip("dispose");
-    badge.attr("title", "You have already re-requested review; waiting for the reviewer, no action needed for now");
-    badge.tooltip({ delay: 200 });
+    this.resetBadgeTooltip(badge, "You have already re-requested review; waiting for the reviewer, no action needed for now");
   },
-  // Adds a muted "in review" badge to one of my authored PRs (GitHub author role) that has a pending
-  // review request (reviewers assigned, none has requested changes yet -> ball with the reviewer).
-  // Injected after paint because the GitHub search response does not carry the requested reviewers.
-  // No-op if the row already shows a review action badge (changes requested, review request or pending
-  // merge), so it never overrides a more specific badge.
+  // Adds a muted "in review" badge to one of my authored GitHub PRs with a pending review request
+  // (injected after paint, since the search response omits the requested reviewers). No-op if the row
+  // already shows any review badge, so it never overrides a more specific one.
   setInReviewBadge: function (providerId, itemId) {
     const id = this.getId("assigned", providerId, itemId);
     const cell = $(`#wi-item-${id} .wi-item-column-content`);
     if (cell.length == 0
       || cell.find(".wi-action-review-request, .wi-action-changes-requested, .wi-action-in-review, .wi-action-pending-merge").length > 0)
       return;
-    cell.prepend(wiRender.actions2html({ in_review: true }));
-    cell.find(".wi-action-in-review").tooltip({ delay: 200 });
+    this.injectActionBadge(cell, "in_review");
   },
-  // Mutes the "review request" badge of an MR (GitLab reviewer role): I already requested changes, so
-  // the ball is with the author and no action is needed from me for now. The row is kept (I may also be
-  // the assignee): only the badge is dimmed and relabelled "changes requested". Same dispose + reinit
-  // tooltip handling as muteChangesRequestedBadge.
+  // Mutes the "review request" badge to "changes requested" (GitLab reviewer already requested changes:
+  // ball with the author, no action needed for now). The row stays; only the badge is dimmed.
   muteReviewRequestBadge: function (providerId, itemId) {
     const id = this.getId("assigned", providerId, itemId);
     const badge = $(`#wi-item-${id} .wi-action-review-request`);
@@ -294,16 +296,11 @@ const wiView = {
       return;
     badge.removeClass("bg-info text-dark").addClass("bg-secondary text-light opacity-50");
     badge.html(`<i class="fa-regular fa-comment"></i> changes requested`);
-    badge.tooltip("dispose");
-    badge.attr("title", "You have requested changes; waiting for the author to update the merge request, no action needed for now");
-    badge.tooltip({ delay: 200 });
+    this.resetBadgeTooltip(badge, "You have requested changes; waiting for the author to update the merge request, no action needed for now");
   },
-  // Upgrades the muted "in review" badge of one of my authored MRs (GitLab author role) to an active
-  // "changes requested" badge: a reviewer has requested changes, so the ball is now with me. Mirrors
-  // muteReviewRequestBadge (dispose + reinit tooltip) but in the activating direction. GitLab drops it
-  // back to "in review" on the next refresh once no reviewer is in REQUESTED_CHANGES (author re-requested
-  // review -> reviewState UNREVIEWED). If the sync "in review" badge is missing (e.g. reviewers not yet
-  // in the REST list), a fresh "changes requested" badge is injected instead.
+  // Upgrades the muted "in review" badge to an active "changes requested" one (GitLab author: a reviewer
+  // wants changes, ball with me; GitLab drops it back on re-request). If the sync "in review" badge is
+  // missing (reviewers not yet in the REST list), a fresh "changes requested" badge is injected instead.
   activateChangesRequestedBadge: function (providerId, itemId) {
     const id = this.getId("assigned", providerId, itemId);
     const row = $(`#wi-item-${id}`);
@@ -311,21 +308,16 @@ const wiView = {
     if (badge.length > 0) {
       badge.removeClass("bg-secondary opacity-50 wi-action-in-review").addClass("bg-primary wi-action-changes-requested");
       badge.html(`<i class="fa-regular fa-comment"></i> changes requested`);
-      badge.tooltip("dispose");
-      badge.attr("title", "A reviewer has requested changes on this merge request");
-      badge.tooltip({ delay: 200 });
-    } else { // no in-review badge to upgrade: inject a fresh one
+      this.resetBadgeTooltip(badge, "A reviewer has requested changes on this merge request");
+    } else {
       const cell = row.find(".wi-item-column-content");
-      if (cell.length == 0 || cell.find(".wi-action-changes-requested").length > 0)
-        return;
-      cell.prepend(wiRender.actions2html({ changes_requested: true }));
-      cell.find(".wi-action-changes-requested").tooltip({ delay: 200 });
+      if (cell.length > 0 && cell.find(".wi-action-changes-requested").length == 0)
+        this.injectActionBadge(cell, "changes_requested");
     }
   },
-  // Shows the green "pending merge" badge on an approved-but-open MR (GitLab, author or reviewer role):
-  // the MR is approved and no reviewer requests changes, so it is ready to merge. The MR already carries
-  // a sync "review request"/"in review" badge in the common case, which is transformed in place; if none
-  // is present (e.g. approved by someone who is not an assigned reviewer), a fresh badge is injected.
+  // Shows the green "pending merge" badge on an approved-but-open MR (GitLab, either role). Transforms
+  // the existing sync "review request"/"in review" badge in place, or injects a fresh one if none is
+  // present (e.g. approved by someone who is not an assigned reviewer).
   setPendingMergeBadge: function (providerId, itemId) {
     const id = this.getId("assigned", providerId, itemId);
     const row = $(`#wi-item-${id}`);
@@ -335,15 +327,11 @@ const wiView = {
     if (badge.length > 0) {
       badge.attr("class", "wi-item-column-clickable badge text-light bg-success wi-action-badge wi-action-pending-merge");
       badge.html(`<i class="fa-solid fa-code-merge"></i> pending merge`);
-      badge.tooltip("dispose");
-      badge.attr("title", "This merge request is approved and pending merge");
-      badge.tooltip({ delay: 200 });
-    } else { // no review badge to transform: inject a fresh one
+      this.resetBadgeTooltip(badge, "This merge request is approved and pending merge");
+    } else {
       const cell = row.find(".wi-item-column-content");
-      if (cell.length == 0)
-        return;
-      cell.prepend(wiRender.actions2html({ pending_merge: true }));
-      cell.find(".wi-action-pending-merge").tooltip({ delay: 200 });
+      if (cell.length > 0)
+        this.injectActionBadge(cell, "pending_merge");
     }
   },
   upateStatusIcon: function (status, providerId, itemId) {
