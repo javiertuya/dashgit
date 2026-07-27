@@ -6,6 +6,8 @@ updates:
       interval: weekly
       day: "friday"
     open-pull-requests-limit: 20
+    # Do not rely on the auto heuristic: always bump the requirement in package.json, not only the lock
+    versioning-strategy: increase
 
   # app dependencies are grouped and should be manually updated in the index.html importmap
   - package-ecosystem: 'npm'
@@ -18,6 +20,7 @@ updates:
       interval: weekly
       day: "friday"
     open-pull-requests-limit: 20
+    versioning-strategy: increase
 
   - package-ecosystem: maven
     directory: "dashgit-updater/"
