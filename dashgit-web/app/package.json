@@ -1,4 +1,6 @@
 {
+  "//": "Declarative manifest: it is never installed and has no package-lock.json on purpose. It exists so that Dependabot watches the versions of the libraries that the app loads from the CDN. The versions that are really loaded are the ones pinned in the importmap of index.html, so a Dependabot update here must be copied there by hand. TestImportmap.js fails if both get out of sync.",
+  "private": true,
   "type": "module",
   "dependencies": {
     "@octokit/rest": "22.0.1",

@@ -27,12 +27,14 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24.x' 
+          node-version-file: 'dashgit-web/test/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: 'dashgit-web/test/package-lock.json'
       - name: Run unit tests
         working-directory: ./dashgit-web/test
         run: |
           mkdir actual
-          npm install
+          npm ci
           npm run report
       - name: Publish test report files
         if: success() || failure() # always run even if the previous step fails
@@ -55,10 +57,12 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24.x'
+          node-version-file: 'dashgit-web/e2e/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: 'dashgit-web/e2e/package-lock.json'
       - name: Install dependencies
         working-directory: ./dashgit-web/e2e
-        run: npm install
+        run: npm ci
       - name: Install Playwright browser
         working-directory: ./dashgit-web/e2e
         run: npx playwright install --with-deps chromium

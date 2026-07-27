@@ -4,6 +4,9 @@
   "author": "Javier Tuya <tuya@uniovi.es>",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "test": "playwright test",
     "report": "playwright show-report"
