@@ -13,8 +13,9 @@ FROM dhi.io/node:24-alpine3.23-dev AS build
 
 ENV NODE_ENV=production
 WORKDIR /usr/src/app
-COPY package*.json ./
-RUN npm install --omit=dev && mkdir -p node_modules
+# Copy the lockfile explicitly: if it is missing the build fails instead of silently resolving a different tree
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && mkdir -p node_modules
 
 # Runtime stage
 FROM dhi.io/node:24-alpine3.23 AS runtime
@@ -24,7 +25,7 @@ ENV NODE_ENV=production
 WORKDIR /usr/src/app
 COPY --from=build /usr/src/app/node_modules ./node_modules
 COPY server.js .
-COPY package*.json .
+COPY package.json package-lock.json ./
 
 EXPOSE 3000
 CMD ["node", "server.js"]
