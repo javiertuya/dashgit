@@ -173,6 +173,7 @@ const config = {
     this.setDefault(data.viewFilter.created, "exclude", "");
     this.setDefault(data.viewFilter.unassigned, "authorMe", true);
     this.setDefault(data.viewFilter.unassigned, "authorOthers", true);
+    this.setDefault(data.viewFilter.unassigned, "exclude", "");
     this.setDefault(data.viewFilter.statuses, "compact", false);
     this.setDefault(data.viewFilter.statuses, "exclude", "");
     this.setDefault(data.viewFilter.dependabot, "assignedMe", true);
