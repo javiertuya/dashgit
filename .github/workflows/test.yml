@@ -80,14 +80,15 @@ jobs:
             dashgit-web/e2e/screenshots
 
   sonarqube:
-    # As in test-ut, but excludes dependabot updates to remove duplicates on local prs
+    needs: [test-ut, test-e2e]
     #if: ${{ false }}
-    if: github.actor != 'dependabot[bot]' && ( (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/'))) )
+    # This job fails when comming from a dependabot PR or a forked repo
+    # (can't read the sonarqube token for security reasons).
+    # Also skipped on the branches merged by dashgit, that only contain version updates
+    if: ${{ github.actor != 'dependabot[bot]' && !github.event.pull_request.head.repo.fork
+      && !startsWith(github.ref, 'refs/heads/dashgit/combined/') }}
     runs-on: ubuntu-latest
     steps:
-      - if: github.event.pull_request.head.repo.fork
-        name: Failing job that is executed from forked repo
-        run: exit 1
       - uses: javiertuya/sonarqube-action@v1.4.5
         with: 
           github-token: ${{ secrets.GITHUB_TOKEN }}
