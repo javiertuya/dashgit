@@ -51,6 +51,15 @@ The configuration is stored in your browser's local storage.
 OAuth tokens are stored in session storage, dropped after closing the browser tab.
 If you authenticate using Personal Access Tokens (PAT) you can encrypt them with a password, which will be requested when you open a new DashGit browser tab.
 
+### Running your own instance locally
+
+`dashgit-server-py/server.py` runs both the web server and the exchange proxy server locally on a single port, requiring only Python (no Docker or Node):
+```
+python3 dashgit-server-py/server.py
+```
+DashGit is then available at `http://127.0.0.1:8080`.
+See [OAUTH2.md](dashgit-web/OAUTH2.md) for how to configure it to use your own OAuth App.
+
 ## Features and Configuration
 
 The different *views* (tabs) in the UI display open *work items* (issues, pull requests, etc.) in a collapsible panel for each *provider*.
