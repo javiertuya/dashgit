@@ -12,6 +12,12 @@ Out of the box, DashGit provides the necessary resources for the OAuth Authentic
 - A predefined *GitHub OAuth App* and *GitLab Application* (henceforth, referred to as *App*) that play the role of *Client* in the OAuth2 protcol to manage all process.
 - A *Exchange Proxy Service* to identify the *App* against the *Authorization Server* that prevents storing confidential information in the browser.
 
+These resources are registered against the public DashGit site, so they are only used when DashGit is served from
+[https://javiertuya.github.io/dashgit](https://javiertuya.github.io/dashgit). If you run DashGit from any other address (locally or on your own hosting),
+there is no predefined *App*: when you check *Use OAuth2 to authenticate*, *Customize OAuth2* is checked automatically and you must fill *OAuth App ID*
+with the *App* that you created for that address. In this case, *OAuth exchange token URL* defaults to the `/exchange` resource of the address where DashGit
+is being served, so you only have to fill it if your *Exchange Proxy Service* is somewhere else.
+
 Should you want to connect to an on-premises repository sever or customize the above, you may read the below sections.
 
 ## Use your own App
@@ -19,7 +25,11 @@ Should you want to connect to an on-premises repository sever or customize the a
 This implies that you will be using an *App* created in your account and you will not be using the *Exchange Proxy Service* (the browser connects directly to the *Authorization Server* to exchange the code for the token). This depends on the platform that you are using:
 - On GitLab:
   - From your GitLab preference settings, go to Access->Applications and add a new Application. Give it a name and set `https://javiertuya.github.io/dashgit/?oapp=gitlab` as the redirect URI. Uncheck *Confidential*, set the `read_api` scope and Save the application. Take note of the *Application ID*.
-  - In the configuration of the DashGit provider, check *Use OAuth2 to authenticate* and *Customize OAuth2*, fill *OAuth App ID* with the *Application ID* and save the configuration.
+  - In the configuration of the DashGit provider, check *Use OAuth2 to authenticate* and *Customize OAuth2*, fill *OAuth App ID* with the *Application ID*,
+    fill *OAuth exchange token URL* with the token endpoint of the *Authorization Server* (`https://gitlab.com/oauth/token`, or the equivalent endpoint if you
+    are using an on-premises server) and save the configuration.
+  - Filling only the *OAuth App ID* is not enough: the *OAuth exchange token URL* would keep its default value, that points to the *Exchange Proxy Service*
+    of DashGit, that does not know your *App* and rejects the exchange with a `403 forbidden`.
   - The difference with respect to the out of the box configuration is that each new session will require your authorization. This is because the *App* is considered as non confidential and the process can't be managed automatically without user intervention.
 - On GitHub: It is not possible to connect directly from a SPA Web Application because of some restrictions that are explained below:
   - From your GitHub settings, go to Developer Settings->OAuth Apps and create a new App. Give it a name, set `https://javiertuya.github.io/dashgit/` as the Homepage URL and `https://javiertuya.github.io/dashgit/?oapp=github` as the Authorization callback URL. Register the application and take note of the *Application ID*.
@@ -62,7 +72,9 @@ This requires your own *App*, as the predefined one is registered against the pu
 - Set the pair of environment variables described above (`CLIENT_SECRET_<CLIENT_ID>` and `TOKEN_URL_<CLIENT_ID>`), either:
   - In a `.env` file located in the `dashgit-server-py` folder, see `.env.example` in that folder for the format, or
   - In the shell environment. These take precedence over the values in `.env`, so that a wrapper script can obtain the secrets from a secret manager instead of storing them on disk.
-- Set *OAuth exchange token URL* to `http://127.0.0.1:8080/exchange`.
+- In the configuration of the DashGit provider, check *Use OAuth2 to authenticate* (this checks *Customize OAuth2* automatically) and fill *OAuth App ID*.
+- Leave *OAuth exchange token URL* empty: it defaults to `/exchange` under the address where DashGit is being served, that is the proxy included in this server
+  (`http://127.0.0.1:8080/exchange` in the example above). Fill it only if you are using an *Exchange Proxy Service* running elsewhere.
 
 The web app and the *Exchange Proxy Service* share the same origin here, so no CORS headers are needed or sent.
 

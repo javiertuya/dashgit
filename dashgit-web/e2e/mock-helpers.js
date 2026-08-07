@@ -51,6 +51,19 @@ async function blockGitApis(page) {
   await page.route(/(api\.github\.com|github\.com\/search|gitlab\.com\/api)/, (route) => route.abort());
 }
 
+// Makes the app believe it is running in the production environment: the environment is selected in
+// OAConfig.js by comparing the url where the app is running against the production url, that can't be
+// reproduced locally. This serves a patched OAConfig.js module where the production url is the url of
+// the test server, so that the app resolves to the production configuration (that registers an OAuth app).
+// Call before page.goto(), as the module is fetched at load time.
+async function mockProductionEnvironment(page, baseUrl = "http://localhost:8080") {
+  await page.route("**/login/OAConfig.js", async (route) => {
+    const response = await route.fetch();
+    const body = (await response.text()).replace("https://javiertuya.github.io/dashgit", baseUrl);
+    await route.fulfill({ response, body, contentType: "application/javascript" });
+  });
+}
+
 // Saves a full-page screenshot for manual verification under e2e/screenshots/, named by spec + test
 // title. Call from a test.afterEach hook so it runs whether the test passed or failed (a failing test
 // captures the actual on-screen state). The screenshot is also attached to the Playwright HTML report.
@@ -62,4 +75,4 @@ async function saveScreenshot(page, testInfo) {
   await testInfo.attach("screenshot", { path: file, contentType: "image/png" });
 }
 
-export { CORS, fulfillJson, preflight, jsonRoute, blockGitApis, saveScreenshot };
+export { CORS, fulfillJson, preflight, jsonRoute, blockGitApis, mockProductionEnvironment, saveScreenshot };
