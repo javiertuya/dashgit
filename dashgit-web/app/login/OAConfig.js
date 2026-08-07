@@ -11,7 +11,10 @@
  *  - Paths/urls to determine the endpoints for authorization request or token exchange
  *  - Does not contain the secret, this should be stored in the the exchange proxy
  * 
- * There are variants of the configuration for development and production.
+ * There are variants of the configuration for production, staging and development.
+ * The development variant is used for any other deployment (eg local): as there is no OAuth app
+ * registered for it, clientId is not defined (the user must set it in the custom configuration)
+ * and by default the exchange proxy is assumed to be served at /exchange under the same url as the app.
  * 
  * GitHub OAuth Apps: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#web-application-flow
  * GitHub Apps: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app#using-the-web-application-flow-to-generate-a-user-access-token
@@ -30,10 +33,20 @@ const oaconfig = {
   getConfig: function (url) {
     if (!url)
       url = this.getCurrentUrl();
-    if (url.replace(/\/$/, '') == "https://javiertuya.github.io/dashgit")
+    const baseUrl = url.replace(/\/$/, '');
+    if (baseUrl == "https://javiertuya.github.io/dashgit")
       return productionConfig;
+    else if (baseUrl == "https://giis.uniovi.es/desarrollo/dashgit")
+      return stagingConfig;
     else
-      return developConfig;
+      return getDevelopConfig(baseUrl);
+  },
+
+  // Determines if the current environment registers a default OAuth app for a given platform.
+  // If it does not (development environments), the app id must be set as a custom configuration
+  hasDefaultClientId: function (platform, url) {
+    const appName = platform.toLowerCase();
+    return (this.getConfig(url)[platform]?.[appName]?.clientId ?? "") != "";
   }
 }
 
@@ -58,7 +71,7 @@ const productionConfig = {
     },
   },
 }
-const developConfig = {
+const stagingConfig = {
   GitHub: {
     github: {
       clientId: "Ov23liF8QHJgpfMvHfDx",
@@ -77,6 +90,26 @@ const developConfig = {
       tokenUrl: "https://giis.uniovi.es/desarrollo/oauth/exchange",
     },
   },
+}
+// Configuration for any other deployment: no clientId (must be set as custom configuration
+// by the user) and the exchange proxy is served under the same url as the app.
+function getDevelopConfig(baseUrl) {
+  return {
+    GitHub: {
+      github: {
+        scopes: "repo notifications",
+        authorizePath: "/login/oauth/authorize",
+        tokenUrl: baseUrl + "/exchange",
+      },
+    },
+    GitLab: {
+      gitlab: {
+        scopes: "read_api",
+        authorizePath: "/oauth/authorize",
+        tokenUrl: baseUrl + "/exchange",
+      },
+    },
+  }
 }
 
 export { oaconfig };

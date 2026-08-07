@@ -1,6 +1,7 @@
 import { config } from "./core/Config.js"
 import { surrogates } from "./core/Surrogates.js"
 import { configValidation } from "./ConfigValidation.js"
+import { oaconfig } from "./login/OAConfig.js"
 
 /**
  * Generates the html content for the config view
@@ -228,7 +229,8 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
         </div>
         <div class="row">
           ${this.input2html(`config-providers-oauth-clientId-${key}`, "text", "OAuth App ID", provider.oacustom.clientId, '', "150", "150",
-            "The Client/Application ID of the GitHub/GitLab App where DashGit connects to get the authentication and authorization.")}
+            "The Client/Application ID of the GitHub/GitLab App where DashGit connects to get the authentication and authorization.",
+            "The OAuth App ID is required because this deployment does not register a default OAuth app")}
           ${this.input2html(`config-providers-oauth-tokenUrl-${key}`, "text", "OAuth exchange token URL", provider.oacustom.tokenUrl, '', "225", "300",
             "The URL of the proxy service endpoint that exchanges the authorization code by the authorization token.")}
         </div>
@@ -360,7 +362,9 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
       $(`.config-provider-updates-div-container`).show();
       configValidation.onShowInstallValidation($(`#config-providers-name-mgrepo`))
    } else {
-      configValidation.onHideUninstallValidation($(`#config-providers-name-mgrepo`));     
+      configValidation.onHideUninstallValidation($(`#config-providers-name-mgrepo`));
+      // the manager repo authentication is hidden too, any validation set by refreshAuthenticationMethod must be removed
+      configValidation.onHideUninstallValidation($(`#config-providers-oauth-clientId-mgrepo`));
       $(`.config-provider-updates-div-container`).hide();
       $(`#config-providers-all-mgrepo`).hide();
     }
@@ -381,22 +385,41 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
       let customize = $(card).find('input[id^="config-providers-oauth-customize-"]');
       let clientId = $(card).find('input[id^="config-providers-oauth-clientId-"]');
       let tokenUrl = $(card).find('input[id^="config-providers-oauth-tokenUrl-"]');
+      // If this deployment does not register a default OAuth app, the app id must be entered by the user:
+      // the customization is forced and the app id becomes required
+      const clientIdRequired = !oaconfig.hasDefaultClientId(this.getCardPlatform(card));
       if ($(auth).is(':checked')) {
         $(token).closest(".col-auto").hide();
         $(customize).closest(".col-auto").show();
+        if (clientIdRequired)
+          $(customize).prop("checked", true).prop("disabled", true);
+        else
+          $(customize).prop("disabled", false);
         if ($(customize).is(':checked')) {
           $(clientId).closest(".col-auto").show();
           $(tokenUrl).closest(".col-auto").show();
+          if (clientIdRequired)
+            configValidation.onShowInstallValidation($(clientId));
+          else
+            configValidation.onHideUninstallValidation($(clientId));
         } else {
           $(clientId).closest(".col-auto").hide();
           $(tokenUrl).closest(".col-auto").hide();
+          configValidation.onHideUninstallValidation($(clientId));
         }
       } else {
         $(token).closest(".col-auto").show();
+        $(customize).prop("disabled", false);
         $(customize).closest(".col-auto").hide();
         $(clientId).closest(".col-auto").hide();
         $(tokenUrl).closest(".col-auto").hide();
+        configValidation.onHideUninstallValidation($(clientId));
     }
+  },
+  // The platform of the card that holds an authentication configuration
+  // (the manager repository is inside the common parameters card and is always GitHub)
+  getCardPlatform: function (card) {
+    return $(card).find(".config-provider-panel").attr("prov") ?? "GitHub";
   },
 
   // hide GitHub urls
@@ -612,9 +635,13 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
 
   // Display of common form input controls, enclosed in col-auto for fluid placement
 
-  input2html: function (id, type, label, value, validation, labelWidth, valueWidth, info, invalidMsg = "Invalid value") { // NOSONAR
+  // The invalid message div is also rendered when there is no validation in the markup, but a message is given:
+  // this allows setting the validation dynamically (eg required when a condition is met)
+  input2html: function (id, type, label, value, validation, labelWidth, valueWidth, info, invalidMsg = "") { // NOSONAR
     let labelStyle = labelWidth == "" ? "" : `style="width:${labelWidth}px"`;
     let valueStyle = valueWidth == "" ? "" : `style="width:${valueWidth}px"`;
+    let hasInvalidMsg = (validation && validation != "") || invalidMsg != "";
+    let invalidMsgText = invalidMsg == "" ? "Invalid value" : invalidMsg;
     return `
     <div class="col-auto" id="${id}-div-container">
       <div class="input-group input-group-sm">
@@ -623,7 +650,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
           autocapitalize="off" autocorrect="off"
           class="form-control ${label == 'Username' ? ' fw-bold' : ''}" aria-label="${label}" aria-describedby="${id}-label">
       </div>
-      ${ validation && validation != "" ? '<div class="text-danger small d-none">' + invalidMsg + '</div>' : ""}
+      ${ hasInvalidMsg ? '<div class="text-danger small d-none">' + invalidMsgText + '</div>' : ""}
     </div>
     `;
   },
