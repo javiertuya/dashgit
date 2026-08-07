@@ -22,6 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 WEB_APP_DIR = ROOT.parent / "dashgit-web" / "app"
 ENV_FILE = ROOT / ".env"
+CONTENT_TYPE_JSON = "application/json"
 VERBOSE = False
 
 
@@ -134,7 +135,7 @@ class Handler(SimpleHTTPRequestHandler):
         req = urllib.request.Request(
             outcome.token_url,
             data=json.dumps(outcome.body).encode(),
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
+            headers={"Content-Type": CONTENT_TYPE_JSON, "Accept": CONTENT_TYPE_JSON},
             method="POST",
         )
         try:
@@ -148,14 +149,14 @@ class Handler(SimpleHTTPRequestHandler):
             return
 
         self.send_response(200)
-        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Type", CONTENT_TYPE_JSON)
         self.end_headers()
         self.wfile.write(data)
 
     # No CORS headers added as the app and /exchange are served from this same origin. 
     def _send_json(self, status, body, as_json=True):
         self.send_response(status)
-        self.send_header("Content-Type", "application/json" if as_json else "text/plain")
+        self.send_header("Content-Type", CONTENT_TYPE_JSON if as_json else "text/plain")
         self.end_headers()
         self.wfile.write((json.dumps(body) if as_json else body).encode())
 
@@ -185,7 +186,9 @@ def main():
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     print(f"DashGit running at http://127.0.0.1:{port}  (serving {WEB_APP_DIR}, exchange proxy at /exchange)")
     try:
-        server.serve_forever()
+        # Plain HTTP is intended: this is a local runner bound to 127.0.0.1,
+        # TLS would only add certificate handling with nothing to protect on the loopback
+        server.serve_forever()  # NOSONAR
     except KeyboardInterrupt:
         pass
 
