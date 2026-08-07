@@ -640,6 +640,8 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
   input2html: function (id, type, label, value, validation, labelWidth, valueWidth, info, invalidMsg = "") { // NOSONAR
     let labelStyle = labelWidth == "" ? "" : `style="width:${labelWidth}px"`;
     let valueStyle = valueWidth == "" ? "" : `style="width:${valueWidth}px"`;
+    let hasInvalidMsg = (validation && validation != "") || invalidMsg != "";
+    let invalidMsgText = invalidMsg == "" ? "Invalid value" : invalidMsg;
     return `
     <div class="col-auto" id="${id}-div-container">
       <div class="input-group input-group-sm">
@@ -648,7 +650,7 @@ Some providers use OAuth but also store a PAT. This PAT should be removed.
           autocapitalize="off" autocorrect="off"
           class="form-control ${label == 'Username' ? ' fw-bold' : ''}" aria-label="${label}" aria-describedby="${id}-label">
       </div>
-      ${ (validation && validation != "") || invalidMsg != "" ? '<div class="text-danger small d-none">' + (invalidMsg == "" ? "Invalid value" : invalidMsg) + '</div>' : ""}
+      ${ hasInvalidMsg ? '<div class="text-danger small d-none">' + invalidMsgText + '</div>' : ""}
     </div>
     `;
   },
