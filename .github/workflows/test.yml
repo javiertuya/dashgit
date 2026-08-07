@@ -46,6 +46,21 @@ jobs:
             dashgit-web/test/actual
             dashgit-web/test/mochawesome-report
 
+  test-ut-server-py:
+    runs-on: ubuntu-latest
+    # As in test-ut: avoids duplicate execution of pr from local repo, but allows pr from forked repos and dependabot
+    if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/')))
+    steps:
+      - name: Checkout GitHub repo
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+      - name: Run unit tests for server.py
+        working-directory: ./dashgit-server-py
+        run: python3 -m unittest test_server.py -v
+
   test-e2e:
     runs-on: ubuntu-latest
     # As in test-ut: avoids duplicate execution of pr from local repo, but allows pr from forked repos and dependabot

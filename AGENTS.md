@@ -13,6 +13,7 @@ This is a multi-component workspace. There is **no `package.json` at the reposit
 | Component | Path | Stack | Purpose |
 | --------- | ---- | ----- | ------- |
 | Web app | `dashgit-web/` | Vanilla JS (ES modules), static HTML/CSS | The DashGit UI — the main component |
+| Local runner | `dashgit-server-py/` | Python 3.7+ stdlib | Runs the web app + OAuth proxy together on one port |
 | Updater | `dashgit-updater/` | Java 17 / Maven | Generates and applies combined Dependabot update payloads |
 | OAuth proxy | `oauth-exchange/` | Node.js / Express 5 | Exchanges OAuth authorization codes for tokens without exposing secrets |
 
@@ -76,8 +77,19 @@ From `dashgit-updater/`:
 ### OAuth proxy
 From `oauth-exchange/`: `npm install` then run `server.js` with the required OAuth environment variables set.
 
+### Run everything locally
+`dashgit-server-py/server.py` serves `dashgit-web/app/` as static files plus the OAuth proxy's `/exchange` and `/healthcheck` on the same port, i.e. the whole stack:
+```
+python3 dashgit-server-py/server.py [port] # http://127.0.0.1:8080, or the given port
+```
+- Binds `127.0.0.1` only, no CORS headers: app and `/exchange` are same-origin.
+- Credentials `CLIENT_SECRET_<client_id>` / `TOKEN_URL_<client_id>` come from `dashgit-server-py/.env` (format in `.env.example`); shell environment wins over `.env`, so a wrapper can inject them from a secret manager.
+- OAuth setup (own *App*, callback URL, address must match the browser's address bar exactly) is in `dashgit-web/OAUTH2.md`, section "Run everything locally". Do not restate it here.
+- Tests for the exchange decision logic (`prepare_exchange`): `cd dashgit-server-py && python3 -m unittest test_server.py`. Named `TestUt*` to mirror the updater's JUnit tests.
+- `oauth-exchange/server.js` + `Dockerfile` remain the Node/Docker alternative for containerized deployment; `dashgit-server-py/` is local-only.
+
 ## CI/CD (`.github/workflows/`)
-- `test.yml` — on push/PR: `test-ut` (web Mocha tests, Node 24), `test-e2e` (Playwright e2e, Node 24), `sonarqube` analysis, and a `test-it` matrix (GitHub/GitLab integration tests, only when files under `dashgit-updater/**` change).
+- `test.yml` — on push/PR: `test-ut` (web Mocha tests, Node 24), `test-ut-server-py` (`dashgit-server-py` unittest), `test-e2e` (Playwright e2e, Node 24), `sonarqube` analysis, and a `test-it` matrix (GitHub/GitLab integration tests, only when files under `dashgit-updater/**` change).
 - `release.yml` — on GitHub Release: runs `prepare-release.sh` and deploys `dashgit-web/dist/` to GitHub Pages.
 - Sonar configuration is in `sonar-project.properties` (analyzes `dashgit-web/app` and `dashgit-updater/src/main/java`).
 - **Analysis runs on SonarCloud (public project key `my:dashgit`)**, so its API is reachable without auth — no token needed to read results. When the `sonarqube` job fails, `gh run view <id> --log-failed` only shows "Quality Gate has FAILED"; get the actual cause from the public API (URL-encode the `:` as `%3A`):
