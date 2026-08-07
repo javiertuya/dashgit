@@ -95,7 +95,7 @@ jobs:
             dashgit-web/e2e/screenshots
 
   sonarqube:
-    needs: [test-ut, test-e2e]
+    needs: [test-ut, test-ut-server-py, test-e2e]
     #if: ${{ false }}
     # This job fails when comming from a dependabot PR or a forked repo
     # (can't read the sonarqube token for security reasons).
