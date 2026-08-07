@@ -22,6 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 WEB_APP_DIR = ROOT.parent / "dashgit-web" / "app"
 ENV_FILE = ROOT / ".env"
+HEADER_CONTENT_TYPE = "Content-Type"
 CONTENT_TYPE_JSON = "application/json"
 VERBOSE = False
 
@@ -135,7 +136,7 @@ class Handler(SimpleHTTPRequestHandler):
         req = urllib.request.Request(
             outcome.token_url,
             data=json.dumps(outcome.body).encode(),
-            headers={"Content-Type": CONTENT_TYPE_JSON, "Accept": CONTENT_TYPE_JSON},
+            headers={HEADER_CONTENT_TYPE: CONTENT_TYPE_JSON, "Accept": CONTENT_TYPE_JSON},
             method="POST",
         )
         try:
@@ -149,14 +150,14 @@ class Handler(SimpleHTTPRequestHandler):
             return
 
         self.send_response(200)
-        self.send_header("Content-Type", CONTENT_TYPE_JSON)
+        self.send_header(HEADER_CONTENT_TYPE, CONTENT_TYPE_JSON)
         self.end_headers()
         self.wfile.write(data)
 
     # No CORS headers added as the app and /exchange are served from this same origin. 
     def _send_json(self, status, body, as_json=True):
         self.send_response(status)
-        self.send_header("Content-Type", CONTENT_TYPE_JSON if as_json else "text/plain")
+        self.send_header(HEADER_CONTENT_TYPE, CONTENT_TYPE_JSON if as_json else "text/plain")
         self.end_headers()
         self.wfile.write((json.dumps(body) if as_json else body).encode())
 
