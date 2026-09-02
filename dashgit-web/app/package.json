@@ -4,7 +4,7 @@
   "type": "module",
   "dependencies": {
     "@octokit/rest": "22.0.1",
-    "@octokit/graphql": "9.0.3",
+    "@octokit/graphql": "9.0.4",
     "@gitbeaker/rest": "43.8.0"
   }
 }
