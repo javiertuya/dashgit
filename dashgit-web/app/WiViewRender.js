@@ -74,7 +74,7 @@ const wiRender = {
     let reason = notifCache.getModel(provider)[uid];
     if (reason == undefined)
       return "";
-    let iconClass = reason == "mention" || reason == "mentioned" || reason == "directly_addressed" ? this.mentionIconClass : this.notificationIconClass;
+    let iconClass = notifCache.isMention(reason) ? this.mentionIconClass : this.notificationIconClass;
     return `<i class="wi-notification-icon ${iconClass}" title="Unread notification, reason: ${reason}"></i>`;
   },
 

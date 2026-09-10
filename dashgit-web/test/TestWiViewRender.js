@@ -1,5 +1,6 @@
 import assert from 'assert';
 import { wiRender } from '../app/WiViewRender.js'
+import { notifCache } from '../app/core/NotifCache.js'
 
 describe('TestWiViewRender - Label rendering', function () {
   it('renders issue type labels with named colors without invalid # prefix', function () {
@@ -67,5 +68,37 @@ describe('TestWiViewRender - Label rendering', function () {
     assert.ok(html.includes('pending merge'));
     assert.ok(!html.includes('review request'));
     assert.ok(!html.includes('in review'));
+  });
+});
+
+describe('TestWiViewRender - Notification rendering', function () {
+  const uid = 'giis-uniovi-test-update_issue_1';
+  afterEach(function () {
+    notifCache.reset();
+  });
+  function renderReason(reason) {
+    notifCache.data['gh1'] = { [uid]: reason };
+    return wiRender.notifications2html('gh1', uid);
+  }
+
+  it('renders the mention icon for each reason that mentions the user', function () {
+    for (const reason of ['mention', 'team_mention', 'mentioned', 'directly_addressed']) {
+      assert.ok(notifCache.isMention(reason), `${reason} must be a mention`);
+      assert.ok(renderReason(reason).includes(wiRender.mentionIconClass), `${reason} must render the mention icon`);
+    }
+  });
+
+  it('renders the bell icon for reasons that do not mention the user', function () {
+    for (const reason of ['subscribed', 'assign', 'author', 'state_change']) {
+      assert.ok(!notifCache.isMention(reason), `${reason} must not be a mention`);
+      assert.ok(renderReason(reason).includes(wiRender.notificationIconClass), `${reason} must render the bell icon`);
+    }
+  });
+
+  it('renders nothing when there is no notification for the work item', function () {
+    notifCache.data['gh1'] = {};
+    assert.strictEqual(wiRender.notifications2html('gh1', uid), '');
+    notifCache.reset();
+    assert.strictEqual(wiRender.notifications2html('gh1', uid), '');
   });
 });

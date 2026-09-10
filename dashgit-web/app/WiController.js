@@ -358,8 +358,8 @@ const wiController = {
     let mentionCount = 0;
     for (let notifKey in notifCache.data[prop]) {
       let reason = notifCache.data[prop][notifKey];
-      if (reason == "mention" || reason == "mentioned" || reason == "directly_addressed")
-        mentionCount++; //PENDING: reason values are duplicated in the view, refactor
+      if (notifCache.isMention(reason))
+        mentionCount++;
     }
     return mentionCount;
   },
