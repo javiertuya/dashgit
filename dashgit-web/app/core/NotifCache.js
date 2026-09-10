@@ -17,6 +17,13 @@ const notifCache = {
       items[mod.getModelUid(notif[i].repo_name, notif[i].type, notif[i].iid, "")] = notif[i].reason; //do not collect from branches
     this.data[provider] = items; //replace content
   },
+  //Notification reasons that are considered a mention of the user.
+  //GitHub: mention (directly mentioned), team_mention (mentioned through a team the user belongs to).
+  //GitLab: mentioned (name at the end), directly_addressed (name at the beginning)
+  mentionReasons: ["mention", "team_mention", "mentioned", "directly_addressed"],
+  isMention: function (reason) {
+    return this.mentionReasons.includes(reason);
+  },
   getModel: function (provider) {
     if (surrogates.hasSurrogate(provider)) {
       let origin = surrogates.getSurrogate(provider);
