@@ -52,7 +52,7 @@ This is a multi-component workspace. There is **no `package.json` at the reposit
   cd dashgit-web/test
   npm install
   npm test           # runs: mocha Test*.js
-  npm run report     # same, with the mochawesome HTML reporter
+  npm run report     # same, with the mochawesome HTML reporter (loaded through mochawesome-compat.cjs)
   ```
   Tests cover API-response-to-model transformations, rendering, and configuration. Test files are `Test*.js` (e.g. `TestGitHubAdapter.js`, `TestWiViewRender.js`, `TestConfig.js`, `TestOALogin.js`). Some tests compare generated output under `test/actual/` against golden files in `test/expected/`; create `test/actual/` if it does not exist. VS Code Mocha Explorer is preconfigured in `.vscode/settings.json`.
 - **End-to-end smoke tests** (Playwright) run from `dashgit-web/e2e/` — a separate, self-contained package that boots the real app in a browser:
