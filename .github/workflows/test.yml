@@ -216,10 +216,6 @@ jobs:
         run: cd dashgit-updater && mvn test -Dtest=TestIt${{ matrix.scope }}*,TestUt* -Dmaven.test.failure.ignore=false -U --no-transfer-progress
         #run: cd dashgit-updater && mvn test -Dtest=TestUt* -Dmaven.test.failure.ignore=false -U --no-transfer-progress
 
-      - name: TEMP force failure on first attempt
-        if: matrix.scope == 'Github' && github.run_attempt == 1
-        run: exit 1
-
       - name: Generate report checks - ${{ matrix.scope }}
         if: success() || failure()
         uses: mikepenz/action-junit-report@v6.5.0
