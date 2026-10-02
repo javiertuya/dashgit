@@ -83,7 +83,8 @@ const wiController = {
       }
     if (promises.length == 0)
       wiView.renderAlert("warning", "No providers have been configured, please, complete the setup in the Configure tab");
-    this.dispatchPromises(target, promises, sorting);
+    // Not awaited: the caller returns while the work items are loading, the view shows a loading indicator meanwhile
+    void this.dispatchPromises(target, promises, sorting);
   },
   tokenIsValid: function (provider) {
     if (!provider.oauth) // PAT token is always considered valid for path authentication (even if emtpy)

@@ -24,7 +24,7 @@ $(document).on('click', '.wi-item-column-clickable', async function (e) {
     title: $(this).closest(".wi-status-class-any").find(".wi-item-title").first().text(),
   }
   // This follow up can be existing or new, updates the modal state accordingly
-  wiControllerFollowUp.edit(params);
+  await wiControllerFollowUp.edit(params);
 });
 $(document).on('click', '#wi-follow-up-btn-save', async function (e) {
   wiView.followUpProgress();

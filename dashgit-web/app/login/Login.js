@@ -43,7 +43,7 @@ const login = {
       console.log(`- Applicable configuration: ${JSON.stringify(providerConfig, null, 2)}`);
 
       // First, check if the provider config matches whith the stored in the tokenInfo (only if not failed). If does not match, remove it
-      if (await this.hasTokenWithChangedConfig(provider, providerConfig)) {
+      if (await this.hasTokenWithChangedConfig(provider, providerConfig)) { // NOSONAR sequential by design: providers are checked one by one before the token refresh that depends on them
         this.removeOAuthTokenInfoByUid(provider.uid);
         tokenInfo = undefined;
       }
@@ -167,7 +167,7 @@ const login = {
           this.setOAuthTokenInfoByUid(provider.uid, tokenInfoToCopy);
         } else {
           console.log(`- Refreshing provider ${provider.uid} token with expiration date ${tokenInfo.refreshTime}`);
-          await this.refreshTokenForProvider(provider, tokenInfo);
+          await this.refreshTokenForProvider(provider, tokenInfo); // NOSONAR sequential by design: surrogates of this provider copy the token refreshed here in later iterations
         }
       }
     }

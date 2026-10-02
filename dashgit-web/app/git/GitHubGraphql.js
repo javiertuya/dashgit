@@ -34,7 +34,7 @@ const gitHubGraphql = {
       log.debug(provider.uid, `${goal}, page ${++page}, page size ${pageSize}, remaining ${remainingProjects} ...`);
       const query = this.getStatusesQuery(provider, pageSize, effectiveUserSpecRepos, includeAll, endCursor, graphqlV2);
       const graphql = this.getGraphQlApi(provider);
-      const response = await graphql(query);
+      const response = await graphql(query); // NOSONAR sequential by design: each page needs the endCursor of the previous one
 
       if (allData.viewer == undefined) // first page
         allData = response;
