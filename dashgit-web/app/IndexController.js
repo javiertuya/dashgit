@@ -54,23 +54,24 @@ $(document).on('click', '#reloadIcon', async function () {
 });
 $(document).on('change', '#inputSort', async function () {
   indexController.saveMainFilterState();
-  indexController.updateAndRender();
+  await indexController.updateAndRender();
 });
 $(document).on('change', '#checkGroup', async function () {
   indexController.saveMainFilterState();
-  indexController.updateAndRender();
+  await indexController.updateAndRender();
 });
 $(document).on('change', '#inputStatus', async function () {
   indexController.saveMainFilterState();
   wiView.updateStatusVisibility();
 });
 $(document).on('click', '#mainFilterDefaults', async function (e) {
+  // must be called before any await, otherwise the empty href of the link reloads the page
+  e.preventDefault();
   // override main filters to defaults and redisplays
   config.data.viewFilter.main = {};
   config.setMainFilterDefaults(config.data);
   config.save();
-  indexController.updateAndRender();
-  e.preventDefault();
+  await indexController.updateAndRender();
 });
 $(document).on('click', '#oauth-reset-btn', async function () {
   login.removeFailedTokens();
@@ -83,7 +84,7 @@ $(document).on('click', '.accordion-button', function () {
 // included here instead of wiController because behaviour is common for several views and causes rendering
 $(document).on('change', '.wi-view-filter-clickable', async function () {
   wiView.saveViewFilterState();
-  indexController.updateAndRender();
+  await indexController.updateAndRender();
 });
 // Generic view header to perform additional filtering with text input (search, exclude)
 // Changes update the view dynamically without rendering again
@@ -183,13 +184,13 @@ const indexController = {
     sessionStorage.setItem(LAST_TAB, target);
   },
   // Select a tab programmatically, this triggers tabControlEntering
-  tabControlSelect: async function (target) {
+  tabControlSelect: function (target) {
     console.log("*** Selecting tab " + target);
     const bsTab = new bootstrap.Tab("#" + target + "-tab");
     bsTab.show()
   },
   // if there is a lastTarget stored, select it, otherwise select the default target
-  tabControlSelectLastOrDefault: async function (defaultTarget) {
+  tabControlSelectLastOrDefault: function (defaultTarget) {
     const lastTarget = sessionStorage.getItem(LAST_TAB);
     console.log("*** Selecting last tab, default " + defaultTarget + " last target " + lastTarget);
     this.tabControlSelect(lastTarget || defaultTarget);

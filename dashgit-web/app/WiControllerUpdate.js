@@ -23,7 +23,7 @@ $(document).on('click', '#wi-btn-update-dispatch', function (e) {
 });
 $(document).on('click', '#wi-btn-update-dispatch-confirm', async function (e) {
   wiView.confirmUpdateProgress();
-  wiControllerUpdate.sendCombinedUpdates($(`#wi-btn-update-dry-run`).is(':checked'));
+  await wiControllerUpdate.sendCombinedUpdates($(`#wi-btn-update-dry-run`).is(':checked'));
 });
 $(document).on('click', '#wi-update-workflow-file-show', async function (e) {
   wiControllerUpdate.fillWorkflowTemplate("wi-update-workflow-file-content");
