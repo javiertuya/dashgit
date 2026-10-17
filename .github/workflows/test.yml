@@ -38,7 +38,7 @@ jobs:
           npm run report
       - name: Publish test report files
         if: success() || failure() # always run even if the previous step fails
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: "test-ut-report-files"
           path: |
@@ -86,7 +86,7 @@ jobs:
         run: npm test
       - name: Publish Playwright report
         if: success() || failure() # always run even if the previous step fails
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: "test-e2e-report-files"
           path: |
@@ -218,7 +218,7 @@ jobs:
 
       - name: Generate report checks - ${{ matrix.scope }}
         if: success() || failure()
-        uses: mikepenz/action-junit-report@v6.5.0
+        uses: mikepenz/action-junit-report@v6.6.1
         with:
           check_name: "test-it-result-${{ matrix.scope }}"
           report_paths: "**/surefire-reports/TEST-*.xml"
