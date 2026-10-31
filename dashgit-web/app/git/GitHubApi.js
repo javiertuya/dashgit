@@ -38,6 +38,7 @@ const gitHubApi = {
     const created = { q: `is:open author:${provider.user} ${matchFilter} archived:false`, ...options };
     const involved = { q: `is:open involves:${provider.user} ${matchFilter} archived:false`, ...options };
     const dependabot = { q: `is:open is:pr author:app/dependabot owner:placeholder ${matchFilter} archived:false`, per_page: 100, ...options };
+    const digestabot = { q: `is:open is:pr author:${provider.user} label:${config.param.digestabotLabel} owner:placeholder ${matchFilter} archived:false`, per_page: 100, ...options };
     const dependabotTest = { q: `is:open is:pr author:${provider.user} ${matchFilter} archived:false in:title "Test pull Request for dependabot/testupdate"`, per_page: 100, ...options };
     let promises = [];
     if (target == "assigned")
@@ -82,6 +83,7 @@ const gitHubApi = {
       const owners = (provider.user + " " + provider.dependabotAdditionalOwner).trim().split(" ");
       promises = [
         ...this.multiOwnerIssuesAndPullRequests(octokit, dependabot, owners),
+        ...this.multiOwnerIssuesAndPullRequests(octokit, digestabot, owners),
       ];
       if (config.ff["updtest"])
         promises.push(this.octokitSearchIssues(octokit, dependabotTest));

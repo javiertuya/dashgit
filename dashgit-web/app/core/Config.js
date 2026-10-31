@@ -18,6 +18,7 @@ const config = {
   param: {
     followUpBranch: "dashgit/follow-up",
     followUpFolder: ".dashgit/follow-up",
+    digestabotLabel: "digestabot", // label of the PRs that refresh docker digests, shown with the dependabot ones
     readmeManagerRepo: "https://github.com/javiertuya/dashgit?tab=readme-ov-file#advanced-features",
     readmeDependencyUpdates: "https://github.com/javiertuya/dashgit?tab=readme-ov-file#combined-dependabot-updates",
     readmeFollowUp: "https://github.com/javiertuya/dashgit?tab=readme-ov-file#follow-up",

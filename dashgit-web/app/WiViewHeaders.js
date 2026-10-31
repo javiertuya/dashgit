@@ -33,7 +33,7 @@ const wiHeaders = {
       return `
       <div style="padding-left:8px">
         <p class="mb-3 mt-2">
-          This view displays all pull requests created by Dependabot.
+          This view displays all pull requests created by Dependabot or by the digestabot workflow (docker digest updates).
           From here, you can combine all updates into a single PR per repository and merge them automatically with just a few clicks.
         </p>
         <p class="mb-3 mt-2 text-danger">
