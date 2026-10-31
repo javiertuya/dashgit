@@ -287,6 +287,20 @@ describe("TestView - Main processing in the view module", function () {
         assert.deepEqual(['pr001', 'pr002', 'pr003', 'pr004', 'is005'], items.map(a => a.title));
     });
 
+    it("Filter digestabot labeled PRs should not appear in unassigned target", function () {
+        let mod = new Model().setHeader("GitHub", "0-github", "usr", "");
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "001", title: "pr001", author: "me" });
+        mod.addItem({ repo_name: "repo1", type: "pr", iid: "002", title: "pr002", author: "me", labels: [{ name: "digestabot", color: "111111" }] });
+        mod.addItem({ repo_name: "repo2", type: "pr", iid: "003", title: "pr003", author: "me", labels: [{ name: "other", color: "222222" }] });
+        let modStr = JSON.stringify(mod);
+
+        let targetViewFilter = { authorMe: true, authorOthers: true };
+        let items = wiServices.filterBy("unassigned", "usr", new Date(), 0, "", undefined, targetViewFilter, JSON.parse(modStr).items);
+        assert.deepEqual(['pr001', 'pr003'], items.map(a => a.title));
+        items = wiServices.filterBy("assigned", "usr", new Date(), 0, "", undefined, targetViewFilter, JSON.parse(modStr).items);
+        assert.deepEqual(['pr001', 'pr002', 'pr003'], items.map(a => a.title));
+    });
+
     it("Filter model items by who is assigned (dependabot)", function () {
         //single assignee: me/other/none, multiple assignees: includes me/does not, pr(only)
         let mod = new Model().setHeader("GitHub", "0-github", "usr", "");

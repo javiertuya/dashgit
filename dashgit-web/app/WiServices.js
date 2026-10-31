@@ -57,7 +57,7 @@ const wiServices = {
         //console.log(`Filtering item by date: ${item.repo_name} ${item.title}`)
         return true;
       } else if (target == "unassigned" && item.type == "pr" //do not repeat what is in dependabot target
-        && item.author.toLowerCase().startsWith("dependabot")) {
+        && (item.author.toLowerCase().startsWith("dependabot") || item.labels.some(l => l.name == config.param.digestabotLabel))) {
         //console.log(`Filtering unassigned item authored by dependabot: ${item.repo_name} ${item.title}`)
         return true;
       } else if (target == "statuses" && targetViewFilter.compact) {
