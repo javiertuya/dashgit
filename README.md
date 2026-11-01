@@ -190,7 +190,7 @@ This requires the previous setup of the manager repository (see above) and a bit
 - Set the API access tokens: In each provider on the Dependabot view, you will see the name of a token. Create the secrets with the indicated name and and the token as value in the manager repository. Their stored value will be used to create the combined PRs.
 
 Notes:
-- On GitHub, the Dependabot view also lists the PRs labeled `digestabot` that you have authored, e.g. those that refresh pinned Docker image digests, so they can be combined with the Dependabot updates.
+- On GitHub, the Dependabot view also lists the PRs labeled `digestabot`, e.g. those that refresh pinned Docker image digests, so they can be combined with the Dependabot updates.
 - On GitLab, projects have automerge enabled by default, but on GitHub you need to explicitly enable it per repository from Settings > General. It is recommended to activate the automatic deletion of head branches when PRs are merged.
 - On GitHub, to automerge when the build succeeds, you must configure the repository to require status checks to pass before merging. To do this, create a branch protection rule on the main branch, check this option, and specify the checks that must pass.
 - On GitLab, you can generate Dependabot updates using [Dependabot CLI](https://github.com/dependabot/cli), or a customized version of Dependabot CLI for GitLab [dependabot-cli-gitlab](https://github.com/javiertuya/dependabot-cli-gitlab).
