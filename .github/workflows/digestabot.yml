@@ -3,8 +3,8 @@ name: digestabot
 on:
   workflow_dispatch:
   schedule:
-    # Temporary: runs only on 2026-11-01 at 09:17 UTC to check the scheduled run, to be readjusted
-    - cron: '17 9 1 11 *'
+    - cron: '11 1 * * 5'
+      timezone: 'Europe/Madrid'
 
 jobs:
   update-digests:
