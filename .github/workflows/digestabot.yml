@@ -1,0 +1,26 @@
+name: digestabot
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Temporary: runs only on 2026-11-01 at 09:17 UTC to check the scheduled run, to be readjusted
+    - cron: '17 9 1 11 *'
+
+jobs:
+  update-digests:
+    # Only the repository owner can run this workflow
+    if: github.actor == 'javiertuya'
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    uses: javiertuya/digestabot-workflows/.github/workflows/docker-digests.yml@v1.0.0
+    with:
+      image-name: oauth-exchange
+      working-dir: oauth-exchange
+      dhi-login: true
+      assignee: javiertuya
+    secrets:
+      DIGESTABOT_TOKEN: ${{ secrets.DIGESTABOT_TOKEN }}
+      DHI_USERNAME: ${{ secrets.DHI_USERNAME }}
+      DHI_TOKEN: ${{ secrets.DHI_TOKEN }}
