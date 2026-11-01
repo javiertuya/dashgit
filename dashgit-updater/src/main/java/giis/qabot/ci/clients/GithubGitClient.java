@@ -35,7 +35,7 @@ public class GithubGitClient implements IGitClient {
 	private String lazyRepoLast = ""; // ultimo lazyRepo obtenido, si coincide lo reutiliza, si no, instancia uno nuevo
 	private String user; // usuario que se ha autenticado
 	private boolean isAdmin = false; // el usuario tiene privilegios de administrador
-	private String token; // needed for the set pr assignee fallback
+	private final String token; // needed for the set pr assignee fallback
 
 	// Cuando se debe comprobar el estado de una operacion (check mergeability o rebase)
 	// se debe hacer un poll, indica el numero maximo de veces que se comprueba y el delay entre cada una
