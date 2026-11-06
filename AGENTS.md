@@ -42,6 +42,7 @@ This is a multi-component workspace. There is **no `package.json` at the reposit
 ### `oauth-exchange/`
 - `server.js` — minimal Express proxy exposing an `/exchange` endpoint. Reads OAuth client secrets and token URLs from environment variables.
 - `Dockerfile` — container image for deployment.
+- `test/server.test.js` — unit tests (`node:test`, no extra dependencies). `server.js` exports the Express `app` and only listens when run directly (`import.meta.main`), so the tests run it in-process against a fake local Authorization Server: no network nor real credentials.
 
 ## Build, test, and run
 
@@ -77,7 +78,7 @@ From `dashgit-updater/`:
 - Run a single test class: `mvn test -Dtest=TestUtConflictResolution`.
 
 ### OAuth proxy
-From `oauth-exchange/`: `npm install` then run `server.js` with the required OAuth environment variables set.
+From `oauth-exchange/`: `npm install` then run `server.js` with the required OAuth environment variables set. Unit tests: `npm test` (runs `node --test`).
 
 ### Run everything locally
 `dashgit-server-py/server.py` serves `dashgit-web/app/` as static files plus the OAuth proxy's `/exchange` and `/healthcheck` on the same port, i.e. the whole stack:
@@ -91,7 +92,7 @@ python3 dashgit-server-py/server.py [port] # http://127.0.0.1:8080, or the given
 - `oauth-exchange/server.js` + `Dockerfile` remain the Node/Docker alternative for containerized deployment; `dashgit-server-py/` is local-only.
 
 ## CI/CD (`.github/workflows/`)
-- `test.yml` — on push/PR: `test-ut` (web Mocha tests, Node 24), `test-ut-server-py` (`dashgit-server-py` unittest), `test-e2e` (Playwright e2e, Node 24), `sonarqube` analysis, and a `test-it` matrix (GitHub/GitLab integration tests, only when files under `dashgit-updater/**` change).
+- `test.yml` — on push/PR: `test-ut` (web Mocha tests, Node 24), `test-ut-server-py` (`dashgit-server-py` unittest), `test-ut-oauth-exchange` (`oauth-exchange` node:test), `test-e2e` (Playwright e2e, Node 24), `sonarqube` analysis, and a `test-it` matrix (GitHub/GitLab integration tests, only when files under `dashgit-updater/**` change).
 - `release.yml` — on GitHub Release: runs `prepare-release.sh` and deploys `dashgit-web/dist/` to GitHub Pages.
 - Sonar configuration is in `sonar-project.properties` (analyzes `dashgit-web/app` and `dashgit-updater/src/main/java`).
 - **Analysis runs on SonarCloud (public project key `my:dashgit`)**, so its API is reachable without auth — no token needed to read results. When the `sonarqube` job fails, `gh run view <id> --log-failed` only shows "Quality Gate has FAILED"; get the actual cause from the public API (URL-encode the `:` as `%3A`):

@@ -61,6 +61,25 @@ jobs:
         working-directory: ./dashgit-server-py
         run: python3 -m unittest test_server.py -v
 
+  test-ut-oauth-exchange:
+    runs-on: ubuntu-latest
+    # As in test-ut: avoids duplicate execution of pr from local repo, but allows pr from forked repos and dependabot
+    if: (github.event_name != 'pull_request' && ! github.event.pull_request.head.repo.fork) || (github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || startsWith(github.head_ref, 'dependabot/')))
+    steps:
+      - name: Checkout GitHub repo
+        uses: actions/checkout@v7
+      - name: Use Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: 'oauth-exchange/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: 'oauth-exchange/package-lock.json'
+      - name: Run unit tests for oauth-exchange
+        working-directory: ./oauth-exchange
+        run: |
+          npm ci
+          npm test
+
   test-e2e:
     runs-on: ubuntu-latest
     # As in test-ut: avoids duplicate execution of pr from local repo, but allows pr from forked repos and dependabot
@@ -95,7 +114,7 @@ jobs:
             dashgit-web/e2e/screenshots
 
   sonarqube:
-    needs: [test-ut, test-ut-server-py, test-e2e]
+    needs: [test-ut, test-ut-server-py, test-ut-oauth-exchange, test-e2e]
     #if: ${{ false }}
     # This job fails when comming from a dependabot PR or a forked repo
     # (can't read the sonarqube token for security reasons).
