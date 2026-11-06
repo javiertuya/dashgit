@@ -237,7 +237,7 @@ jobs:
 
       - name: Generate report checks - ${{ matrix.scope }}
         if: success() || failure()
-        uses: mikepenz/action-junit-report@v6.6.1
+        uses: mikepenz/action-junit-report@v6.7.0
         with:
           check_name: "test-it-result-${{ matrix.scope }}"
           report_paths: "**/surefire-reports/TEST-*.xml"
