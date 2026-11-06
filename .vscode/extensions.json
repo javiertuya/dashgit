@@ -1,6 +1,7 @@
 {
   "recommendations": [
     "hbenl.vscode-mocha-test-adapter",
+    "connor4312.nodejs-testing",
     "ms-playwright.playwright"
   ]
 }

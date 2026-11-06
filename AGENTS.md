@@ -42,7 +42,7 @@ This is a multi-component workspace. There is **no `package.json` at the reposit
 ### `oauth-exchange/`
 - `server.js` — minimal Express proxy exposing an `/exchange` endpoint. Reads OAuth client secrets and token URLs from environment variables.
 - `Dockerfile` — container image for deployment.
-- `test/server.test.js` — unit tests (`node:test`, no extra dependencies). `server.js` exports the Express `app` and only listens when run directly (`import.meta.main`), so the tests run it in-process against a fake local Authorization Server: no network nor real credentials.
+- `test/server.test.js` — unit tests (`node:test`, no extra dependencies). `server.js` exports the Express `app` and only listens when run directly (`import.meta.main`), so the tests run it in-process against a fake local Authorization Server: no network nor real credentials. In VS Code they appear in the Testing panel through the **node:test runner** extension (`connor4312.nodejs-testing`, recommended in `.vscode/extensions.json`), restricted to `oauth-exchange/` by `nodejs-testing.include` so it does not pick up the Mocha tests.
 
 ## Build, test, and run
 
