@@ -285,8 +285,19 @@ describe("Authorization Server responses and failures", () => {
   });
 
   it("returns server_error when the token url is unreachable", async () => {
-    process.env["TOKEN_URL_" + CLIENT_ID] = "http://127.0.0.1:1/oauth/token";
+    // A port that was just released, so that the connection is refused (low ports as 1 or 9 are blocked by fetch before connecting)
+    const closed = http.createServer();
+    const closedUrl = await listen(closed);
+    await close(closed);
+    process.env["TOKEN_URL_" + CLIENT_ID] = `${closedUrl}/oauth/token`;
     await assertServerError();
+    assert.ok(logs.some((line) => line.includes("ECONNREFUSED")), "should fail when connecting");
+  });
+
+  it("returns server_error when the token url uses a port blocked by fetch", async () => {
+    process.env["TOKEN_URL_" + CLIENT_ID] = "http://127.0.0.1:9/oauth/token";
+    await assertServerError();
+    assert.ok(logs.some((line) => line.includes("bad port")));
   });
 
   it("returns server_error when the token url is not a valid url", async () => {
@@ -301,6 +312,25 @@ describe("Authorization Server responses and failures", () => {
     assert.equal(response.status, 504);
     assert.deepEqual(response.body, { error: "server_error", error_description: "The authorization server did not respond in time" });
     assert.equal(received.length, 1);
+  });
+
+  it("returns server_error with timeout when the connection takes too long", async () => {
+    // The native fetch fails after 10s if it can't connect: simulated to not depend on the network
+    const nativeFetch = globalThis.fetch;
+    globalThis.fetch = async (url, options) => {
+      if (url !== `${authServerUrl}/oauth/token`)
+        return nativeFetch(url, options); // the requests from the test to the proxy
+      const cause = Object.assign(new Error("Connect Timeout Error"), { name: "ConnectTimeoutError", code: "UND_ERR_CONNECT_TIMEOUT" });
+      throw new TypeError("fetch failed", { cause });
+    };
+    try {
+      const response = await exchange({ grant_type: "authorization_code", client_id: CLIENT_ID, code: "AUTHCODE" });
+      assert.equal(response.status, 504);
+      assert.deepEqual(response.body, { error: "server_error", error_description: "The authorization server did not respond in time" });
+      assert.ok(logs.some((line) => line.includes("Exchange failed: TypeError: fetch failed - ConnectTimeoutError")));
+    } finally {
+      globalThis.fetch = nativeFetch;
+    }
   });
 
   // The client gets a generic description, the details (that could include the token url) are only logged

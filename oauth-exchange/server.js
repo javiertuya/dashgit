@@ -98,7 +98,8 @@ app.post("/exchange", async (req, res) => {
   } catch (err) {
     // The details are only logged, they could expose internal information (e.g. the token url)
     consoleError(`Exchange failed: ${err.name}: ${err.message}${err.cause ? " - " + err.cause : ""}`);
-    const timeout = err.name === "TimeoutError";
+    // Response timeout (signal above) or connection timeout (applied by the native fetch, 10s)
+    const timeout = err.name === "TimeoutError" || err.cause?.code === "UND_ERR_CONNECT_TIMEOUT";
     res.status(timeout ? 504 : 500).json({
       error: "server_error",
       error_description: timeout ? "The authorization server did not respond in time" : "Token exchange failed",
