@@ -16,5 +16,9 @@
     "sinon": "22.1.0",
     "chai": "6.3.0",
     "mochawesome": "8.1.1"
+  },
+  "overrides": {
+    "glob": "^14.0.4",
+    "minimatch": "^11.0.5"
   }
 }
