@@ -5,12 +5,14 @@
     "Test*.js",
     "test/**/*.js"
   ],
-  "mochaExplorer.require": [
-    "./setup.js"
-  ],
   "mochaExplorer.env": {
     "NODE_ENV": "test"
   },
+
+  // oauth-exchange tests use node:test (extension connor4312.nodejs-testing), restricted to avoid the mocha tests
+  "nodejs-testing.include": [
+    "./oauth-exchange"
+  ],
 
   "java.server.launchMode": "Standard",
   "java.project.sourcePaths": [
