@@ -24,6 +24,7 @@ let cannedBody;
 let cannedContentType;
 let dropConnection; // if true, the fake Authorization Server closes the connection without response
 let hang; // if true, the fake Authorization Server never responds
+let logs; // messages logged by the proxy
 
 const listen = (server) => new Promise((resolve) => {
   server.listen(0, "127.0.0.1", () => resolve(`http://127.0.0.1:${server.address().port}`));
@@ -62,9 +63,9 @@ before(async () => {
   authServerUrl = await listen(authServer);
   proxy = http.createServer(app);
   proxyUrl = await listen(proxy);
-  // Silence the proxy logs to keep the test output clean
-  console.log = () => { };
-  console.error = () => { };
+  // Capture the proxy logs, to check them and to keep the test output clean
+  console.log = (message) => logs.push(String(message));
+  console.error = (message) => logs.push(String(message));
 });
 
 after(async () => {
@@ -74,6 +75,7 @@ after(async () => {
 
 beforeEach(() => {
   received = [];
+  logs = [];
   cannedStatus = 200;
   cannedContentType = "application/json";
   dropConnection = false;
@@ -307,6 +309,59 @@ describe("Authorization Server responses and failures", () => {
     assert.equal(response.status, 500);
     assert.deepEqual(response.body, { error: "server_error", error_description: "Token exchange failed" });
   };
+});
+
+describe("Logs", () => {
+  const logged = (text) => logs.some((line) => line.includes(text));
+
+  it("logs the request and a successful response without the tokens", async () => {
+    await exchange({ grant_type: "authorization_code", client_id: CLIENT_ID, code: "AUTHCODE", redirect_uri: "https://dashgit.example.test/" });
+    assert.ok(logged(`Received exchange request: grant_type="authorization_code", client_id="${CLIENT_ID}", redirect_uri="https://dashgit.example.test/"`));
+    assert.ok(logged(`Forwarding to ${authServerUrl}/oauth/token`));
+    assert.ok(logged("Authorization Server response: status 200, access_token received"));
+    for (const secret of [CLIENT_SECRET, "AUTHCODE", "ACCESSTOKEN", "NEWREFRESHTOKEN"])
+      assert.ok(!logged(secret), `${secret} should not be logged`);
+  });
+
+  it("logs a response without access token", async () => {
+    cannedBody = { token_type: "bearer" };
+    await exchange({ grant_type: "authorization_code", client_id: CLIENT_ID, code: "AUTHCODE" });
+    assert.ok(logged("Authorization Server response: status 200, access_token missing"));
+  });
+
+  it("logs an error answered with a success status", async () => {
+    // GitHub answers OAuth errors with 200
+    cannedBody = { error: "bad_verification_code", error_description: "The code passed is incorrect or expired." };
+    await exchange({ grant_type: "authorization_code", client_id: CLIENT_ID, code: "AUTHCODE" });
+    assert.ok(logged('Authorization Server error: status 200, error="bad_verification_code", error_description="The code passed is incorrect or expired."'));
+  });
+
+  it("logs an error answered with an error status", async () => {
+    // GitLab answers OAuth errors with 400
+    cannedStatus = 400;
+    cannedBody = { error: "invalid_grant", error_description: "The provided authorization grant is invalid." };
+    await exchange({ grant_type: "authorization_code", client_id: CLIENT_ID, code: "AUTHCODE" });
+    assert.ok(logged('Authorization Server error: status 400, error="invalid_grant", error_description="The provided authorization grant is invalid."'));
+  });
+
+  it("does not log forwarding for rejected requests", async () => {
+    await exchange({ grant_type: "authorization_code", client_id: "nope" });
+    await exchange({ grant_type: "client_credentials", client_id: CLIENT_ID });
+    assert.ok(!logged("Forwarding"));
+  });
+
+  it("logs the client values as json", async () => {
+    await exchange({ grant_type: ["authorization_code"], client_id: CLIENT_ID, redirect_uri: "x\nforged line" });
+    assert.ok(logged('grant_type=["authorization_code"]'));
+    assert.ok(logged(String.raw`redirect_uri="x\nforged line"`)); // escaped, not a line break
+    assert.ok(logged('Grant type ["authorization_code"] is not supported'));
+    assert.ok(!logs.some((line) => line.includes("\n")), "line breaks should be escaped");
+  });
+
+  it("logs missing client values as undefined", async () => {
+    await exchange({ grant_type: "authorization_code", client_id: "nope" });
+    assert.ok(logged('client_id="nope", redirect_uri=undefined'));
+  });
 });
 
 describe("CORS", () => {

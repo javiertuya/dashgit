@@ -34,6 +34,10 @@ const consoleError = (message) => {
   console.error(`[${new Date().toISOString()}] ${message}`);
 }
 
+// Values received from the client or the Authorization Server are logged as json: shows their type (e.g. arrays)
+// and escapes line breaks, so that they can't forge log lines
+const show = (value) => JSON.stringify(value) ?? "undefined";
+
 const INVALID_BODY = { error: "bad_request", error_description: "Invalid JSON body" };
 
 app.get("/healthcheck", async (req, res) => {
@@ -49,12 +53,11 @@ app.post("/exchange", async (req, res) => {
       return;
     }
     const { grant_type, client_id, code, code_verifier, redirect_uri, refresh_token } = req.body;
-    consoleLog(`Received exchange request: grant_type=${grant_type}, client_id=${client_id}, redirect_uri=${redirect_uri}`);
+    consoleLog(`Received exchange request: grant_type=${show(grant_type)}, client_id=${show(client_id)}, redirect_uri=${show(redirect_uri)}`);
 
     // The environment variables determine the secret and token url
     const clientSecret = process.env["CLIENT_SECRET_" + client_id];
     const tokenUrl = process.env["TOKEN_URL_" + client_id];
-    consoleLog(`  Forwarding to ${tokenUrl}`);
 
     // returns custom error if some of the environment variables are not defined
     if (!clientSecret || !tokenUrl) {
@@ -70,12 +73,13 @@ app.post("/exchange", async (req, res) => {
     } else if (grant_type === "refresh_token") {
       body = { client_secret: clientSecret, refresh_token: refresh_token, client_id, grant_type, redirect_uri }
     } else {
-      consoleError(`Grant type ${grant_type} is not supported, returning 403 forbidden`);
+      consoleError(`Grant type ${show(grant_type)} is not supported, returning 403 forbidden`);
       res.status(403).json({ error: "forbidden", error_description: "Grant type not supported" });
       return;
     }
 
     // Everything is correct, forward the request to the Authentication Server and return the response to the client
+    consoleLog(`  Forwarding to ${tokenUrl}`);
     const response = await fetch(tokenUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
@@ -84,8 +88,11 @@ app.post("/exchange", async (req, res) => {
     });
 
     const data = await response.json();
-    if (!response.ok)
-      consoleError(`Response is not OK: status ${response.status}`);
+    // Errors may come with a success status (GitHub answers OAuth errors with 200). Never log the full response, it contains the tokens
+    if (!response.ok || data?.error)
+      consoleError(`  Authorization Server error: status ${response.status}, error=${show(data?.error)}, error_description=${show(data?.error_description)}`);
+    else
+      consoleLog(`  Authorization Server response: status ${response.status}, access_token ${data?.access_token ? "received" : "missing"}`);
     res.json(data);
 
   } catch (err) {
