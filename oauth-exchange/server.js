@@ -1,5 +1,4 @@
 import express from "express";
-import fetch from "node-fetch";
 import cors from "cors";
 
 /**
@@ -21,8 +20,12 @@ import cors from "cors";
  * Unit tests are in test/server.test.js (run with: npm test).
  */
 export const app = express();
-app.use(express.json());
+// cors first, so that the error responses (e.g. invalid json body) also have the cors headers
 app.use(cors());
+app.use(express.json());
+
+// Maximum time to wait for the Authorization Server (can be changed by the tests)
+app.locals.forwardTimeoutMs = 30000;
 
 const consoleLog = (message) => {
   console.log(`[${new Date().toISOString()}] ${message}`);
@@ -31,12 +34,20 @@ const consoleError = (message) => {
   console.error(`[${new Date().toISOString()}] ${message}`);
 }
 
+const INVALID_BODY = { error: "bad_request", error_description: "Invalid JSON body" };
+
 app.get("/healthcheck", async (req, res) => {
   res.status(200).send("OK");
 });
 
 app.post("/exchange", async (req, res) => {
   try {
+    // express.json() leaves the body undefined if the request is not json
+    if (req.body == null || typeof req.body !== "object" || Array.isArray(req.body)) {
+      consoleError("Request body is not a json object, returning 400 bad request");
+      res.status(400).json(INVALID_BODY);
+      return;
+    }
     const { grant_type, client_id, code, code_verifier, redirect_uri, refresh_token } = req.body;
     consoleLog(`Received exchange request: grant_type=${grant_type}, client_id=${client_id}, redirect_uri=${redirect_uri}`);
 
@@ -54,9 +65,9 @@ app.post("/exchange", async (req, res) => {
 
     // Two different operations are allowed: (1) get a new token and (2) refresh an existing token
     let body;
-    if (grant_type == "authorization_code") {
+    if (grant_type === "authorization_code") {
       body = { client_secret: clientSecret, client_id, grant_type, redirect_uri, code, code_verifier }
-    } else if (grant_type == "refresh_token") {
+    } else if (grant_type === "refresh_token") {
       body = { client_secret: clientSecret, refresh_token: refresh_token, client_id, grant_type, redirect_uri }
     } else {
       consoleError(`Grant type ${grant_type} is not supported, returning 403 forbidden`);
@@ -69,16 +80,33 @@ app.post("/exchange", async (req, res) => {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(req.app.locals.forwardTimeoutMs),
     });
 
     const data = await response.json();
     if (!response.ok)
-      consoleError(`Response is not OK: ${JSON.stringify(response)}`);
+      consoleError(`Response is not OK: status ${response.status}`);
     res.json(data);
 
   } catch (err) {
-    consoleError(err);
-    res.status(500).json({ error: "server_error", error_description: err.message });
+    // The details are only logged, they could expose internal information (e.g. the token url)
+    consoleError(`Exchange failed: ${err.name}: ${err.message}${err.cause ? " - " + err.cause : ""}`);
+    const timeout = err.name === "TimeoutError";
+    res.status(timeout ? 504 : 500).json({
+      error: "server_error",
+      error_description: timeout ? "The authorization server did not respond in time" : "Token exchange failed",
+    });
+  }
+});
+
+// Errors raised before reaching the handlers (e.g. invalid json body), answered as json instead of the express html page
+app.use((err, req, res, next) => {
+  if (err.type === "entity.parse.failed") {
+    consoleError("Request body is not valid json, returning 400 bad request");
+    res.status(400).json(INVALID_BODY);
+  } else {
+    consoleError(`Request failed: ${err.message}`);
+    res.status(err.status || 500).json({ error: "server_error", error_description: "Request failed" });
   }
 });
 

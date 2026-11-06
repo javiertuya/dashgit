@@ -23,6 +23,7 @@ let cannedStatus; // response that the fake Authorization Server will return
 let cannedBody;
 let cannedContentType;
 let dropConnection; // if true, the fake Authorization Server closes the connection without response
+let hang; // if true, the fake Authorization Server never responds
 
 const listen = (server) => new Promise((resolve) => {
   server.listen(0, "127.0.0.1", () => resolve(`http://127.0.0.1:${server.address().port}`));
@@ -48,6 +49,8 @@ before(async () => {
     req.on("data", (chunk) => data += chunk);
     req.on("end", () => {
       received.push({ method: req.method, url: req.url, headers: req.headers, body: JSON.parse(data) });
+      if (hang)
+        return;
       if (dropConnection) {
         req.socket.destroy();
         return;
@@ -74,6 +77,8 @@ beforeEach(() => {
   cannedStatus = 200;
   cannedContentType = "application/json";
   dropConnection = false;
+  hang = false;
+  app.locals.forwardTimeoutMs = 30000;
   cannedBody = { access_token: "ACCESSTOKEN", token_type: "bearer", refresh_token: "NEWREFRESHTOKEN" };
   process.env["CLIENT_SECRET_" + CLIENT_ID] = CLIENT_SECRET;
   process.env["TOKEN_URL_" + CLIENT_ID] = `${authServerUrl}/oauth/token`;
@@ -133,18 +138,46 @@ describe("Exchange forbidden", () => {
 });
 
 describe("Exchange invalid requests", () => {
-  it("rejects a malformed json body", async () => {
-    // Rejected by express.json() before reaching the handler: the default Express error handler answers html, not json
-    const response = await exchangeRaw("{not json", "application/json");
+  const assertBadRequest = async (response) => {
     assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: "bad_request", error_description: "Invalid JSON body" });
+    assert.equal(received.length, 0);
+  };
+
+  it("rejects a malformed json body", async () => {
+    // Rejected by express.json() before reaching the handler, answered as json and with cors headers
+    const response = await exchangeRaw("{not json", "application/json");
+    assert.equal(response.headers.get("access-control-allow-origin"), "*");
+    await assertBadRequest(response);
+  });
+
+  it("rejects a body that is not json", async () => {
+    await assertBadRequest(await exchangeRaw("grant_type=authorization_code&client_id=myclientid", "application/x-www-form-urlencoded"));
+  });
+
+  it("rejects an empty json body as a missing client id", async () => {
+    // express.json() parses an empty body as {}
+    const response = await exchangeRaw(undefined, "application/json");
+    assert.equal(response.status, 403);
+    assert.equal((await response.json()).error_description, "Exchange not allowed");
     assert.equal(received.length, 0);
   });
 
-  it("returns server_error when the body is not json", async () => {
-    // express.json() skips the body, req.body is undefined and the handler fails
-    const response = await exchangeRaw("grant_type=authorization_code&client_id=myclientid", "application/x-www-form-urlencoded");
-    assert.equal(response.status, 500);
-    assert.equal((await response.json()).error, "server_error");
+  it("rejects a json body that is not an object", async () => {
+    await assertBadRequest(await exchangeRaw(JSON.stringify([{ grant_type: "authorization_code" }]), "application/json"));
+  });
+
+  it("rejects a grant type that is not a string", async () => {
+    const response = await exchange({ grant_type: ["authorization_code"], client_id: CLIENT_ID, code: "AUTHCODE" });
+    assert.equal(response.status, 403);
+    assert.equal(response.body.error_description, "Grant type not supported");
+    assert.equal(received.length, 0);
+  });
+
+  it("answers other request errors as json", async () => {
+    const response = await exchangeRaw(JSON.stringify({ code: "x".repeat(200 * 1024) }), "application/json");
+    assert.equal(response.status, 413); // exceeds the express.json() limit
+    assert.deepEqual(await response.json(), { error: "server_error", error_description: "Request failed" });
     assert.equal(received.length, 0);
   });
 });
@@ -259,11 +292,20 @@ describe("Authorization Server responses and failures", () => {
     await assertServerError();
   });
 
+  it("returns server_error with timeout when the response takes too long", async () => {
+    hang = true;
+    app.locals.forwardTimeoutMs = 200;
+    const response = await exchange({ grant_type: "authorization_code", client_id: CLIENT_ID, code: "AUTHCODE" });
+    assert.equal(response.status, 504);
+    assert.deepEqual(response.body, { error: "server_error", error_description: "The authorization server did not respond in time" });
+    assert.equal(received.length, 1);
+  });
+
+  // The client gets a generic description, the details (that could include the token url) are only logged
   const assertServerError = async () => {
     const response = await exchange({ grant_type: "authorization_code", client_id: CLIENT_ID, code: "AUTHCODE" });
     assert.equal(response.status, 500);
-    assert.equal(response.body.error, "server_error");
-    assert.ok(response.body.error_description, "error_description should explain the failure");
+    assert.deepEqual(response.body, { error: "server_error", error_description: "Token exchange failed" });
   };
 });
 
