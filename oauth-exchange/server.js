@@ -18,8 +18,9 @@ import cors from "cors";
  *   (e.g. https://github.com/login/oauth/access_token for GitHub or https://gitlab.com/oauth/token for GitLab)
  * 
  * See at the end of this file some instructions to build and test the service is running.
+ * Unit tests are in test/server.test.js (run with: npm test).
  */
-const app = express();
+export const app = express();
 app.use(express.json());
 app.use(cors());
 
@@ -81,9 +82,12 @@ app.post("/exchange", async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  consoleLog("OAuth microservice running on port 3000");
-});
+// Only listen when run directly (node server.js), not when imported by the tests
+if (import.meta.main) {
+  app.listen(3000, () => {
+    consoleLog("OAuth microservice running on port 3000");
+  });
+}
 
 /*
 # When dockerfile uses Docker Hardened Image, remember login to dhi.io to pull the image:

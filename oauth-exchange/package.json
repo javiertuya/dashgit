@@ -1,8 +1,11 @@
 {
   "private": true,
   "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
   "engines": {
-    "node": ">=24"
+    "node": ">=24.2"
   },
   "dependencies": {
     "express": "5.3.0",
