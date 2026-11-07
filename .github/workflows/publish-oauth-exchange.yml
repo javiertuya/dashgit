@@ -1,10 +1,12 @@
 name: publish-oauth-exchange
 
 # Builds and smoke tests the oauth-exchange container image, and publishes it to GHCR.
-# Production: every push to main that changes the container publishes the tags
-# main and main-<timestamp> (UTC). The server pins main-<timestamp>@sha256 and
-# its Dependabot opens a MR on each new timestamp.
-# Other branches only build and smoke test the image (e.g. digestabot updates of the base image).
+# - Production: every push to main that changes the container (or a manual dispatch on main) publishes
+#   the tags main and main-<timestamp> (UTC). The server pins main-<timestamp>@sha256 and
+#   its Dependabot opens a MR on each new timestamp.
+# - Development: a manual dispatch on any other branch publishes the tag dev in a separate package
+#   (oauth-exchange-dev), out of the server's Dependabot and deployed on demand.
+# - Other pushes only build and smoke test the image (e.g. digestabot updates of the base image).
 
 on:
   push:
@@ -13,15 +15,14 @@ on:
     paths:
       - 'oauth-exchange/**'
       - '.github/workflows/publish-oauth-exchange.yml'
-  # To republish main without changes (e.g. when the push run is too old to be re-run)
+  # On main: republish without changes (e.g. when the push run is too old to be re-run).
+  # On other branches: publish the development image
   workflow_dispatch:
 
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/oauth-exchange
   CONTEXT: oauth-exchange
   SMOKE_IMAGE: oauth-exchange:smoke
-  # Only main is published
-  PUBLISH: ${{ github.ref == 'refs/heads/main' }}
 
 jobs:
   publish:
@@ -32,6 +33,47 @@ jobs:
       contents: read
       packages: write
     steps:
+      # Determines what is published from the branch and the event, as outputs for the next steps:
+      # - publish: true if the image is pushed to GHCR (always smoke tested before)
+      # - image and tags: inputs of docker/metadata-action (the timestamp is resolved by the action)
+      #
+      # | Branch and event                                | Mode | Package            | Tags                   |
+      # |-------------------------------------------------|------|--------------------|------------------------|
+      # | main (push or dispatch)                         | main | oauth-exchange     | main-<timestamp>, main |
+      # | other branch, dispatch                          | dev  | oauth-exchange-dev | dev                    |
+      # | dependabot/*, digestabot/*, dashgit/*, dispatch | -    | -                  | fails with an error    |
+      # | other branch, push                              | test | (not published)    | -                      |
+      #
+      # The automated update branches (dashgit/* are the combined updates) must not overwrite the dev image.
+      # In test mode the image and tags are placeholders: they only set the version label of the smoke test build.
+      - name: Publication mode
+        id: mode
+        run: |
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            mode=main
+            image="$IMAGE"
+            tags="type=raw,value=main-{{date 'YYYYMMDD.HHmmss' tz='UTC'}},priority=300
+          type=raw,value=main,priority=200"
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            case "$GITHUB_REF_NAME" in
+              dependabot/*|digestabot/*|dashgit/*)
+                echo "::error::The development image can't be published from the automated update branches"
+                exit 1 ;;
+            esac
+            mode=dev
+            image="$IMAGE-dev"
+            tags="type=raw,value=dev"
+          else
+            mode=test
+            image="$IMAGE"
+            tags="type=raw,value=test"
+          fi
+          echo "Publication mode: $mode, image: $image"
+          { echo "publish=$([ "$mode" = test ] && echo false || echo true)"
+            echo "image=$image"
+            echo "tags<<EOF"; echo "$tags"; echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Checkout GitHub repo
         uses: actions/checkout@v7
 
@@ -51,12 +93,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.IMAGE }}
+          images: ${{ steps.mode.outputs.image }}
           flavor: latest=false
-          # The timestamp tag has the highest priority, so that it is the image version label
-          tags: |
-            type=raw,value=main-{{date 'YYYYMMDD.HHmmss' tz='UTC'}},priority=300
-            type=raw,value=main,priority=200
+          # On main, the timestamp tag has the highest priority, so that it is the image version label
+          tags: ${{ steps.mode.outputs.tags }}
           # Title and description default to the repository ones, that describe the dashboard, not this image
           labels: |
             org.opencontainers.image.title=oauth-exchange
@@ -71,7 +111,7 @@ jobs:
           password: ${{ secrets.DHI_TOKEN }}
 
       - name: Login to GHCR
-        if: env.PUBLISH == 'true'
+        if: steps.mode.outputs.publish == 'true'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -115,7 +155,7 @@ jobs:
             || { echo "::error::Unexpected exchange response"; exit 1; }
 
       - name: Build and push
-        if: env.PUBLISH == 'true'
+        if: steps.mode.outputs.publish == 'true'
         uses: docker/build-push-action@v7
         with:
           context: ${{ env.CONTEXT }}
