@@ -27,7 +27,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: javiertuya/docker-workflows/.github/workflows/publish-image.yml@publish-image
+    uses: javiertuya/docker-workflows/.github/workflows/publish-image.yml@v1.0.0
     with:
       image-name: oauth-exchange
       context: oauth-exchange
