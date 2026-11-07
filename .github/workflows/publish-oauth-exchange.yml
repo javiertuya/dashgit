@@ -1,0 +1,88 @@
+name: publish-oauth-exchange
+
+# Publishes the oauth-exchange container image to GHCR.
+# Production: every push to main that changes the container publishes the tags
+# main and main-<timestamp> (UTC). The server pins main-<timestamp>@sha256 and
+# its Dependabot opens a MR on each new timestamp.
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'ghcr-publishing' # PROVISIONAL: to validate the publication before merge, remove when merging
+    paths:
+      - 'oauth-exchange/**'
+      - '.github/workflows/publish-oauth-exchange.yml'
+  # To republish main without changes (e.g. when the push run is too old to be re-run)
+  workflow_dispatch:
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/oauth-exchange
+  CONTEXT: oauth-exchange
+
+jobs:
+  publish:
+    # Do not publish from forks, and only from main (PROVISIONAL: also from ghcr-publishing, remove when merging)
+    if: github.repository == 'javiertuya/dashgit' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ghcr-publishing')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout GitHub repo
+        uses: actions/checkout@v7
+
+      - name: Get the digest of the runtime base image
+        id: base
+        working-directory: ${{ env.CONTEXT }}
+        run: |
+          # The runtime base is the last FROM of the Dockerfile, pinned by digest
+          digest=$(grep -E '^FROM ' Dockerfile | tail -n 1 | grep -oE 'sha256:[0-9a-f]{64}' || true)
+          if [ -z "$digest" ]; then
+            echo "::error::The last FROM of the Dockerfile is not pinned by digest"
+            exit 1
+          fi
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Image metadata (tags and labels)
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE }}
+          flavor: latest=false
+          # The timestamp tag has the highest priority, so that it is the image version label
+          tags: |
+            type=raw,value=main-{{date 'YYYYMMDD.HHmmss' tz='UTC'}},priority=300
+            type=raw,value=main,priority=200
+          labels: |
+            org.opencontainers.image.base.digest=${{ steps.base.outputs.digest }}
+
+      - name: Login to DHI (base images)
+        uses: docker/login-action@v4
+        with:
+          registry: dhi.io
+          username: ${{ secrets.DHI_USERNAME }}
+          password: ${{ secrets.DHI_TOKEN }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ env.CONTEXT }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Single amd64 manifest, without index nor attestation manifests:
+          # GHCR lists attestations as untagged versions, that would break the cleanup
+          provenance: false
+          sbom: false
