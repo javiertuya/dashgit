@@ -1,14 +1,15 @@
 name: publish-oauth-exchange
 
-# Publishes the oauth-exchange container image to GHCR.
+# Builds and smoke tests the oauth-exchange container image, and publishes it to GHCR.
 # Production: every push to main that changes the container publishes the tags
 # main and main-<timestamp> (UTC). The server pins main-<timestamp>@sha256 and
 # its Dependabot opens a MR on each new timestamp.
+# Other branches only build and smoke test the image (e.g. digestabot updates of the base image).
 
 on:
   push:
-    branches:
-      - 'main'
+    branches-ignore:
+      - 'dependabot/**' # no access to the DHI secrets, the combined updates branch covers them
     paths:
       - 'oauth-exchange/**'
       - '.github/workflows/publish-oauth-exchange.yml'
@@ -18,11 +19,14 @@ on:
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/oauth-exchange
   CONTEXT: oauth-exchange
+  SMOKE_IMAGE: oauth-exchange:smoke
+  # Only main is published
+  PUBLISH: ${{ github.ref == 'refs/heads/main' }}
 
 jobs:
   publish:
-    # Do not publish from forks, and only from main
-    if: github.repository == 'javiertuya/dashgit' && github.ref == 'refs/heads/main'
+    # Do not run in forks
+    if: github.repository == 'javiertuya/dashgit'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -67,6 +71,7 @@ jobs:
           password: ${{ secrets.DHI_TOKEN }}
 
       - name: Login to GHCR
+        if: env.PUBLISH == 'true'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -76,7 +81,41 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
+      # The image is built and loaded into the local docker first, to be tested before the push.
+      # The build and push step below reuses the cache of this build, so that it pushes the same image
+      - name: Build for the smoke test
+        uses: docker/build-push-action@v7
+        with:
+          context: ${{ env.CONTEXT }}
+          platforms: linux/amd64
+          load: true
+          tags: ${{ env.SMOKE_IMAGE }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: false
+          sbom: false
+
+      # Checks that the service starts and answers without any configuration:
+      # the healthcheck, and an exchange request for a client that is not configured
+      - name: Smoke test
+        run: |
+          docker run -d --name smoke -p 3000:3000 "$SMOKE_IMAGE"
+          trap 'echo "--- container logs:"; docker logs smoke' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:3000/healthcheck >/dev/null 2>&1 && break
+            [ "$i" -eq 30 ] && { echo "::error::The service did not start in 30 seconds"; exit 1; }
+            sleep 1
+          done
+          health=$(curl -sS http://localhost:3000/healthcheck)
+          echo "healthcheck: $health"
+          [ "$health" = "OK" ] || { echo "::error::Unexpected healthcheck response"; exit 1; }
+          status=$(curl -sS -o exchange.json -w '%{http_code}' -X POST http://localhost:3000/exchange \
+            -H "Content-Type: application/json" -d '{"grant_type":"authorization_code","client_id":"smoke-test"}')
+          echo "exchange: $status $(cat exchange.json)"
+          [ "$status" = "403" ] && grep -q '"error":"forbidden"' exchange.json \
+            || { echo "::error::Unexpected exchange response"; exit 1; }
+
       - name: Build and push
+        if: env.PUBLISH == 'true'
         uses: docker/build-push-action@v7
         with:
           context: ${{ env.CONTEXT }}
