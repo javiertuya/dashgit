@@ -9,7 +9,6 @@ on:
   push:
     branches:
       - 'main'
-      - 'ghcr-publishing' # PROVISIONAL: to validate the publication before merge, remove when merging
     paths:
       - 'oauth-exchange/**'
       - '.github/workflows/publish-oauth-exchange.yml'
@@ -22,8 +21,8 @@ env:
 
 jobs:
   publish:
-    # Do not publish from forks, and only from main (PROVISIONAL: also from ghcr-publishing, remove when merging)
-    if: github.repository == 'javiertuya/dashgit' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/ghcr-publishing')
+    # Do not publish from forks, and only from main
+    if: github.repository == 'javiertuya/dashgit' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -54,7 +53,10 @@ jobs:
           tags: |
             type=raw,value=main-{{date 'YYYYMMDD.HHmmss' tz='UTC'}},priority=300
             type=raw,value=main,priority=200
+          # Title and description default to the repository ones, that describe the dashboard, not this image
           labels: |
+            org.opencontainers.image.title=oauth-exchange
+            org.opencontainers.image.description=DashGit OAuth token exchange proxy: exchanges the authorization code for an access token without exposing the client secret to the frontend
             org.opencontainers.image.base.digest=${{ steps.base.outputs.digest }}
 
       - name: Login to DHI (base images)
