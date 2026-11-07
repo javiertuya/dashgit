@@ -1,12 +1,10 @@
 name: publish-oauth-exchange
 
-# Builds and smoke tests the oauth-exchange container image, and publishes it to GHCR.
+# Builds and smoke tests the oauth-exchange container image, and publishes it to GHCR
+# (see javiertuya/docker-workflows for the tags and packages published on each branch and event).
 # - Production: every push to main that changes the container or this workflow (or a manual dispatch
-#   on main) publishes the tags main and main-<timestamp> (UTC). Consumers pin main-<timestamp> (optionally with its
-#   @sha256 digest): the timestamp identifies each build and is sortable, so that update tools
-#   can detect the newer versions.
-# - Development: a manual dispatch on another branch publishes the floating tag dev in a separate
-#   package (oauth-exchange-dev), that is overwritten on each publication and not meant to be pinned.
+#   on main) publishes the tags main and main-<timestamp> (UTC).
+# - Development: a manual dispatch on another branch publishes oauth-exchange-dev:dev.
 #   Refused on the automated update branches (dependabot, digestabot and combined updates).
 # - Pushes to other branches (with the same paths) only build and smoke test the image
 #   (e.g. digestabot updates of the base image).
@@ -22,176 +20,22 @@ on:
   # On other branches: publish the development image (fails on the automated update branches)
   workflow_dispatch:
 
-env:
-  IMAGE: ghcr.io/${{ github.repository_owner }}/oauth-exchange
-  CONTEXT: oauth-exchange
-  SMOKE_IMAGE: oauth-exchange:smoke
-
 jobs:
   publish:
     # Do not run in forks
     if: github.repository == 'javiertuya/dashgit'
-    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    steps:
-      # Determines what is published from the branch and the event, as outputs for the next steps:
-      # - publish: true if the image is pushed to GHCR (always smoke tested before)
-      # - image and tags: inputs of docker/metadata-action (the timestamp is resolved by the action)
-      # - package, keep-tagged and delete-untagged: inputs of the cleanup of old versions (see the Cleanup step)
-      #
-      # | Branch and event                                | Mode | Package            | Tags                   | Cleanup (after the push)     |
-      # |-------------------------------------------------|------|--------------------|------------------------|------------------------------|
-      # | main (push or dispatch)                         | main | oauth-exchange     | main-<timestamp>, main | keep the newest 20 tagged    |
-      # | other branch, dispatch                          | dev  | oauth-exchange-dev | dev                    | delete the untagged images   |
-      # | dependabot/*, digestabot/*, dashgit/*, dispatch | -    | -                  | fails with an error    | -                            |
-      # | other branch, push                              | test | (not published)    | -                      | -                            |
-      #
-      # The automated update branches (dashgit/* are the combined updates) must not overwrite the dev image.
-      # In test mode the image and tags are placeholders: they only set the version label of the smoke test build.
-      - name: Publication mode
-        id: mode
-        run: |
-          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
-            mode=main
-            image="$IMAGE"
-            tags="type=raw,value=main-{{date 'YYYYMMDD.HHmmss' tz='UTC'}},priority=300
-          type=raw,value=main,priority=200"
-            keep_tagged=20
-            delete_untagged=
-          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            case "$GITHUB_REF_NAME" in
-              dependabot/*|digestabot/*|dashgit/*)
-                echo "::error::The development image can't be published from the automated update branches"
-                exit 1 ;;
-            esac
-            mode=dev
-            image="$IMAGE-dev"
-            tags="type=raw,value=dev"
-            keep_tagged=
-            delete_untagged=true
-          else
-            mode=test
-            image="$IMAGE"
-            tags="type=raw,value=test"
-            keep_tagged=
-            delete_untagged=
-          fi
-          echo "Publication mode: $mode, image: $image"
-          { echo "publish=$([ "$mode" = test ] && echo false || echo true)"
-            echo "image=$image"
-            echo "package=${image##*/}"
-            echo "keep-tagged=$keep_tagged"
-            echo "delete-untagged=$delete_untagged"
-            echo "tags<<EOF"; echo "$tags"; echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Checkout GitHub repo
-        uses: actions/checkout@v7
-
-      - name: Get the digest of the runtime base image
-        id: base
-        working-directory: ${{ env.CONTEXT }}
-        run: |
-          # The runtime base is the last FROM of the Dockerfile, pinned by digest
-          digest=$(grep -E '^FROM ' Dockerfile | tail -n 1 | grep -oE 'sha256:[0-9a-f]{64}' || true)
-          if [ -z "$digest" ]; then
-            echo "::error::The last FROM of the Dockerfile is not pinned by digest"
-            exit 1
-          fi
-          echo "digest=$digest" >> "$GITHUB_OUTPUT"
-
-      - name: Image metadata (tags and labels)
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ steps.mode.outputs.image }}
-          flavor: latest=false
-          # On main, the timestamp tag has the highest priority, so that it is the image version label
-          tags: ${{ steps.mode.outputs.tags }}
-          # Title and description default to the repository ones, that describe the dashboard, not this image
-          labels: |
-            org.opencontainers.image.title=oauth-exchange
-            org.opencontainers.image.description=DashGit OAuth token exchange proxy: exchanges the authorization code for an access token without exposing the client secret to the frontend
-            org.opencontainers.image.base.digest=${{ steps.base.outputs.digest }}
-
-      - name: Login to DHI (base images)
-        uses: docker/login-action@v4
-        with:
-          registry: dhi.io
-          username: ${{ secrets.DHI_USERNAME }}
-          password: ${{ secrets.DHI_TOKEN }}
-
-      - name: Login to GHCR
-        if: steps.mode.outputs.publish == 'true'
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      # The image is built and loaded into the local docker first, to be tested before the push.
-      # The build and push step below reuses the cache of this build, so that it pushes the same image
-      - name: Build for the smoke test
-        uses: docker/build-push-action@v7
-        with:
-          context: ${{ env.CONTEXT }}
-          platforms: linux/amd64
-          load: true
-          tags: ${{ env.SMOKE_IMAGE }}
-          labels: ${{ steps.meta.outputs.labels }}
-          provenance: false
-          sbom: false
-
-      # Checks that the service starts and answers without any configuration:
-      # the healthcheck, and an exchange request for a client that is not configured
-      - name: Smoke test
-        run: |
-          docker run -d --name smoke -p 3000:3000 "$SMOKE_IMAGE"
-          trap 'echo "--- container logs:"; docker logs smoke' EXIT
-          for i in $(seq 1 30); do
-            curl -fsS http://localhost:3000/healthcheck >/dev/null 2>&1 && break
-            [ "$i" -eq 30 ] && { echo "::error::The service did not start in 30 seconds"; exit 1; }
-            sleep 1
-          done
-          health=$(curl -sS http://localhost:3000/healthcheck)
-          echo "healthcheck: $health"
-          [ "$health" = "OK" ] || { echo "::error::Unexpected healthcheck response"; exit 1; }
-          status=$(curl -sS -o exchange.json -w '%{http_code}' -X POST http://localhost:3000/exchange \
-            -H "Content-Type: application/json" -d '{"grant_type":"authorization_code","client_id":"smoke-test"}')
-          echo "exchange: $status $(cat exchange.json)"
-          [ "$status" = "403" ] && grep -q '"error":"forbidden"' exchange.json \
-            || { echo "::error::Unexpected exchange response"; exit 1; }
-
-      - name: Build and push
-        if: steps.mode.outputs.publish == 'true'
-        uses: docker/build-push-action@v7
-        with:
-          context: ${{ env.CONTEXT }}
-          platforms: linux/amd64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          # Single amd64 manifest, without index nor attestation manifests (attestations are not needed):
-          # each version listed in GHCR is a single image, without the untagged attestation entries
-          provenance: false
-          sbom: false
-
-      # Removes the old versions of the package just published. Requires the repository to have the admin role
-      # on the package, that it gets when the package is created by this workflow.
-      # - main: keeps the newest 20 tagged images (the tags main and main-<timestamp> of a build count as one).
-      #   Consumers may pin an older version by digest: deleting it would break their pulls.
-      #   20 versions leave them a wide margin to update, and allow a rollback
-      # - dev: deletes the untagged images, that are the dev builds that were overwritten
-      # Empty inputs are not set (the action ignores them)
-      - name: Cleanup of old versions
-        if: steps.mode.outputs.publish == 'true'
-        uses: dataaxiom/ghcr-cleanup-action@v1
-        with:
-          package: ${{ steps.mode.outputs.package }}
-          keep-n-tagged: ${{ steps.mode.outputs.keep-tagged }}
-          delete-untagged: ${{ steps.mode.outputs.delete-untagged }}
+    uses: javiertuya/docker-workflows/.github/workflows/publish-image.yml@v1.0.0
+    with:
+      image-name: oauth-exchange
+      context: oauth-exchange
+      smoke-test-script: oauth-exchange/test/smoke-test.sh
+      # dashgit/combined/* are the combined updates
+      dev-excluded-branches: 'dependabot/* digestabot/* dashgit/combined/*'
+      image-description: 'DashGit OAuth token exchange proxy: exchanges the authorization code for an access token without exposing the client secret to the frontend'
+      dhi-login: true
+    secrets:
+      DHI_USERNAME: ${{ secrets.DHI_USERNAME }}
+      DHI_TOKEN: ${{ secrets.DHI_TOKEN }}
