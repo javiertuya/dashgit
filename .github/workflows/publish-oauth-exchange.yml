@@ -1,22 +1,25 @@
 name: publish-oauth-exchange
 
 # Builds and smoke tests the oauth-exchange container image, and publishes it to GHCR.
-# - Production: every push to main that changes the container (or a manual dispatch on main) publishes
-#   the tags main and main-<timestamp> (UTC). The server pins main-<timestamp>@sha256 and
-#   its Dependabot opens a MR on each new timestamp.
-# - Development: a manual dispatch on any other branch publishes the tag dev in a separate package
-#   (oauth-exchange-dev), out of the server's Dependabot and deployed on demand.
-# - Other pushes only build and smoke test the image (e.g. digestabot updates of the base image).
+# - Production: every push to main that changes the container or this workflow (or a manual dispatch
+#   on main) publishes the tags main and main-<timestamp> (UTC). Consumers pin main-<timestamp> (optionally with its
+#   @sha256 digest): the timestamp identifies each build and is sortable, so that update tools
+#   can detect the newer versions.
+# - Development: a manual dispatch on another branch publishes the floating tag dev in a separate
+#   package (oauth-exchange-dev), that is overwritten on each publication and not meant to be pinned.
+#   Refused on the automated update branches (dependabot, digestabot and combined updates).
+# - Pushes to other branches (with the same paths) only build and smoke test the image
+#   (e.g. digestabot updates of the base image).
 
 on:
   push:
     branches-ignore:
-      - 'dependabot/**' # no access to the DHI secrets, the combined updates branch covers them
+      - 'dependabot/**' # runs triggered by Dependabot can't read the DHI secrets, the combined updates branch covers them
     paths:
       - 'oauth-exchange/**'
       - '.github/workflows/publish-oauth-exchange.yml'
   # On main: republish without changes (e.g. when the push run is too old to be re-run).
-  # On other branches: publish the development image
+  # On other branches: publish the development image (fails on the automated update branches)
   workflow_dispatch:
 
 env:
@@ -36,13 +39,14 @@ jobs:
       # Determines what is published from the branch and the event, as outputs for the next steps:
       # - publish: true if the image is pushed to GHCR (always smoke tested before)
       # - image and tags: inputs of docker/metadata-action (the timestamp is resolved by the action)
+      # - package, keep-tagged and delete-untagged: inputs of the cleanup of old versions (see the Cleanup step)
       #
-      # | Branch and event                                | Mode | Package            | Tags                   |
-      # |-------------------------------------------------|------|--------------------|------------------------|
-      # | main (push or dispatch)                         | main | oauth-exchange     | main-<timestamp>, main |
-      # | other branch, dispatch                          | dev  | oauth-exchange-dev | dev                    |
-      # | dependabot/*, digestabot/*, dashgit/*, dispatch | -    | -                  | fails with an error    |
-      # | other branch, push                              | test | (not published)    | -                      |
+      # | Branch and event                                | Mode | Package            | Tags                   | Cleanup (after the push)     |
+      # |-------------------------------------------------|------|--------------------|------------------------|------------------------------|
+      # | main (push or dispatch)                         | main | oauth-exchange     | main-<timestamp>, main | keep the newest 20 tagged    |
+      # | other branch, dispatch                          | dev  | oauth-exchange-dev | dev                    | delete the untagged images   |
+      # | dependabot/*, digestabot/*, dashgit/*, dispatch | -    | -                  | fails with an error    | -                            |
+      # | other branch, push                              | test | (not published)    | -                      | -                            |
       #
       # The automated update branches (dashgit/* are the combined updates) must not overwrite the dev image.
       # In test mode the image and tags are placeholders: they only set the version label of the smoke test build.
@@ -54,6 +58,8 @@ jobs:
             image="$IMAGE"
             tags="type=raw,value=main-{{date 'YYYYMMDD.HHmmss' tz='UTC'}},priority=300
           type=raw,value=main,priority=200"
+            keep_tagged=20
+            delete_untagged=
           elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             case "$GITHUB_REF_NAME" in
               dependabot/*|digestabot/*|dashgit/*)
@@ -63,14 +69,21 @@ jobs:
             mode=dev
             image="$IMAGE-dev"
             tags="type=raw,value=dev"
+            keep_tagged=
+            delete_untagged=true
           else
             mode=test
             image="$IMAGE"
             tags="type=raw,value=test"
+            keep_tagged=
+            delete_untagged=
           fi
           echo "Publication mode: $mode, image: $image"
           { echo "publish=$([ "$mode" = test ] && echo false || echo true)"
             echo "image=$image"
+            echo "package=${image##*/}"
+            echo "keep-tagged=$keep_tagged"
+            echo "delete-untagged=$delete_untagged"
             echo "tags<<EOF"; echo "$tags"; echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
@@ -163,7 +176,22 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Single amd64 manifest, without index nor attestation manifests:
-          # GHCR lists attestations as untagged versions, that would break the cleanup
+          # Single amd64 manifest, without index nor attestation manifests (attestations are not needed):
+          # each version listed in GHCR is a single image, without the untagged attestation entries
           provenance: false
           sbom: false
+
+      # Removes the old versions of the package just published. Requires the repository to have the admin role
+      # on the package, that it gets when the package is created by this workflow.
+      # - main: keeps the newest 20 tagged images (the tags main and main-<timestamp> of a build count as one).
+      #   Consumers may pin an older version by digest: deleting it would break their pulls.
+      #   20 versions leave them a wide margin to update, and allow a rollback
+      # - dev: deletes the untagged images, that are the dev builds that were overwritten
+      # Empty inputs are not set (the action ignores them)
+      - name: Cleanup of old versions
+        if: steps.mode.outputs.publish == 'true'
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          package: ${{ steps.mode.outputs.package }}
+          keep-n-tagged: ${{ steps.mode.outputs.keep-tagged }}
+          delete-untagged: ${{ steps.mode.outputs.delete-untagged }}
