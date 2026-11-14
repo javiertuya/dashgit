@@ -222,7 +222,7 @@ jobs:
           echo "gitlab.user=$USERNAME"                        >> dashgit-updater/it.properties
           echo "gitlab.email="                                >> dashgit-updater/it.properties
 
-      - uses: actions/setup-java@v6.1.0
+      - uses: actions/setup-java@v6.2.0
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -237,7 +237,7 @@ jobs:
 
       - name: Generate report checks - ${{ matrix.scope }}
         if: success() || failure()
-        uses: mikepenz/action-junit-report@v6.6.1
+        uses: mikepenz/action-junit-report@v6.7.1
         with:
           check_name: "test-it-result-${{ matrix.scope }}"
           report_paths: "**/surefire-reports/TEST-*.xml"
