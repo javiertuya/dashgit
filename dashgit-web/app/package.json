@@ -5,6 +5,6 @@
   "dependencies": {
     "@octokit/rest": "22.0.1",
     "@octokit/graphql": "9.0.5",
-    "@gitbeaker/rest": "43.8.0"
+    "@gitbeaker/rest": "44.0.0"
   }
 }
