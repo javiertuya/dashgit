@@ -14,12 +14,14 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
-    uses: javiertuya/digestabot-workflows/.github/workflows/docker-digests.yml@v1.0.0
+    uses: javiertuya/digestabot-workflows/.github/workflows/docker-digests.yml@v1.1.0
     with:
       image-name: oauth-exchange
       working-dir: oauth-exchange
       dhi-login: true
       assignee: javiertuya
+      auto-merge: true
+      merge-method: squash
     secrets:
       DIGESTABOT_TOKEN: ${{ secrets.DIGESTABOT_TOKEN }}
       DHI_USERNAME: ${{ secrets.DHI_USERNAME }}
