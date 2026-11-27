@@ -8,7 +8,7 @@
 # Alternatively, you can swap the image names to test with public node images, but it is recommended to use hardened images for better security.
 
 # Build stage
-FROM dhi.io/node:24-alpine3.23-dev@sha256:abe5e2eb4166f422dea213c4181c1ab069f63bb5d4b4bb0878abba2039fefec6 AS build
+FROM dhi.io/node:24-alpine3.23-dev@sha256:46ca2931c263986bd0dd5bc7d4189ae4a54c9bfd2aea30763f7774a0c8149620 AS build
 #FROM node:24-alpine3.23 AS build
 
 ENV NODE_ENV=production
